@@ -1,0 +1,5 @@
+# Configurações do Servidor
+PORT=3000
+
+# Configurações JWT
+JWT_SECRET=
