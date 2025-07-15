@@ -1,8 +1,6 @@
-require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,26 +9,17 @@ const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'app', 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 
-// Middleware para cookies
+// Middleware para cookies e JSON
 app.use(cookieParser());
-
-// Função para checar autenticação via JWT no cookie
-function isAuthenticated(req) {
-  const token = req.cookies.token;
-  if (!token) return false;
-  try {
-    // Usa o segredo do .env
-    jwt.verify(token, process.env.JWT_SECRET);
-    return true;
-  } catch (err) {
-    return false;
-  }
-}
+app.use(express.json());
 
 // Redireciona '/' para '/login'
 app.get('/', (req, res) => {
   res.redirect('/login');
 });
+
+// Servir arquivos estáticos (css, js, imagens, etc)
+app.use(express.static(PUBLIC_DIR));
 
 // Middleware para proteger rotas (exceto login e arquivos públicos)
 app.use((req, res, next) => {
@@ -44,9 +33,6 @@ app.use((req, res, next) => {
     req.path.startsWith('/icon-fonts')
   ) {
     return next();
-  }
-  if (!isAuthenticated(req)) {
-    return res.redirect('/login');
   }
   next();
 });
@@ -71,9 +57,6 @@ app.get('/login', (req, res) => {
   const filePath = path.join(PAGES_DIR, 'login', 'index.html');
   res.sendFile(filePath);
 });
-
-// Servir arquivos estáticos (css, js, imagens, etc)
-app.use(express.static(PUBLIC_DIR));
 
 // 404 para rotas não encontradas
 app.use((req, res) => {
