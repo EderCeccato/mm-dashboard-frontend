@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Dashboard - Home</title>
+   <style>
+      body {
+         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+         margin: 0;
+         padding: 0;
+         background: #f5f5f5;
+         color: #333;
+      }
+      .container {
+         display: flex;
+         min-height: 100vh;
+      }
+      .sidebar {
+         width: 250px;
+         background: #2c3e50;
+         color: #fff;
+         padding: 20px 0;
+      }
+      .main-content {
+         flex: 1;
+         padding: 20px;
+      }
+      .header {
+         display: flex;
+         justify-content: space-between;
+         align-items: center;
+         padding: 10px 20px;
+         background: #fff;
+         border-bottom: 1px solid #e1e1e1;
+         margin-bottom: 20px;
+      }
+      .user-info {
+         display: flex;
+         align-items: center;
+      }
+      .user-avatar {
+         width: 40px;
+         height: 40px;
+         border-radius: 50%;
+         background: #3498db;
+         color: white;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         font-weight: bold;
+         margin-right: 10px;
+      }
+      .logout-btn {
+         background: #e74c3c;
+         color: white;
+         border: none;
+         padding: 8px 15px;
+         border-radius: 4px;
+         cursor: pointer;
+      }
+      .module-menu-item {
+         display: flex;
+         align-items: center;
+         padding: 12px 20px;
+         color: #ecf0f1;
+         text-decoration: none;
+         transition: all 0.2s;
+      }
+      .module-menu-item:hover {
+         background: #34495e;
+      }
+      .module-menu-item.active {
+         background: #3498db;
+      }
+      .module-icon {
+         margin-right: 10px;
+         font-size: 18px;
+      }
+      .card {
+         background: white;
+         border-radius: 8px;
+         padding: 20px;
+         margin-bottom: 20px;
+         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      .modules-grid {
+         display: grid;
+         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+         gap: 20px;
+      }
+      .module-card {
+         background: white;
+         border-radius: 8px;
+         padding: 20px;
+         text-align: center;
+         box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+         transition: all 0.3s;
+         cursor: pointer;
+      }
+      .module-card:hover {
+         transform: translateY(-5px);
+         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      }
+      .module-card-icon {
+         font-size: 36px;
+         margin-bottom: 10px;
+      }
+      .brand {
+         padding: 20px;
+         font-size: 20px;
+         font-weight: bold;
+         border-bottom: 1px solid #34495e;
+         margin-bottom: 20px;
+      }
+      h1 {
+         margin-top: 0;
+         color: #2c3e50;
+      }
+   </style>
+</head>
+<body>
+   <div class="container">
+      <div class="sidebar">
+         <div class="brand">🚀 Dashboard</div>
+         <div id="moduleMenu">
+            <!-- Menu gerado dinamicamente pelo AuthManager -->
+            <div style="padding: 20px; text-align: center;">Carregando menu...</div>
+         </div>
+      </div>
+
+      <div class="main-content">
+         <div class="header">
+            <h2>🏠 Painel Principal</h2>
+            <div class="user-info">
+               <div class="user-avatar" id="userInitial">U</div>
+               <div>
+                  <div id="userName">Carregando...</div>
+                  <div data-auth-user="email" style="font-size: 12px; color: #777;"></div>
+               </div>
+               <button class="logout-btn" onclick="AuthManager.logout()" style="margin-left: 20px;">Sair</button>
+            </div>
+         </div>
+
+         <div class="card">
+            <h1>Bem-vindo(a) ao Dashboard</h1>
+            <p>Este sistema usa <strong>AuthManager</strong> para controlar acesso aos módulos.</p>
+            <p id="userModuleInfo">Carregando informações de acesso...</p>
+         </div>
+
+         <h3>Seus Módulos</h3>
+         <div class="modules-grid" id="modulesGrid">
+            <!-- Módulos gerados pelo script -->
+         </div>
+      </div>
+   </div>
+
+   <!-- Scripts necessários -->
+   <script src="../../assets/js/main.js"></script>
+   <script src="../../assets/js/auth-manager.js"></script>
+
+   <script>
+      // Define módulo atual
+      AuthManager.setCurrentModule('home');
+
+      // Quando o DOM carregar
+      document.addEventListener('DOMContentLoaded', function() {
+         // Gera inicial do usuário
+         const userData = AuthManager.getUserData();
+         if (userData && userData.name) {
+            document.getElementById('userInitial').textContent = userData.name.charAt(0).toUpperCase();
+         }
+
+         // Mostra módulos do usuário
+         const modules = AuthManager.getUserModules();
+         const modulesInfo = document.getElementById('userModuleInfo');
+         if (modules && modules.length) {
+            modulesInfo.textContent = `Você tem acesso a ${modules.length} módulos: ${modules.join(', ')}`;
+
+            // Gera cards de módulos
+            const moduleGrid = document.getElementById('modulesGrid');
+
+            // Mapa com detalhes dos módulos
+            const moduleDetails = {
+               'home': { icon: '🏠', name: 'Início', description: 'Painel principal do sistema' },
+               'users': { icon: '👥', name: 'Usuários', description: 'Gerenciamento de usuários' },
+               'products': { icon: '📦', name: 'Produtos', description: 'Catálogo de produtos' },
+               'reports': { icon: '📊', name: 'Relatórios', description: 'Análise de dados' },
+               'settings': { icon: '⚙️', name: 'Configurações', description: 'Ajustes do sistema' },
+               'admin': { icon: '🛡️', name: 'Admin', description: 'Acesso administrativo' },
+               '*': { icon: '🔑', name: 'Super Admin', description: 'Acesso total ao sistema' }
+            };
+
+            // Admin tem todos os módulos
+            const isAdmin = modules.includes('admin') || modules.includes('*');
+            const moduleIds = isAdmin ? Object.keys(moduleDetails) : modules;
+
+            // Remove duplicatas
+            const uniqueModules = [...new Set(moduleIds)];
+
+            // Cria cards
+            uniqueModules.forEach(moduleId => {
+               const details = moduleDetails[moduleId] || {
+                  icon: '📄',
+                  name: moduleId.charAt(0).toUpperCase() + moduleId.slice(1),
+                  description: 'Módulo do sistema'
+               };
+
+               const card = document.createElement('div');
+               card.className = 'module-card';
+               card.innerHTML = `
+                  <div class="module-card-icon">${details.icon}</div>
+                  <h3>${details.name}</h3>
+                  <p>${details.description}</p>
+               `;
+
+               // Adiciona evento de clique
+               card.addEventListener('click', () => {
+                  window.location.href = `/pages/${moduleId}/`;
+               });
+
+               moduleGrid.appendChild(card);
+            });
+         } else {
+            modulesInfo.textContent = 'Você não tem acesso a nenhum módulo.';
+         }
+      });
+   </script>
+</body>
+</html>
