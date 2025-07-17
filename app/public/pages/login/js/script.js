@@ -4,6 +4,90 @@ async function login(email, password) {
    return verify_access;
 };
 
+// Função para criar e exibir um toast de erro
+function showSuccessToast(message) {
+   // Obtém o container de toasts
+   const toastContainer = document.querySelector('.toast-container');
+
+   // Cria um ID único para o toast
+   const toastId = 'toast-' + Date.now();
+
+   // Cria o HTML do toast
+   const toastHTML = `
+      <div id="${toastId}" class="toast colored-toast bg-success text-fixed-white fade" role="alert" aria-live="assertive" aria-atomic="true">
+         <div class="toast-header bg-success text-fixed-white">
+            <strong class="me-auto">Sucesso</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+         </div>
+         <div class="toast-body">
+            ${message || 'Sucesso ao fazer login'}
+         </div>
+      </div>
+   `;
+
+   // Adiciona o toast ao container
+   toastContainer.insertAdjacentHTML('afterbegin', toastHTML);
+
+   // Obtém a referência ao elemento do toast
+   const toastElement = document.getElementById(toastId);
+
+   // Inicializa o toast com o Bootstrap
+   const toast = new bootstrap.Toast(toastElement, {
+      delay: 3000, // Tempo em ms que o toast ficará visível
+      autohide: true
+   });
+
+   // Adiciona evento para remover o elemento do DOM após o toast ser escondido
+   toastElement.addEventListener('hidden.bs.toast', function () {
+      toastElement.remove();
+   });
+
+   // Exibe o toast
+   toast.show();
+}
+
+// Função para criar e exibir um toast de erro
+function showErrorToast(message) {
+   // Obtém o container de toasts
+   const toastContainer = document.querySelector('.toast-container');
+
+   // Cria um ID único para o toast
+   const toastId = 'toast-' + Date.now();
+
+   // Cria o HTML do toast
+   const toastHTML = `
+      <div id="${toastId}" class="toast colored-toast bg-danger text-fixed-white fade" role="alert" aria-live="assertive" aria-atomic="true">
+         <div class="toast-header bg-danger text-fixed-white">
+            <strong class="me-auto">Erro</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+         </div>
+         <div class="toast-body">
+            ${message || 'Erro ao fazer login'}
+         </div>
+      </div>
+   `;
+
+   // Adiciona o toast ao container
+   toastContainer.insertAdjacentHTML('afterbegin', toastHTML);
+
+   // Obtém a referência ao elemento do toast
+   const toastElement = document.getElementById(toastId);
+
+   // Inicializa o toast com o Bootstrap
+   const toast = new bootstrap.Toast(toastElement, {
+      delay: 5000, // Tempo em ms que o toast ficará visível
+      autohide: true
+   });
+
+   // Adiciona evento para remover o elemento do DOM após o toast ser escondido
+   toastElement.addEventListener('hidden.bs.toast', function () {
+      toastElement.remove();
+   });
+
+   // Exibe o toast
+   toast.show();
+}
+
 function event_click() {
    // Fazer Login
    const signin_email = document.getElementById('signin-email');
@@ -47,21 +131,30 @@ function event_click() {
             }));
          }
 
-         console.log('✅ Login realizado com sucesso');
+         const successMessage = data_login && data_login.message ? data_login.message : 'Login realizado com sucesso';
+         showSuccessToast(successMessage);
 
-         // Redireciona para página principal
-         window.location.href = '/pages/home/';
+         setTimeout(() => {
+            // Redireciona para página principal
+            window.location.href = '/pages/home/';
+         }, 1200);
       } else {
-         alert('Usuário ou senha inválidos!');
+         // Exibe o toast com a mensagem de erro do servidor
+         const errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
+         showErrorToast(errorMessage);
+
+         // Restaura os botões
          if (btn_submit) btn_submit.style.display = 'block';
          if (btn_loading) btn_loading.style.display = 'none';
       }
    });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-   if (typeof hideLoader === 'function') {
-      hideLoader();
-   }
+// Inicializa a página quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', async function() {
+   // Registra eventos
    event_click();
+
+   // Remove o loader após todas as configurações iniciais
+   hideLoader();
 });
