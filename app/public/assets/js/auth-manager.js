@@ -14,7 +14,8 @@ const AuthManager = (function() {
       USER_DATA: 'userData',     // Dados do usuário
       MODULES: 'userModules',    // Lista de módulos permitidos
       TOKEN_DATA: 'tokenData',   // Dados do token (data de login, expiração)
-      CURRENT_MODULE: 'currentModule'  // Módulo atual
+      LAST_USER_EMAIL: 'lastUserEmail', // Email do último usuário
+      LAST_USER_NAME: 'lastUserName'    // Nome do último usuário
    };
 
    /**
@@ -66,7 +67,6 @@ const AuthManager = (function() {
             expiresAt: Date.now() + (24 * 60 * 60 * 1000)
          }));
 
-         console.log('✅ Dados de autenticação salvos com sucesso');
          return true;
       } catch (error) {
          console.error('❌ Erro ao salvar dados de autenticação:', error);
@@ -90,8 +90,6 @@ const AuthManager = (function() {
 
          // Se a resposta for bem-sucedida, a sessão é válida
          if (response && response.success === true) {
-            console.log('✅ Sessão válida no servidor');
-
             // Atualiza os dados do usuário se disponíveis na resposta
             if (response.data && response.data.user) {
                saveAuthData(response);
@@ -157,52 +155,6 @@ const AuthManager = (function() {
    }
 
    /**
-    * Verifica se o usuário tem acesso a um módulo específico
-    * @param {string} moduleId - Identificador do módulo (ex: 'home', 'users', etc)
-    * @returns {boolean} Verdadeiro se tem acesso
-    */
-   function hasModuleAccess(moduleId) {
-      try {
-         // Se não informar módulo, assume que precisa apenas estar autenticado
-         if (!moduleId) return true;
-
-         // Carrega lista de módulos do usuário
-         const modulesJson = localStorage.getItem(KEYS.MODULES);
-         if (!modulesJson) {
-            console.log('⚠️ Lista de módulos não encontrada');
-            return false;
-         }
-
-         const modules = JSON.parse(modulesJson);
-
-         // Verifica se está na lista de módulos ou tem acesso total
-         const hasAccess = modules.includes(moduleId) || modules.includes('admin') || modules.includes('*');
-
-         if (hasAccess) {
-            console.log(`✅ Acesso permitido ao módulo: ${moduleId}`);
-         } else {
-            console.log(`❌ Acesso negado ao módulo: ${moduleId}`);
-         }
-
-         return hasAccess;
-      } catch (error) {
-         console.error('❌ Erro ao verificar acesso ao módulo:', error);
-         return false;
-      }
-   }
-
-   /**
-    * Define o módulo atual da página
-    * @param {string} moduleId - Identificador do módulo
-    */
-   function setCurrentModule(moduleId) {
-      if (moduleId) {
-         localStorage.setItem(KEYS.CURRENT_MODULE, moduleId);
-         console.log(`🔍 Módulo atual: ${moduleId}`);
-      }
-   }
-
-   /**
     * Retorna dados do usuário logado
     * @returns {Object|null} Dados do usuário ou null
     */
@@ -235,11 +187,17 @@ const AuthManager = (function() {
     * @param {boolean} redirect - Se deve redirecionar para a página de login
     */
    function logout(redirect = true) {
+      // Salva o email e nome do último usuário antes de limpar
+      const userData = getUserData();
+      if (userData) {
+         localStorage.setItem(KEYS.LAST_USER_EMAIL, userData.email || '');
+         localStorage.setItem(KEYS.LAST_USER_NAME, userData.name || '');
+      }
+
       // Limpa dados do localStorage
       localStorage.removeItem(KEYS.USER_DATA);
       localStorage.removeItem(KEYS.MODULES);
       localStorage.removeItem(KEYS.TOKEN_DATA);
-      localStorage.removeItem(KEYS.CURRENT_MODULE);
 
       // Limpa outros dados que possam existir
       localStorage.removeItem('isAuthenticated');
@@ -248,8 +206,6 @@ const AuthManager = (function() {
 
       // Limpa cookie do backend
       document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-
-      console.log('🚪 Logout realizado com sucesso');
 
       // Redireciona para login se solicitado
       if (redirect) {
@@ -260,40 +216,22 @@ const AuthManager = (function() {
    /**
     * Verifica se pode acessar a página atual baseado no módulo
     * Se não estiver autenticado ou não tiver permissão, redireciona
-    * @param {string} requiredModule - Módulo necessário para acessar a página
     * @returns {Promise<boolean>} Verdadeiro se tem acesso
     */
-   async function checkAccess(requiredModule) {
+   async function checkAccess() {
       // Se estiver na página de login, não verifica
       if (window.location.pathname === '/login' ||
          window.location.pathname.includes('/login/')) {
          return true;
       }
 
-      console.log(`🛡️ Verificando acesso para: ${window.location.pathname}`);
-
       // 1. Verifica autenticação com o servidor
       const authenticated = await isAuthenticated();
       if (!authenticated) {
-         console.log('🚪 Não autenticado, redirecionando para login...');
          redirectToLogin();
          return false;
       }
 
-      // 2. Se informou um módulo específico, verifica permissão
-      if (requiredModule && !hasModuleAccess(requiredModule)) {
-         console.log(`🚫 Sem permissão para o módulo: ${requiredModule}`);
-         // Redireciona para a página inicial ou de acesso negado
-         window.location.href = '/pages/home/';
-         return false;
-      }
-
-      // Salva o módulo atual
-      if (requiredModule) {
-         setCurrentModule(requiredModule);
-      }
-
-      console.log('✅ Acesso permitido à página atual');
       return true;
    }
 
@@ -310,18 +248,32 @@ const AuthManager = (function() {
     */
    function renderUserInfo() {
       const userData = getUserData();
-      if (userData) {
+      const lastEmail = localStorage.getItem(KEYS.LAST_USER_EMAIL);
+      const lastName = localStorage.getItem(KEYS.LAST_USER_NAME);
+
+      // Preenche com dados do usuário logado ou último usuário
+      if (userData || lastEmail || lastName) {
          // Procura elementos com data-auth-user-* para preencher com dados
          document.querySelectorAll('[data-auth-user]').forEach(element => {
             const field = element.getAttribute('data-auth-user');
-            if (userData[field]) {
+            if (userData && userData[field]) {
                element.textContent = userData[field];
             }
          });
 
-         // Preenche elementos específicos por ID
-         if (document.getElementById('userName')) {
-            document.getElementById('userName').textContent = userData.name || userData.email || 'Usuário';
+         // Preenche o campo de email se existir
+         const emailInput = document.getElementById('signin-email');
+         if (emailInput) {
+            emailInput.value = userData ? userData.email : lastEmail || '';
+         }
+
+         // Preenche a mensagem de boas-vindas se existir
+         const loginMessage = document.getElementById('login-message');
+         if (loginMessage) {
+            const name = userData ? userData.name : lastName;
+            if (name) {
+               loginMessage.textContent = 'Bem-vindo de volta, ' + name + '!';
+            }
          }
       }
    }
@@ -368,12 +320,6 @@ const AuthManager = (function() {
             <span class="module-label">${module.label}</span>
          `;
 
-         // Destaca item atual
-         const currentModule = localStorage.getItem(KEYS.CURRENT_MODULE);
-         if (currentModule === moduleId) {
-            menuItem.classList.add('active');
-         }
-
          // Adiciona ao menu
          menuContainer.appendChild(menuItem);
       });
@@ -402,14 +348,12 @@ const AuthManager = (function() {
    return {
       saveAuthData: saveAuthData,
       isAuthenticated: isAuthenticated,
-      hasModuleAccess: hasModuleAccess,
       getUserData: getUserData,
       getUserModules: getUserModules,
       checkAccess: checkAccess,
       logout: logout,
       renderUserInfo: renderUserInfo,
-      renderModuleMenu: renderModuleMenu,
-      setCurrentModule: setCurrentModule
+      renderModuleMenu: renderModuleMenu
    };
 
 })();
