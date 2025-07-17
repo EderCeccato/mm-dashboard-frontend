@@ -65,10 +65,43 @@ function injectLoaderSVG() {
 // Adiciona o loader antes da página carregar
 injectLoaderSVG();
 
-// Remover o Loader
+// Inicializa a personalização automaticamente
+(async function initBranding() {
+   try {
+      // Se o sistema de personalização não estiver disponível, não faz nada
+      if (typeof CompanyBranding === 'undefined') {
+         console.warn('⚠️ Sistema de personalização não encontrado');
+         return;
+      }
+
+      // Verifica se está na página de login para forçar atualização
+      const isLoginPage = window.location.pathname.includes('/login') ||
+                         window.location.pathname === '/login' ||
+                         window.location.pathname === '/';
+
+      // Se estiver na página de login, força a atualização
+      let companyData;
+      if (isLoginPage) {
+         companyData = await CompanyBranding.forceRefresh();
+      } else {
+         // Para outras páginas, usa o cache se disponível
+         companyData = await CompanyBranding.init();
+      }
+   } catch (error) {
+      console.error('❌ Erro ao processar personalização:', error);
+   }
+})();
+
+/**
+ * Função para remover o loader
+ * Esta função deve ser chamada manualmente no final de cada página,
+ * após todas as requisições e carregamentos necessários
+ */
 function hideLoader() {
    const loader = document.getElementById("loader");
    if (loader) {
       loader.classList.add("d-none");
+   } else {
+      console.warn('⚠️ Elemento loader não encontrado');
    }
 }
