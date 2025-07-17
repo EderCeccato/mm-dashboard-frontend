@@ -10,12 +10,13 @@
    <meta name="Author" content="MM Softwares">
    <meta name="keywords" content="admin, dashboard, mmsoftwares, siserv">
    <!-- Favicon -->
-   <link rel="icon" href="../../assets/images/brand-logos/favicon.ico" type="image/x-icon">
+   <link rel="icon" href="" type="image/x-icon">
    <!-- Main Theme Js -->
    <script src="../../assets/js/authentication-main.js"></script>
    <!-- Main Js -->
    <script src="../../assets/js/main.js"></script>
    <script src="../../assets/js/auth-manager.js"></script>
+   <script src="../../assets/js/company-branding.js"></script>
    <!-- Bootstrap Css -->
    <link id="style" href="../../assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
    <!-- Style Css -->
@@ -392,11 +393,12 @@
             <div class="col-xxl-6 col-xl-7 col-lg-7 col-md-7 col-sm-8 col-12">
                <div class="p-5">
                   <div class="mb-3">
-                     <img src="../../assets/images/brand-logos/desktop-logo.png" alt="" class="authentication-brand desktop-logo" style="max-width: 100px;">
-                     <img src="../../assets/images/brand-logos/desktop-dark.png" alt="" class="authentication-brand desktop-dark" style="max-width: 100px;">
+                     <img src="" alt="" class="authentication-brand desktop-logo" style="max-width: 100px;">
+                     <img src="" alt="" class="authentication-brand desktop-dark" style="max-width: 100px;">
                   </div>
 
-                  <p class="h5 fw-semibold mb-5 text-center">Login</p>
+                  <p class="h5 fw-semibold text-center">Login</p>
+                  <p class="mb-3 text-muted op-7 fw-normal text-center mb-5" id="login-message"></p>
 
                   <div class="row gy-3">
                      <div class="col-xl-12 mt-0">
@@ -415,7 +417,7 @@
                      <div class="col-xl-12 d-grid mt-2">
                         <button id="btn-submit" class="btn btn-lg btn-primary">Entrar</button>
                         <button id="btn-loading" class="btn btn-lg btn-primary btn-loader disabled justify-content-center align-items-center" style="position: relative; display: none;">
-                           <span class="me-2">Loading</span>
+                           <span class="me-2">Carregando...</span>
                            <span class="loading"><i class="ri-loader-2-fill fs-16" style="margin-top: 5px;"></i></span>
                         </button>
                      </div>
@@ -436,10 +438,8 @@
                         <div class="text-fixed-white text-center p-5 d-flex align-items-center justify-content-center">
                            <div>
                               <div class="mb-5">
-                                 <img src="../../assets/images/authentication/1.jpg"class="authentication-image" alt="">
+                                 <img src="" class="authentication-image" alt="">
                               </div>
-                              <h6 class="fw-semibold text-fixed-white">Estoque Sempre Sob Medida</h6>
-                              <p class="fw-normal fs-14 op-7">Monitore níveis e reposições em tempo real, eliminando excessos e faltas para manter sua operação sempre alinhada à demanda.</p>
                            </div>
                         </div>
                      </div>
@@ -2082,6 +2082,8 @@
       <!-- End Swiper -->
 
    </div>
+
+   <div class="toast-container position-fixed top-0 end-0 p-3"></div>
 
    <script src="../../assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
    <script src="../../assets/libs/swiper/swiper-bundle.min.js"></script>
