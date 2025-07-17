@@ -24,3 +24,15 @@ async function Thefetch(path, method = 'GET', body = null) {
       return error;
    }
 }
+
+// Inicializa o sistema de personalização de marca em todas as páginas
+document.addEventListener('DOMContentLoaded', function() {
+   // Verifica se o sistema de personalização está disponível
+   if (typeof CompanyBranding !== 'undefined') {
+      // Se o loader não estiver sendo usado, inicializa diretamente
+      if (!document.documentElement.hasAttribute('loader')) {
+         CompanyBranding.init()
+      }
+      // Caso contrário, o loader.js já vai cuidar da inicialização
+   }
+});
