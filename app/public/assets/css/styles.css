@@ -9003,7 +9003,7 @@ caption {
   height: auto;
 }
 .authentication .authentication-cover {
-  background-image: url(../images/authentication/1.jpg);
+  /* background-image: url(../images/authentication/1.jpg); */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
