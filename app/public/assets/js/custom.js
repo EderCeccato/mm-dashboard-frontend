@@ -230,9 +230,9 @@
       document.querySelector("#switcher-background2").checked = false;
       document.querySelector("#switcher-background1").checked = false;
       document.querySelector("#switcher-background").checked = false;
-      localStorage.removeItem("ynexdarktheme");
-      localStorage.removeItem("ynexMenu");
-      localStorage.removeItem("ynexHeader");
+      localStorage.removeItem("mmdarktheme");
+      localStorage.removeItem("mmMenu");
+      localStorage.removeItem("mmHeader");
       localStorage.removeItem("bodylightRGB");
       localStorage.removeItem("bodyBgRGB");
       if (localStorage.getItem("ynexlayout") != "horizontal") {
@@ -258,9 +258,9 @@
       document.querySelector("#switcher-background2").checked = false;
       document.querySelector("#switcher-background1").checked = false;
       document.querySelector("#switcher-background").checked = false;
-      localStorage.setItem("ynexdarktheme", "true");
-      localStorage.setItem("ynexMenu", "dark");
-      localStorage.setItem("ynexHeader", "dark");
+      localStorage.setItem("mmdarktheme", "true");
+      localStorage.setItem("mmMenu", "dark");
+      localStorage.setItem("mmHeader", "dark");
       localStorage.removeItem("bodylightRGB");
       localStorage.removeItem("bodyBgRGB");
     }
@@ -356,15 +356,21 @@
 
   /* header dropdowns scroll */
   var myHeaderShortcut = document.getElementById("header-shortcut-scroll");
-  new SimpleBar(myHeaderShortcut, { autoHide: true });
+  if (myHeaderShortcut) {
+    new SimpleBar(myHeaderShortcut, { autoHide: true });
+  }
 
   var myHeadernotification = document.getElementById(
     "header-notification-scroll"
   );
-  new SimpleBar(myHeadernotification, { autoHide: true });
+  if (myHeadernotification) {
+    new SimpleBar(myHeadernotification, { autoHide: true });
+  }
 
   var myHeaderCart = document.getElementById("header-cart-items-scroll");
-  new SimpleBar(myHeaderCart, { autoHide: true });
+  if (myHeaderCart) {
+    new SimpleBar(myHeaderCart, { autoHide: true });
+  }
   /* header dropdowns scroll */
 })();
 
