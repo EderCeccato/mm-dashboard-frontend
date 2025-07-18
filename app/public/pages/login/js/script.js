@@ -101,7 +101,6 @@ function event_click() {
       if (btn_loading) btn_loading.style.display = 'flex';
 
       const data_login = await login(signin_email.value, signin_password.value);
-      console.log(data_login);
 
       if (data_login && data_login.success) {
          // Salva os dados da sessão usando o AuthManager
@@ -114,6 +113,8 @@ function event_click() {
             if (data_login.data && data_login.data.user) {
                // Nova estrutura
                localStorage.setItem('userData', JSON.stringify(data_login.data.user));
+               console.log(data_login);
+
 
                // Extrai os módulos da nova estrutura
                const modules = data_login.data.user.modules || [];
@@ -121,7 +122,7 @@ function event_click() {
             } else if (data_login.user) {
                // Estrutura antiga
                localStorage.setItem('userData', JSON.stringify(data_login.user));
-               localStorage.setItem('userModules', JSON.stringify(data_login.modules || ['home']));
+               localStorage.setItem('userModules', JSON.stringify(data_login.modules));
             }
 
             // Salva informações do token
@@ -137,7 +138,7 @@ function event_click() {
          setTimeout(() => {
             // Redireciona para página principal
             window.location.href = '/pages/home/';
-         }, 1200);
+         }, 1000);
       } else {
          // Exibe o toast com a mensagem de erro do servidor
          const errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
@@ -154,7 +155,4 @@ function event_click() {
 document.addEventListener('DOMContentLoaded', async function() {
    // Registra eventos
    event_click();
-
-   // Remove o loader após todas as configurações iniciais
-   hideLoader();
 });
