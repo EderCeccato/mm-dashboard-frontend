@@ -1,6 +1,6 @@
 (function () {
     'use strict';
-    if (localStorage.getItem("ynexdarktheme")) {
+    if (localStorage.getItem("mmdarktheme")) {
         document.querySelector("html").setAttribute("data-theme-mode", "dark")
         document.querySelector("html").setAttribute("data-menu-styles", "dark")
         document.querySelector("html").setAttribute("data-header-styles", "dark")
@@ -12,7 +12,7 @@
             // rtlFn();
     }
     if (localStorage.getItem("ynexlayout") == "horizontal") {
-        document.querySelector("html").setAttribute("data-nav-layout", "horizontal") 
+        document.querySelector("html").setAttribute("data-nav-layout", "horizontal")
     }
     function localStorageBackup() {
 
@@ -40,7 +40,7 @@
 
 
         }
-        if (localStorage.ynexdarktheme) {
+        if (localStorage.mmdarktheme) {
             let html = document.querySelector('html');
             html.setAttribute('data-theme-mode', 'dark');
         }
