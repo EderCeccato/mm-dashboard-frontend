@@ -72,19 +72,54 @@ const CompanyBranding = (function() {
    }
 
    /**
-    * Aplica a cor primária ao CSS
+    * Aplica a cor primária ao CSS e ao menu quando estiver no modo light
     * @param {string} colorRgb Cor no formato "R, G, B" (ex: "0, 129, 0")
     */
    function applyPrimaryColor(colorRgb) {
       if (!colorRgb) return;
 
       try {
+         // Converter RGB para Hex para o menu
+         const rgbValues = colorRgb.split(',').map(val => parseInt(val.trim()));
+         const rgbToHex = (r, g, b) => '#' + [r, g, b]
+            .map(x => {
+               const hex = x.toString(16);
+               return hex.length === 1 ? '0' + hex : hex;
+            })
+            .join('');
+
+         // Converte a cor RGB para Hex e aplica a cor ao menu no modo light
+         const hexColor = rgbToHex(rgbValues[0], rgbValues[1], rgbValues[2]);
+
          // Cria um estilo personalizado
          const style = document.createElement('style');
          style.id = 'company-primary-color';
 
-         // Define a variável CSS --primary-rgb
-         style.textContent = `:root { --primary-rgb: ${colorRgb}; }`;
+         // Define a variável CSS --primary-rgb e aplica a cor ao menu no modo light
+         style.textContent = `
+            :root {
+               --primary-rgb: ${colorRgb};
+            }
+
+            /* Aplicar cor da empresa ao menu apenas quando estiver no modo light */
+            html[data-theme-mode="light"][data-menu-styles="light"] {
+               --menu-bg: #fff !important;
+            }
+
+            /* Ajustar cores de texto para o menu light com cor da empresa */
+            html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item {
+               color: rgba(255, 255, 255, 0.9) !important;
+            }
+
+            html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item:hover {
+               color: #fff !important;
+            }
+
+            html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item.active {
+               color: #fff !important;
+               background-color: rgba(255, 255, 255, 0.15) !important;
+            }
+         `;
 
          // Remove estilo anterior se existir
          const existingStyle = document.getElementById('company-primary-color');
@@ -94,9 +129,71 @@ const CompanyBranding = (function() {
 
          // Adiciona o novo estilo ao head
          document.head.appendChild(style);
+
+         // Configura o observador para tema se ainda não existir
+         setupThemeObserver(colorRgb);
       } catch (error) {
          console.error('❌ Erro ao aplicar cor primária:', error);
       }
+   }
+
+      /**
+    * Sincroniza o estilo do menu com o tema atual
+    */
+   function syncMenuWithTheme() {
+      const html = document.documentElement;
+      const themeMode = html.getAttribute('data-theme-mode');
+
+      if (themeMode === 'light') {
+         // No modo light, o menu também deve ser light
+         html.setAttribute('data-menu-styles', 'light');
+      } else if (themeMode === 'dark') {
+         // No modo dark, o menu também deve ser dark
+         html.setAttribute('data-menu-styles', 'dark');
+      }
+   }
+
+   /**
+    * Configura um observador para sincronizar o menu com o tema
+    * @param {string} colorRgb Cor RGB da empresa
+    */
+   function setupThemeObserver(colorRgb) {
+      // Evitar criar múltiplos observadores
+      if (window._themeObserver) return;
+
+      const html = document.documentElement;
+
+      // Executar a sincronização inicial
+      syncMenuWithTheme();
+
+      // Observar mudanças no tema
+      const observer = new MutationObserver((mutations) => {
+         mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'data-theme-mode') {
+               syncMenuWithTheme();
+            }
+         });
+      });
+
+      // Configurar o observador
+      observer.observe(html, {
+         attributes: true,
+         attributeFilter: ['data-theme-mode']
+      });
+
+      // Armazenar o observador para referência
+      window._themeObserver = observer;
+
+      // Adicionar evento para o botão de alternar tema
+      document.querySelectorAll('.layout-setting').forEach((btn) => {
+         // Remover eventos anteriores para evitar duplicação
+         btn.removeEventListener('click', syncMenuWithTheme);
+         // Adicionar novo evento
+         btn.addEventListener('click', () => {
+            // Pequeno atraso para garantir que o tema foi alterado
+            setTimeout(syncMenuWithTheme, 100);
+         });
+      });
    }
 
    /**
@@ -172,6 +269,9 @@ const CompanyBranding = (function() {
     */
    async function init(forceRefresh = false) {
       try {
+         // Sincronizar o menu com o tema atual
+         syncMenuWithTheme();
+
          // Tenta obter dados do localStorage primeiro (cache)
          let companyData = null;
 
@@ -244,3 +344,12 @@ const CompanyBranding = (function() {
       }
    };
 })();
+
+// Executar a sincronização do menu com o tema quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+   // Verificar se o CompanyBranding está disponível
+   if (typeof CompanyBranding !== 'undefined') {
+      // Inicializar o CompanyBranding
+      CompanyBranding.init();
+   }
+});
