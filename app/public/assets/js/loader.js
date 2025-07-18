@@ -65,37 +65,89 @@ function injectLoaderSVG() {
 // Adiciona o loader antes da página carregar
 injectLoaderSVG();
 
-// Inicializa a personalização automaticamente
-(async function initBranding() {
-   try {
-      // Se o sistema de personalização não estiver disponível, não faz nada
-      if (typeof CompanyBranding === 'undefined') {
-         console.warn('⚠️ Sistema de personalização não encontrado');
-         return;
-      }
+// Variável global para controlar o estado do loader
+window.loaderState = {
+   authChecked: false,
+   pageLoaded: false,
+   requestsCompleted: false
+};
 
+// Inicializa a personalização e verificação de autenticação
+(async function initApp() {
+   try {
       // Verifica se está na página de login para forçar atualização
       const isLoginPage = window.location.pathname.includes('/login') ||
                          window.location.pathname === '/login' ||
                          window.location.pathname === '/';
 
-      // Se estiver na página de login, força a atualização
-      let companyData;
-      if (isLoginPage) {
-         companyData = await CompanyBranding.forceRefresh();
+      // Se o sistema de personalização não estiver disponível, marca como concluído
+      if (typeof CompanyBranding === 'undefined') {
+         console.warn('⚠️ Sistema de personalização não encontrado');
+         window.loaderState.pageLoaded = true;
       } else {
-         // Para outras páginas, usa o cache se disponível
-         companyData = await CompanyBranding.init();
+         // Se estiver na página de login, força a atualização
+         let companyData;
+         if (isLoginPage) {
+            companyData = await CompanyBranding.forceRefresh();
+         } else {
+            // Para outras páginas, usa o cache se disponível
+            companyData = await CompanyBranding.init();
+         }
+
+         window.loaderState.pageLoaded = true;
       }
+
+      // Verifica autenticação apenas se não estiver na página de login
+      if (!isLoginPage && typeof AuthManager !== 'undefined') {
+         try {
+            // Verifica autenticação
+            const isAuthenticated = await AuthManager.isAuthenticated();
+
+            // Marca a autenticação como verificada
+            window.loaderState.authChecked = true;
+
+            // Se não estiver autenticado, o AuthManager já vai redirecionar
+            // então não precisamos fazer nada aqui
+         } catch (error) {
+            console.error('❌ Erro ao verificar autenticação:', error);
+            window.loaderState.authChecked = true; // Marca como verificado mesmo com erro
+         }
+      } else {
+         // Se estiver na página de login ou não tiver AuthManager, marca como verificado
+         window.loaderState.authChecked = true;
+      }
+
+      // Após 1 segundo, considera que todas as requisições foram completadas
+      setTimeout(() => {
+         window.loaderState.requestsCompleted = true;
+         checkAndHideLoader();
+      }, 500);
    } catch (error) {
-      console.error('❌ Erro ao processar personalização:', error);
+      console.error('❌ Erro ao inicializar aplicação:', error);
+
+      // Em caso de erro, marca tudo como concluído para não travar o loader
+      window.loaderState.authChecked = true;
+      window.loaderState.pageLoaded = true;
+      window.loaderState.requestsCompleted = true;
+
+      checkAndHideLoader();
    }
 })();
 
 /**
+ * Verifica se todas as condições foram atendidas e esconde o loader
+ */
+function checkAndHideLoader() {
+   if (window.loaderState.authChecked &&
+       window.loaderState.pageLoaded &&
+       window.loaderState.requestsCompleted) {
+      hideLoader();
+   }
+}
+
+/**
  * Função para remover o loader
- * Esta função deve ser chamada manualmente no final de cada página,
- * após todas as requisições e carregamentos necessários
+ * Esta função será chamada automaticamente quando todas as verificações forem concluídas
  */
 function hideLoader() {
    const loader = document.getElementById("loader");
@@ -105,3 +157,12 @@ function hideLoader() {
       console.warn('⚠️ Elemento loader não encontrado');
    }
 }
+
+// Quando a página estiver totalmente carregada
+window.addEventListener('load', function() {
+   // Marca a página como carregada
+   window.loaderState.pageLoaded = true;
+
+   // Verifica se pode esconder o loader
+   checkAndHideLoader();
+});
