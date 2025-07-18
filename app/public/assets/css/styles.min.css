@@ -657,8 +657,8 @@
 [data-menu-styles=dark] .app-sidebar .side-menu__item:hover .side-menu__angle,
 [data-menu-styles=dark] .app-sidebar .side-menu__item:hover .side-menu__icon,
 [data-menu-styles=dark] .app-sidebar .side-menu__item:hover .side-menu__label {
-   color: #fff;
-   fill: #fff
+   color: #fff !important;
+   fill: #fff !important
 }
 
 [data-menu-styles=dark] .app-sidebar .slide-menu.child1 .side-menu__item:hover,
@@ -20099,7 +20099,7 @@ code[class*=language-] {
    align-items: center;
    text-decoration: none;
    font-size: .78rem;
-   color: var(--menu-prime-color);
+   color: var(--default-text-color);
    font-weight: 500;
    border-radius: .5rem
 }
@@ -20176,7 +20176,7 @@ code[class*=language-] {
    content: "";
    width: .3rem;
    height: .3rem;
-   border: 1px solid var(--menu-prime-color);
+   border: 1px solid var(--default-text-color);
    border-radius: 50%;
    background-color: transparent;
    opacity: 1
@@ -20192,7 +20192,7 @@ code[class*=language-] {
 
 .app-sidebar .side-menu__label {
    white-space: nowrap;
-   color: var(--menu-prime-color) !important;
+   color: var(--default-text-color) !important;
    position: relative;
    font-size: .85rem;
    line-height: 1;
@@ -20205,8 +20205,8 @@ code[class*=language-] {
    height: 1.15rem;
    font-size: 1.15rem;
    text-align: center;
-   color: var(--menu-prime-color);
-   fill: var(--menu-prime-color);
+   color: var(--default-text-color);
+   fill: var(--default-text-color);
    border-radius: .5rem
 }
 
@@ -21621,7 +21621,7 @@ code[class*=language-] {
    }
 
    .landing-body .app-sidebar.sticky.sticky-pin.app-sidebar .side-menu__item:hover .side-menu__label {
-      color: var(--primary-color) !important
+      color: #000 !important
    }
 
    .landing-body .app-sidebar.app-sidebar .slide.has-sub.open .slide-menu.child1::before {
