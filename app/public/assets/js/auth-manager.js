@@ -15,7 +15,7 @@ const AuthManager = (function() {
       MODULES: 'userModules',    // Lista de módulos permitidos
       TOKEN_DATA: 'tokenData',   // Dados do token (data de login, expiração)
       LAST_USER_EMAIL: 'lastUserEmail', // Email do último usuário
-      LAST_USER_NAME: 'lastUserName'    // Nome do último usuário
+      LAST_USER_NAME: 'lastUserName',    // Nome do último usuário
    };
 
    /**
@@ -143,7 +143,7 @@ const AuthManager = (function() {
          if (!isValid) {
             console.log('❌ Sessão invalidada pelo servidor');
             // Limpa dados locais já que o token é inválido
-            logout(false); // Não redireciona automaticamente
+            await logout(false); // Não redireciona automaticamente
             return false;
          }
 
@@ -186,7 +186,7 @@ const AuthManager = (function() {
     * Faz logout do usuário
     * @param {boolean} redirect - Se deve redirecionar para a página de login
     */
-   function logout(redirect = true) {
+   async function logout(redirect = true) {
       // Salva o email e nome do último usuário antes de limpar
       const userData = getUserData();
       if (userData) {
@@ -206,6 +206,8 @@ const AuthManager = (function() {
 
       // Limpa cookie do backend
       document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
+      await Thefetch('/api/auth/logout', 'POST');
 
       // Redireciona para login se solicitado
       if (redirect) {
@@ -275,6 +277,7 @@ const AuthManager = (function() {
                loginMessage.textContent = 'Bem-vindo de volta, ' + name + '!';
             }
          }
+
       }
    }
 
@@ -353,7 +356,7 @@ const AuthManager = (function() {
       checkAccess: checkAccess,
       logout: logout,
       renderUserInfo: renderUserInfo,
-      renderModuleMenu: renderModuleMenu
+      renderModuleMenu: renderModuleMenu,
    };
 
 })();
