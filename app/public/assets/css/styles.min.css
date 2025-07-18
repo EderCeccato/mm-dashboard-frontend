@@ -34,7 +34,7 @@
    --default-border: #f3f3f3;
    --default-background: #f7f8f9;
    --menu-bg: #fff;
-   --menu-prime-color: #536485;
+   --menu-prime-color: #fff;
    --menu-border-color: #f3f3f3;
    --header-bg: #fff;
    --header-prime-color: #536485;
@@ -80,7 +80,7 @@
    --body-bg-rgb2: 37, 39, 41;
    --menu-bg: rgb(var(--body-bg-rgb));
    --menu-border-color: rgba(255, 255, 255, 0.1);
-   --menu-prime-color: rgba(255, 255, 255, 0.6);
+   --menu-prime-color: rgba(0, 0, 0);
    --header-bg: rgb(var(--body-bg-rgb));
    --header-prime-color: rgba(255, 255, 255, 0.6);
    --header-border-color: rgba(255, 255, 255, 0.1);
@@ -558,8 +558,8 @@
 }
 
 [data-menu-styles=light] {
-   --menu-bg: #fff;
-   --menu-prime-color: #536485;
+   --menu-bg: #000;
+   --menu-prime-color: #000;
    --menu-border-color: #f3f3f3
 }
 
@@ -597,7 +597,7 @@
 
 [data-menu-styles=dark] {
    --menu-bg: var(--custom-white);
-   --menu-prime-color: #8f9bb3;
+   --menu-prime-color: #fff;
    --menu-border-color: rgba(255, 255, 255, 0.1)
 }
 
@@ -729,7 +729,7 @@
 
 [data-menu-styles=dark][data-theme-mode=light] {
    --menu-bg: #111c43;
-   --menu-prime-color: #a3aed1
+   --menu-prime-color: #fff;
 }
 
 [data-menu-styles=color] {
@@ -20192,7 +20192,7 @@ code[class*=language-] {
 
 .app-sidebar .side-menu__label {
    white-space: nowrap;
-   color: var(--menu-prime-color);
+   color: var(--menu-prime-color) !important;
    position: relative;
    font-size: .85rem;
    line-height: 1;
@@ -25369,3 +25369,7 @@ a.link-underline-dark {
 }
 
 /*# sourceMappingURL=styles.min.css.map */
+
+#logout-link {
+   cursor: pointer !important;
+}
