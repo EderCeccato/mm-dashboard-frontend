@@ -35,4 +35,41 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       // Caso contrário, o loader.js já vai cuidar da inicialização
    }
+
+   // Configurar o botão de logout
+   setupLogoutButton();
+   // Pega o nome do usuário
+   getUserData();
 });
+
+// Configura o botão de logout para chamar AuthManager.logout()
+function setupLogoutButton() {
+   // Procura pelo botão de logout usando o ID ou a classe
+   const logoutButton = document.getElementById('logout-link');
+
+   if (logoutButton) {
+      // Adiciona o evento de clique
+      logoutButton.addEventListener('click', function() {
+         // Verifica se o AuthManager está disponível
+         if (typeof AuthManager !== 'undefined' && AuthManager.logout) {
+            // Chama a função de logout do AuthManager
+            AuthManager.logout();
+         } else {
+            console.error('AuthManager não está disponível. Redirecionando manualmente.');
+            // Fallback: redireciona para a página de login
+            window.location.href = '/login';
+         }
+      });
+
+      // Adiciona cursor pointer para indicar que é clicável
+      logoutButton.style.cursor = 'pointer';
+   }
+};
+
+// Pega o nome do usuário
+function getUserData() {
+   const userName = document.getElementById('user-name');
+   const userNameLocalStorage = localStorage.getItem('lastUserName');
+
+   if (userNameLocalStorage) userName.textContent = userNameLocalStorage;
+};
