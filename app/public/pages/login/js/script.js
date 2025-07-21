@@ -113,8 +113,6 @@ function event_click() {
             if (data_login.data && data_login.data.user) {
                // Nova estrutura
                localStorage.setItem('userData', JSON.stringify(data_login.data.user));
-               console.log(data_login);
-
 
                // Extrai os módulos da nova estrutura
                const modules = data_login.data.user.modules || [];
@@ -153,6 +151,22 @@ function event_click() {
 
 // Inicializa a página quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', async function() {
-   // Registra eventos
+   // Verifica se o usuário já está autenticado antes de mostrar a tela de login
+   if (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated) {
+      try {
+         const isAuthenticated = await AuthManager.isAuthenticated();
+         if (isAuthenticated) {
+            // Se estiver autenticado, redireciona para a home
+            console.log('✅ Usuário já autenticado, redirecionando para home...');
+            window.location.href = '/pages/home/';
+            return; // Para não executar o resto do código
+         }
+      } catch (error) {
+         console.error('❌ Erro ao verificar autenticação na página de login:', error);
+         // Em caso de erro, continua para mostrar a tela de login normalmente
+      }
+   }
+
+   // Registra eventos se o usuário não estiver autenticado
    event_click();
 });

@@ -14,8 +14,6 @@ const AuthManager = (function() {
       USER_DATA: 'userData',     // Dados do usuário
       MODULES: 'userModules',    // Lista de módulos permitidos
       TOKEN_DATA: 'tokenData',   // Dados do token (data de login, expiração)
-      LAST_USER_EMAIL: 'lastUserEmail', // Email do último usuário
-      LAST_USER_NAME: 'lastUserName',    // Nome do último usuário
    };
 
    /**
@@ -47,14 +45,6 @@ const AuthManager = (function() {
             if (data.modules && Array.isArray(data.modules)) {
                userModules = data.modules;
             }
-         }
-
-         // Salva dados do usuário
-         if (userData) {
-            localStorage.setItem(KEYS.USER_DATA, JSON.stringify(userData));
-         } else {
-            console.error('❌ Estrutura de dados de usuário inválida');
-            return false;
          }
 
          // Salva lista de módulos
@@ -119,9 +109,16 @@ const AuthManager = (function() {
    async function isAuthenticated() {
       try {
          // 1. Verifica se existem dados do usuário no localStorage
-         const userData = localStorage.getItem(KEYS.USER_DATA);
-         if (!userData) {
+         const userDataString = localStorage.getItem(KEYS.USER_DATA);
+         if (!userDataString) {
             console.log('❌ Dados do usuário não encontrados no localStorage');
+            return false;
+         }
+
+         // Verifica se o userData tem campos obrigatórios de um usuário autenticado
+         const userData = JSON.parse(userDataString);
+         if (!userData.uuid || userData.hasOwnProperty('companyUuid') === false) {
+            console.log('❌ Dados do usuário incompletos (não autenticado)');
             return false;
          }
 
@@ -174,6 +171,13 @@ const AuthManager = (function() {
     */
    function getUserModules() {
       try {
+         // Primeiro tenta pegar do userData
+         const userData = getUserData();
+         if (userData && userData.modules && Array.isArray(userData.modules)) {
+            return userData.modules.map(m => m.name || m);
+         }
+
+         // Fallback para o método antigo
          const modules = localStorage.getItem(KEYS.MODULES);
          return modules ? JSON.parse(modules) : [];
       } catch (error) {
@@ -187,15 +191,18 @@ const AuthManager = (function() {
     * @param {boolean} redirect - Se deve redirecionar para a página de login
     */
    async function logout(redirect = true) {
-      // Salva o email e nome do último usuário antes de limpar
+      // Preserva apenas dados básicos do usuário para melhor UX no próximo login
       const userData = getUserData();
       if (userData) {
-         localStorage.setItem(KEYS.LAST_USER_EMAIL, userData.email || '');
-         localStorage.setItem(KEYS.LAST_USER_NAME, userData.name || '');
+         const preservedData = {
+            name: userData.name || '',
+            email: userData.email || '',
+            picture: userData.picture || ''
+         };
+         localStorage.setItem(KEYS.USER_DATA, JSON.stringify(preservedData));
       }
 
-      // Limpa dados do localStorage
-      localStorage.removeItem(KEYS.USER_DATA);
+      // Limpa outros dados do localStorage
       localStorage.removeItem(KEYS.MODULES);
       localStorage.removeItem(KEYS.TOKEN_DATA);
 
@@ -203,6 +210,8 @@ const AuthManager = (function() {
       localStorage.removeItem('isAuthenticated');
       localStorage.removeItem('userEmail');
       localStorage.removeItem('loginTime');
+      localStorage.removeItem('lastUserEmail');
+      localStorage.removeItem('lastUserName');
 
       // Limpa cookie do backend
       document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -250,34 +259,42 @@ const AuthManager = (function() {
     */
    function renderUserInfo() {
       const userData = getUserData();
-      const lastEmail = localStorage.getItem(KEYS.LAST_USER_EMAIL);
-      const lastName = localStorage.getItem(KEYS.LAST_USER_NAME);
 
-      // Preenche com dados do usuário logado ou último usuário
-      if (userData || lastEmail || lastName) {
-         // Procura elementos com data-auth-user-* para preencher com dados
-         document.querySelectorAll('[data-auth-user]').forEach(element => {
-            const field = element.getAttribute('data-auth-user');
-            if (userData && userData[field]) {
-               element.textContent = userData[field];
+      if (userData) {
+         const isAuthenticatedUser = userData.uuid && userData.hasOwnProperty('companyUuid');
+
+         // Para usuários autenticados: preenche elementos com data-auth-user
+         if (isAuthenticatedUser) {
+            document.querySelectorAll('[data-auth-user]').forEach(element => {
+               const field = element.getAttribute('data-auth-user');
+               if (userData[field]) {
+                  element.textContent = userData[field];
+               }
+            });
+
+            // Preenche o nome do usuário se existir (para páginas internas)
+            const userNameElement = document.getElementById('user-name');
+            if (userNameElement && userData.name) {
+               userNameElement.textContent = userData.name;
             }
-         });
 
-         // Preenche o campo de email se existir
+            // Preenche a foto do usuário se existir (para páginas internas)
+            const userPictureElement = document.getElementById('user-picture');
+            if (userPictureElement && userData.picture) {
+               userPictureElement.src = userData.picture;
+            }
+         }
+
+         // Para todos os usuários (autenticados ou com dados preservados): preenche dados da tela de login
          const emailInput = document.getElementById('signin-email');
-         if (emailInput) {
-            emailInput.value = userData ? userData.email : lastEmail || '';
+         if (emailInput && userData.email) {
+            emailInput.value = userData.email;
          }
 
-         // Preenche a mensagem de boas-vindas se existir
          const loginMessage = document.getElementById('login-message');
-         if (loginMessage) {
-            const name = userData ? userData.name : lastName;
-            if (name) {
-               loginMessage.textContent = 'Bem-vindo de volta, ' + name + '!';
-            }
+         if (loginMessage && userData.name) {
+            loginMessage.textContent = 'Bem-vindo de volta, ' + userData.name + '!';
          }
-
       }
    }
 

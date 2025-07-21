@@ -25,23 +25,6 @@ async function Thefetch(path, method = 'GET', body = null) {
    }
 }
 
-// Inicializa o sistema de personalização de marca em todas as páginas
-document.addEventListener('DOMContentLoaded', function() {
-   // Verifica se o sistema de personalização está disponível
-   if (typeof CompanyBranding !== 'undefined') {
-      // Se o loader não estiver sendo usado, inicializa diretamente
-      if (!document.documentElement.hasAttribute('loader')) {
-         CompanyBranding.init()
-      }
-      // Caso contrário, o loader.js já vai cuidar da inicialização
-   }
-
-   // Configurar o botão de logout
-   setupLogoutButton();
-   // Pega o nome do usuário
-   getUserData();
-});
-
 // Configura o botão de logout para chamar AuthManager.logout()
 function setupLogoutButton() {
    // Procura pelo botão de logout usando o ID ou a classe
@@ -66,10 +49,21 @@ function setupLogoutButton() {
    }
 };
 
-// Pega o nome do usuário
-function getUserData() {
-   const userName = document.getElementById('user-name');
-   const userNameLocalStorage = localStorage.getItem('lastUserName');
+// A função getUserData foi movida para o AuthManager.renderUserInfo()
+// que agora cuida de todos os dados do usuário automaticamente
 
-   if (userNameLocalStorage) userName.textContent = userNameLocalStorage;
-};
+// Inicializa o sistema de personalização de marca em todas as páginas
+document.addEventListener('DOMContentLoaded', function() {
+   // Verifica se o sistema de personalização está disponível
+   if (typeof CompanyBranding !== 'undefined') {
+      // Se o loader não estiver sendo usado, inicializa diretamente
+      if (!document.documentElement.hasAttribute('loader')) {
+         CompanyBranding.init()
+      }
+      // Caso contrário, o loader.js já vai cuidar da inicialização
+   }
+
+   // Configurar o botão de logout
+   setupLogoutButton();
+   // Os dados do usuário são carregados automaticamente pelo AuthManager.renderUserInfo()
+});
