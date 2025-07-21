@@ -5,7 +5,7 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>Login - MM Sofwares</title>
+   <title>Home - MM Sofwares</title>
    <meta name="Description" content="Dashboard login - MM Sofwares">
    <meta name="Author" content="MM Softwares">
    <meta name="keywords" content="admin, dashboard, mmsoftwares, siserv">
@@ -569,30 +569,33 @@
       <!-- End - app-sidebar -->
 
       <!-- Start - app-content -->
-      <div class="main-content app-content">
+      <div class="main-content app-content" style="margin-bottom: 0 !important; margin-top: 0 !important; margin-right: 0 !important; padding: 0 !important;">
          <div class="container-fluid">
             <!-- Page Header -->
-            <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-               <h1 class="page-title fw-semibold fs-18 mb-0">Empty</h1>
-               <div class="ms-md-1 ms-0">
-                  <nav>
-                     <ol class="breadcrumb mb-0">
-                        <li class="breadcrumb-item"><a href="javascript:void(0);">Pages</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Empty</li>
-                     </ol>
-                  </nav>
+            <div class="page error-bg" id="particles-js" style="min-height: 94vh !important;">
+               <div class="error-page">
+                  <div class="text-center">
+                     <div class="col-xl-12">
+                        <p class="fs-22 fw-semibold mb-3">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="var(--primary-color)" class="bi bi-arrow-left-square-fill" viewBox="0 0 16 16">
+                              <path d="M16 14a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2zm-4.5-6.5H5.707l2.147-2.146a.5.5 0 1 0-.708-.708l-3 3a.5.5 0 0 0 0 .708l3 3a.5.5 0 0 0 .708-.708L5.707 8.5H11.5a.5.5 0 0 0 0-1"/>
+                           </svg>
+                           Selecione um módulo para continuar
+                        </p>
+                     </div>
+                  </div>
                </div>
+
+               <canvas class="particles-js-canvas-el"></canvas>
             </div>
             <!-- Page Header Close -->
-            <!-- Start - row-1 -->
-            <div class="row"> </div>
-            <!--End - row-1 -->
+
          </div>
       </div>
       <!-- End - app-content -->
 
       <!-- Footer Start -->
-      <footer class="footer mt-auto py-3 bg-white text-center" style="min-width: 100vw;">
+      <footer class="footer mt-auto py-3 bg-white text-center" style="min-width: 99vw;">
          <div class="container">
             <span class="text-muted"> Copyright ©
                <span id="year">
@@ -632,8 +635,11 @@
    <script src="../../assets/js/custom-switcher.min.js"></script>
    <!-- Custom JS -->
    <script src="../../assets/js/custom.js"></script>
+   <!-- Custom JS -->
+   <script src="../../assets/libs/particles.js/particles.js"></script>
    <!-- Menu JS -->
    <script src="../../assets/js/menu-manager.js"></script>
+   <script src="/pages/home/js/script.js"></script>
 
 </body>
 
