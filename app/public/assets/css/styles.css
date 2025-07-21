@@ -12702,16 +12702,18 @@ hr {
 
 /* End:: Personal Dashboard */
 #particles-js {
-  position: absolute;
+  position: relative;
   width: 100%;
-  height: 100%;
+  height: 400px; /* Altura fixa mais adequada */
+  max-height: 50vh; /* Máximo de 50% da viewport height */
   background-color: var(--custom-white);
+  overflow: hidden; /* Evita qualquer conteúdo que extrapole */
 }
 
 .error-page {
   position: absolute;
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
