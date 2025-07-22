@@ -47,8 +47,15 @@ app.get(/^\/(.+)/, (req, res, next) => {
     filePath = path.join(filePath, part);
   }
   filePath = path.join(filePath, 'index.html');
+
+  // Log da tentativa de acesso para debug
+  console.log(`Tentando acessar: ${req.path} -> ${filePath}`);
+
   res.sendFile(filePath, err => {
-    if (err) next();
+    if (err) {
+      console.log(`Arquivo não encontrado: ${filePath}`);
+      next(); // Passa para o middleware 404
+    }
   });
 });
 
@@ -60,7 +67,30 @@ app.get('/login', (req, res) => {
 
 // 404 para rotas não encontradas
 app.use((req, res) => {
-  res.status(404).send('Página não encontrada');
+  const filePath = path.join(PAGES_DIR, 'erro-404', 'index.html');
+  res.status(404).sendFile(filePath, (err) => {
+    if (err) {
+      // Fallback se a página 404 não existir
+      res.status(404).send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Página não encontrada</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+            h1 { color: #e74c3c; }
+          </style>
+        </head>
+        <body>
+          <h1>404 - Página não encontrada</h1>
+          <p>A página que você procura não existe.</p>
+          <a href="/pages/home/">Voltar ao início</a>
+        </body>
+        </html>
+      `);
+    }
+  });
 });
 
 app.listen(PORT, () => {

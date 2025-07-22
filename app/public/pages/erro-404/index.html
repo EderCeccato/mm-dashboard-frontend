@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" loader="enable" data-vertical-style="overlay" data-lt-installed="true">
+
+<head>
+   <!-- Meta Data -->
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <title>Página não encontrada - MM Sofwares</title>
+   <meta name="Description" content="Página não encontrada - MM Sofwares">
+   <meta name="Author" content="MM Softwares">
+   <meta name="keywords" content="404, erro, página não encontrada">
+
+   <!-- Favicon -->
+   <link rel="icon" href="" type="image/x-icon">
+
+   <!-- Bootstrap Css -->
+   <link id="style" href="../../assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+   <!-- Style Css -->
+   <link href="../../assets/css/styles.min.css" rel="stylesheet">
+   <!-- Icons Css -->
+   <link href="../../assets/css/icons.css" rel="stylesheet">
+
+   <!-- Main JS -->
+   <script src="../../assets/js/main.js"></script>
+   <script src="../../assets/js/company-branding.js"></script>
+   <meta http-equiv="imagetoolbar" content="no">
+</head>
+
+<body class="bg-white">
+   <!-- Adição do Loader -->
+   <script src="../../assets/js/loader.js"></script>
+
+   <div class="page">
+      <!-- Start - error-content -->
+      <div class="error-page d-flex align-items-center justify-content-center min-vh-100">
+         <div class="container">
+            <div class="row justify-content-center">
+               <div class="col-xl-8 col-lg-9 col-md-12">
+                  <div class="text-center">
+                     <div class="error-404-img mb-4">
+                        <!-- Número 404 grande -->
+                        <div class="error-text display-1 fw-bold text-primary mb-3" style="font-size: 8rem; line-height: 1;">
+                           404
+                        </div>
+                     </div>
+
+                     <div class="error-content">
+                        <h1 class="fw-semibold mb-3 fs-3">Oops! Página não encontrada</h1>
+                        <p class="fs-16 text-muted mb-4">
+                           A página que você está procurando não existe ou foi movida.
+                           <br class="d-none d-md-block">
+                           Verifique se o endereço está correto ou navegue para uma das opções abaixo.
+                        </p>
+
+                        <div class="error-actions d-flex flex-column flex-sm-row gap-3 justify-content-center align-items-center">
+                           <a href="/pages/home/" class="btn btn-primary btn-lg px-4">
+                              <i class="bi bi-house me-2"></i>
+                              Voltar ao Início
+                           </a>
+
+                           <button onclick="history.back()" class="btn btn-outline-secondary btn-lg px-4">
+                              <i class="bi bi-arrow-left me-2"></i>
+                              Página Anterior
+                           </button>
+                        </div>
+
+                        <!-- Links úteis -->
+                        <div class="helpful-links mt-5">
+                           <h6 class="text-muted mb-3">Links úteis:</h6>
+                           <div class="d-flex flex-wrap gap-3 justify-content-center">
+                              <a href="/pages/home/" class="text-decoration-none">
+                                 <i class="bi bi-house-door text-primary me-1"></i>
+                                 Página Inicial
+                              </a>
+                              <a href="/login" class="text-decoration-none">
+                                 <i class="bi bi-box-arrow-in-right text-primary me-1"></i>
+                                 Fazer Login
+                              </a>
+                              <a href="mailto:suporte@mmsoftwares.com.br" class="text-decoration-none">
+                                 <i class="bi bi-envelope text-primary me-1"></i>
+                                 Suporte
+                              </a>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+      <!-- End - error-content -->
+   </div>
+
+   <!-- Bootstrap JS -->
+   <script src="../../assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+   <!-- Custom JS -->
+   <script src="../../assets/js/custom.js"></script>
+
+   <script>
+      // Script para melhorar a experiência do usuário
+      document.addEventListener('DOMContentLoaded', function() {
+         // Registra o evento de erro 404 (para analytics se necessário)
+         console.log('Página 404 acessada:', window.location.pathname);
+
+         // Auto-redirecionamento após tempo (opcional)
+         let countdown = 30;
+         const autoRedirect = false; // Mude para true se quiser auto-redirecionamento
+
+         if (autoRedirect) {
+            const countdownElement = document.createElement('div');
+            countdownElement.className = 'alert alert-info mt-4';
+            countdownElement.innerHTML = `
+               <i class="bi bi-info-circle me-2"></i>
+               Redirecionando para a página inicial em <span id="countdown">${countdown}</span> segundos...
+               <button type="button" class="btn-close float-end" onclick="clearInterval(countdownInterval)"></button>
+            `;
+
+            document.querySelector('.error-actions').insertAdjacentElement('afterend', countdownElement);
+
+            const countdownInterval = setInterval(() => {
+               countdown--;
+               const countdownSpan = document.getElementById('countdown');
+               if (countdownSpan) {
+                  countdownSpan.textContent = countdown;
+               }
+
+               if (countdown <= 0) {
+                  clearInterval(countdownInterval);
+                  window.location.href = '/pages/home/';
+               }
+            }, 1000);
+
+            // Torna o intervalo global para poder ser cancelado
+            window.countdownInterval = countdownInterval;
+         }
+      });
+   </script>
+</body>
+
+</html>
