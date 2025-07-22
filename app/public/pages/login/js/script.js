@@ -113,14 +113,9 @@ function event_click() {
             if (data_login.data && data_login.data.user) {
                // Nova estrutura
                localStorage.setItem('userData', JSON.stringify(data_login.data.user));
-
-               // Extrai os módulos da nova estrutura
-               const modules = data_login.data.user.modules || [];
-               localStorage.setItem('userModules', JSON.stringify(modules.map(m => m.name)));
             } else if (data_login.user) {
                // Estrutura antiga
                localStorage.setItem('userData', JSON.stringify(data_login.user));
-               localStorage.setItem('userModules', JSON.stringify(data_login.modules));
             }
 
             // Salva informações do token
