@@ -12,7 +12,6 @@ const AuthManager = (function() {
    // Chaves usadas no localStorage
    const KEYS = {
       USER_DATA: 'userData',     // Dados do usuário
-      MODULES: 'userModules',    // Lista de módulos permitidos
       TOKEN_DATA: 'tokenData',   // Dados do token (data de login, expiração)
    };
 
@@ -26,29 +25,16 @@ const AuthManager = (function() {
       try {
          // Estrutura esperada: { user: {...}, modules: [...] } ou { data: { user: {...} } }
          let userData = null;
-         let userModules = [];
 
          // Verifica se os dados estão na estrutura antiga ou nova
          if (data.data && data.data.user) {
             // Nova estrutura: { data: { user: {...} } }
             userData = data.data.user;
 
-            // Extrai os módulos da nova estrutura
-            if (userData.modules && Array.isArray(userData.modules)) {
-               userModules = userData.modules.map(m => m.name);
-            }
          } else if (data.user) {
             // Estrutura antiga: { user: {...}, modules: [...] }
             userData = data.user;
-
-            // Usa os módulos da estrutura antiga
-            if (data.modules && Array.isArray(data.modules)) {
-               userModules = data.modules;
-            }
          }
-
-         // Salva lista de módulos
-         localStorage.setItem(KEYS.MODULES, JSON.stringify(userModules));
 
          // Salva informações do token (data de login, expiração)
          localStorage.setItem(KEYS.TOKEN_DATA, JSON.stringify({
@@ -61,6 +47,50 @@ const AuthManager = (function() {
       } catch (error) {
          console.error('❌ Erro ao salvar dados de autenticação:', error);
          return false;
+      }
+   }
+
+   /**
+    * Verifica e atualiza os módulos do usuário
+    * @returns {Promise<boolean>} Verdadeiro se a verificação foi bem-sucedida
+    */
+   async function verifyAndUpdateUserModules() {
+      try {
+         // Usa a função Thefetch global para verificar os módulos
+         if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            return false;
+         }
+
+         const response = await Thefetch('/api/modules/user-modules', 'GET');
+
+         // Se a resposta for bem-sucedida, atualiza os módulos
+         if (response && response.success === true && response.data && response.data.modules) {
+            const currentUserData = getUserData();
+            if (currentUserData) {
+               // Atualiza apenas os módulos mantendo outros dados do usuário
+               currentUserData.modules = response.data.modules;
+               localStorage.setItem(KEYS.USER_DATA, JSON.stringify(currentUserData));
+
+               // Atualiza o menu lateral automaticamente
+               if (typeof ModuleManager !== 'undefined' && ModuleManager.refreshMenu) {
+                  ModuleManager.refreshMenu();
+               }
+
+               return true;
+            }
+         }
+
+         // Se recebemos código de erro, trata adequadamente
+         if (response && response.code === 'SESSION_INVALID') {
+            console.log('❌ Sessão expirada ao verificar módulos');
+            return false;
+         }
+
+         return true; // Não considera erro crítico
+      } catch (error) {
+         console.error('❌ Erro ao verificar módulos do usuário:', error);
+         return true; // Não considera erro crítico para não bloquear o sistema
       }
    }
 
@@ -80,9 +110,11 @@ const AuthManager = (function() {
 
          // Se a resposta for bem-sucedida, a sessão é válida
          if (response && response.success === true) {
-            // Atualiza os dados do usuário se disponíveis na resposta
-            if (response.data && response.data.user) {
-               saveAuthData(response);
+            // Verifica e atualiza os módulos do usuário
+            const modulesUpdated = await verifyAndUpdateUserModules();
+            if (!modulesUpdated) {
+               // Se falhou ao verificar módulos por sessão inválida, retorna false
+               return false;
             }
 
             return true;
@@ -300,49 +332,15 @@ const AuthManager = (function() {
 
    /**
     * Renderiza o menu de acordo com as permissões do usuário
+    * Agora usa o ModuleManager para gerenciar os módulos
     */
    function renderModuleMenu() {
-      const modules = getUserModules();
-      const menuContainer = document.getElementById('moduleMenu');
-
-      // Se não tiver o container de menu ou módulos, não faz nada
-      if (!menuContainer || !modules || !modules.length) return;
-
-      // Mapa de módulos e suas informações
-      const moduleMap = {
-         'home': { icon: '🏠', label: 'Início', url: '/pages/home/' },
-         'users': { icon: '👥', label: 'Usuários', url: '/pages/users/' },
-         'products': { icon: '📦', label: 'Produtos', url: '/pages/products/' },
-         'reports': { icon: '📊', label: 'Relatórios', url: '/pages/reports/' },
-         'settings': { icon: '⚙️', label: 'Configurações', url: '/pages/settings/' }
-         // Adicione mais módulos conforme necessário
-      };
-
-      // Limpa o container
-      menuContainer.innerHTML = '';
-
-      // Admin tem acesso a tudo
-      const isAdmin = modules.includes('admin') || modules.includes('*');
-
-      // Cria itens de menu para cada módulo permitido
-      Object.keys(moduleMap).forEach(moduleId => {
-         // Se não tem permissão para este módulo, pula
-         if (!isAdmin && !modules.includes(moduleId)) return;
-
-         const module = moduleMap[moduleId];
-
-         // Cria elemento de menu
-         const menuItem = document.createElement('a');
-         menuItem.href = module.url;
-         menuItem.className = 'module-menu-item';
-         menuItem.innerHTML = `
-            <span class="module-icon">${module.icon}</span>
-            <span class="module-label">${module.label}</span>
-         `;
-
-         // Adiciona ao menu
-         menuContainer.appendChild(menuItem);
-      });
+      // Verifica se o ModuleManager está disponível
+      if (typeof ModuleManager !== 'undefined' && ModuleManager.renderSidebarMenu) {
+         ModuleManager.renderSidebarMenu();
+      } else {
+         console.warn('⚠️ ModuleManager não encontrado. Certifique-se de incluir module-manager.js');
+      }
    }
 
    // Inicializa verificações quando o script é carregado
@@ -364,6 +362,21 @@ const AuthManager = (function() {
       })();
    }
 
+   /**
+    * Força a verificação e atualização dos módulos do usuário
+    * Útil para atualizar módulos sem recarregar a página
+    * @returns {Promise<boolean>} Verdadeiro se a atualização foi bem-sucedida
+    */
+   async function refreshUserModules() {
+      const userData = getUserData();
+      if (!userData || !userData.uuid) {
+         console.log('❌ Usuário não autenticado para atualizar módulos');
+         return false;
+      }
+
+      return await verifyAndUpdateUserModules();
+   }
+
    // Expõe API pública
    return {
       saveAuthData: saveAuthData,
@@ -374,6 +387,7 @@ const AuthManager = (function() {
       logout: logout,
       renderUserInfo: renderUserInfo,
       renderModuleMenu: renderModuleMenu,
+      refreshUserModules: refreshUserModules,
    };
 
 })();
