@@ -108,15 +108,16 @@ const CompanyBranding = (function() {
 
             /* Ajustar cores de texto para o menu light com cor da empresa */
             html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item {
-               color: rgba(255, 255, 255, 0.9) !important;
+               color: var(--default-text-color) !important;
             }
 
             html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item:hover {
-               color: #fff !important;
+               color: #000 !important;
+               cursor: pointer !important;
             }
 
             html[data-theme-mode="light"][data-menu-styles="light"] .side-menu__item.active {
-               color: #fff !important;
+               color: #000 !important;
                background-color: rgba(255, 255, 255, 0.15) !important;
             }
          `;
