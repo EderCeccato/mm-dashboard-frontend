@@ -389,48 +389,83 @@
    <div class="row authentication mx-0">
 
       <!-- Login -->
-      <div class="col-xxl-7 col-xl-7 col-lg-12">
+      <div class="col-xxl-4 col-xl-4 col-lg-12">
          <div class="row justify-content-center align-items-center h-100">
-            <div class="col-xxl-6 col-xl-7 col-lg-7 col-md-7 col-sm-8 col-12">
-               <div class="p-5">
-                  <div class="mb-3">
-                     <img src="" alt="" class="authentication-brand desktop-logo" style="max-width: 100px;">
-                     <img src="" alt="" class="authentication-brand desktop-dark" style="max-width: 100px;">
-                  </div>
-
-                  <p class="h5 fw-semibold text-center">Login</p>
-                  <p class="mb-3 text-muted op-7 fw-normal text-center mb-5" id="login-message"></p>
-
-                  <div class="row gy-3">
-                     <div class="col-xl-12 mt-0">
-                        <label for="signin-email" class="form-label text-default">E-mail</label>
-                        <input type="email" class="form-control form-control-lg" id="signin-email" placeholder="meu@email.com.br">
-                     </div>
-                     <div class="col-xl-12 mb-3">
-                        <label for="signin-password" class="form-label text-default d-block">Senha</label>
-                        <div class="input-group">
-                           <input type="password" class="form-control form-control-lg" id="signin-password" placeholder="•••••••••••••••••">
-                           <button class="btn btn-light" type="button" onclick="createpassword('signin-password',this)" id="button-addon2">
-                              <i class="ri-eye-off-line align-middle"></i>
-                           </button>
-                        </div>
-                     </div>
-                     <div class="col-xl-12 d-grid mt-2">
-                        <button id="btn-submit" class="btn btn-lg btn-primary">Entrar</button>
-                        <button id="btn-loading" class="btn btn-lg btn-primary btn-loader disabled justify-content-center align-items-center" style="position: relative; display: none;">
-                           <span class="me-2">Carregando...</span>
-                           <span class="loading"><i class="ri-loader-2-fill fs-16" style="margin-top: 5px;"></i></span>
-                        </button>
-                     </div>
-                  </div>
+           <div class="col-xxl-9 col-xl-10 col-lg-10 col-md-10 col-sm-11 col-12">
+             <div class="p-5">
+               <div class="mb-3">
+                 <img src="" alt="" class="authentication-brand desktop-logo" style="max-width: 100px;">
+                 <img src="" alt="" class="authentication-brand desktop-dark" style="max-width: 100px;">
                </div>
-            </div>
+
+               <p class="h5 fw-semibold text-center">Login</p>
+               <p class="mb-3 text-muted op-7 fw-normal text-center mb-5" id="login-message"></p>
+
+               <!-- Form wrapped aqui -->
+               <form id="login-form">
+                 <div class="row gy-3">
+                   <div class="col-xl-12 mt-0">
+                     <label for="signin-email" class="form-label text-default">E-mail</label>
+                     <input
+                       type="email"
+                       class="form-control form-control-lg"
+                       id="signin-email"
+                       placeholder="meu@email.com.br"
+                     >
+                   </div>
+                   <div class="col-xl-12 mb-3">
+                     <label for="signin-password" class="form-label text-default d-block">Senha</label>
+                     <div class="input-group">
+                       <input
+                         type="password"
+                         class="form-control form-control-lg"
+                         id="signin-password"
+                         placeholder="•••••••••••••••••"
+                       >
+                       <button
+                         class="btn btn-light"
+                         type="button"
+                         onclick="createpassword('signin-password', this)"
+                         id="button-addon2"
+                       >
+                         <i class="ri-eye-off-line align-middle"></i>
+                       </button>
+                     </div>
+                   </div>
+                   <div class="col-xl-12 d-grid mt-2">
+                     <!-- Aqui o botão vira submit -->
+                     <button
+                       type="submit"
+                       id="btn-submit"
+                       class="btn btn-lg btn-primary"
+                     >
+                       Entrar
+                     </button>
+                     <button
+                       type="button"
+                       id="btn-loading"
+                       class="btn btn-lg btn-primary btn-loader disabled justify-content-center align-items-center"
+                       style="position: relative; display: none;"
+                     >
+                       <span class="me-2">Carregando...</span>
+                       <span class="loading">
+                         <i class="ri-loader-2-fill fs-16" style="margin-top: 5px;"></i>
+                       </span>
+                     </button>
+                   </div>
+                 </div>
+               </form>
+               <!-- /Form -->
+
+             </div>
+           </div>
          </div>
-      </div>
+       </div>
+
       <!-- End Login -->
 
       <!-- Swiper -->
-      <div class="col-xxl-5 col-xl-5 col-lg-5 d-xl-block d-none px-0">
+      <div class="col-xxl-8 col-xl-8 col-lg-8 d-xl-block d-none px-0">
          <div class="authentication-cover">
             <div class="aunthentication-cover-content rounded">
                <div class="swiper keyboard-control swiper-initialized swiper-horizontal swiper-pointer-events swiper-backface-hidden">
