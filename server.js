@@ -48,12 +48,8 @@ app.get(/^\/(.+)/, (req, res, next) => {
   }
   filePath = path.join(filePath, 'index.html');
 
-  // Log da tentativa de acesso para debug
-  console.log(`Tentando acessar: ${req.path} -> ${filePath}`);
-
   res.sendFile(filePath, err => {
     if (err) {
-      console.log(`Arquivo não encontrado: ${filePath}`);
       next(); // Passa para o middleware 404
     }
   });
