@@ -1,0 +1,98 @@
+#btn-new-company {
+   background-color: var(--primary-color);
+   color: #f3f3f3;
+}
+
+#btn-new-company:hover {
+   background-color: var(--primary07);
+}
+
+#btn-new-user {
+   background-color: rgb(var(--secondary-rgb));
+   color: #f3f3f3;
+}
+
+#btn-new-user:hover {
+   background-color: rgba(var(--secondary-rgb), 0.7);
+}
+
+thead.table {
+  background-color: var(--primary-color);
+}
+
+/* Company Table Logo Responsive Styles */
+/* Default state - show desktop-logo */
+.header-logo .desktop-logo {
+  display: block;
+}
+.header-logo .desktop-dark,
+.header-logo .toggle-logo,
+.header-logo .toggle-dark,
+.header-logo .desktop-white,
+.header-logo .toggle-white {
+  display: none;
+}
+
+/* Dark Mode - show desktop-dark */
+[data-theme-mode=dark] .desktop-dark {
+  display: block;
+}
+[data-theme-mode=dark] .desktop-logo,
+[data-theme-mode=dark] .toggle-logo,
+[data-theme-mode=dark] .toggle-dark,
+[data-theme-mode=dark] .desktop-white,
+[data-theme-mode=dark] .toggle-white {
+  display: none;
+}
+
+/* Mobile - show toggle-logo */
+@media (max-width: 991.98px) {
+  .desktop-logo,
+  .desktop-dark,
+  .toggle-dark,
+  .desktop-white,
+  .toggle-white {
+    display: none;
+  }
+  .toggle-logo {
+    display: block;
+  }
+}
+
+/* Mobile + Dark Mode - show toggle-dark */
+@media (max-width: 991.98px) {
+  [data-theme-mode=dark] .desktop-logo,
+  [data-theme-mode=dark] .desktop-dark,
+  [data-theme-mode=dark] .toggle-logo,
+  [data-theme-mode=dark] .desktop-white,
+  [data-theme-mode=dark] .toggle-white {
+    display: none;
+  }
+  [data-theme-mode=dark] .toggle-dark {
+    display: block;
+  }
+}
+
+/* Menu styles variations */
+[data-menu-styles=dark] .desktop-dark {
+  display: block;
+}
+[data-menu-styles=dark] .desktop-logo,
+[data-menu-styles=dark] .toggle-logo,
+[data-menu-styles=dark] .toggle-dark,
+[data-menu-styles=dark] .desktop-white,
+[data-menu-styles=dark] .toggle-white {
+  display: none;
+}
+
+[data-menu-styles=light] .desktop-logo {
+  display: block;
+}
+[data-menu-styles=light] .desktop-dark,
+[data-menu-styles=light] .toggle-logo,
+[data-menu-styles=light] .toggle-dark,
+[data-menu-styles=light] .desktop-white,
+[data-menu-styles=light] .toggle-white {
+  display: none;
+}
+ /* End Company Table Logo Responsive Styles */
