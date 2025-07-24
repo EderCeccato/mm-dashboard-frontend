@@ -39,6 +39,11 @@ app.use((req, res, next) => {
 
 // Roteamento dinâmico para qualquer subpasta (ex: /home, /home/teste, /modulo/abc/xyz)
 app.get(/^\/(.+)/, (req, res, next) => {
+  // Verifica se a resposta já foi enviada
+  if (res.headersSent) {
+    return;
+  }
+
   // Remove query params e divide a rota em partes
   const route = req.path.replace(/\/$/, ''); // remove barra final
   const parts = route.split('/').filter(Boolean); // remove vazios
@@ -49,22 +54,36 @@ app.get(/^\/(.+)/, (req, res, next) => {
   filePath = path.join(filePath, 'index.html');
 
   res.sendFile(filePath, err => {
-    if (err) {
-      next(); // Passa para o middleware 404
+    if (err && !res.headersSent) {
+      next(); // Passa para o middleware 404 apenas se headers não foram enviados
     }
   });
 });
 
 // Rota específica para login
 app.get('/login', (req, res) => {
+  if (res.headersSent) {
+    return;
+  }
+
   const filePath = path.join(PAGES_DIR, 'login', 'index.html');
   res.sendFile(filePath);
 });
 
 // 404 para rotas não encontradas
 app.use((req, res) => {
+  // Verifica se a resposta já foi enviada para evitar ERR_HTTP_HEADERS_SENT
+  if (res.headersSent) {
+    return;
+  }
+
   const filePath = path.join(PAGES_DIR, 'erro-404', 'index.html');
   res.status(404).sendFile(filePath, (err) => {
+    // Verifica novamente se os headers já foram enviados antes de responder
+    if (res.headersSent) {
+      return;
+    }
+
     if (err) {
       // Fallback se a página 404 não existir
       res.status(404).send(`
