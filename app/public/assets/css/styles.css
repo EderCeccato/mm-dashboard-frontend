@@ -8735,9 +8735,106 @@ caption {
   background-color: #fff;
 }
 
-[data-theme-mode=dark] .table-dark {
-  border-color: rgba(0, 0, 0, 0.025);
+/* Dark Mode - Tables Base Styling */
+[data-theme-mode=dark] .table {
+  --bs-table-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-color: #ffffff;
+  --bs-table-border-color: rgba(255, 255, 255, 0.1);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.08);
+  --bs-table-striped-color: #ffffff;
+  --bs-table-active-bg: rgba(255, 255, 255, 0.12);
+  --bs-table-active-color: #ffffff;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
 }
+
+[data-theme-mode=dark] .table > :not(caption) > * > * {
+  background-color: var(--bs-table-bg);
+  color: #ffffff;
+  border-bottom-color: var(--bs-table-border-color);
+}
+
+[data-theme-mode=dark] .table > thead > tr > th {
+  background-color: rgba(var(--primary-rgb), 0.3) !important;
+  color: #ffffff !important;
+  border-bottom-color: rgba(var(--primary-rgb), 0.4) !important;
+}
+
+[data-theme-mode=dark] .table > tbody > tr > td {
+  background-color: var(--bs-table-bg) !important;
+  color: #ffffff !important;
+}
+
+[data-theme-mode=dark] .table-dark {
+  --bs-table-bg: rgba(0, 0, 0, 0.3);
+  --bs-table-color: var(--default-text-color);
+  --bs-table-border-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(0, 0, 0, 0.3);
+  color: var(--default-text-color);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Dark Mode - Table Primary with Darker Colors */
+[data-theme-mode=dark] .table.table-primary {
+  --bs-table-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-color: #ffffff;
+  --bs-table-border-color: rgba(255, 255, 255, 0.1);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.08);
+  --bs-table-striped-color: #ffffff;
+  --bs-table-active-bg: rgba(255, 255, 255, 0.12);
+  --bs-table-active-color: #ffffff;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme-mode=dark] .table.table-primary > :not(caption) > * > * {
+  background-color: var(--bs-table-bg);
+  color: #ffffff;
+  border-bottom-color: var(--bs-table-border-color);
+}
+
+[data-theme-mode=dark] .table.table-primary > thead > tr > th {
+  background-color: rgba(var(--primary-rgb), 0.3) !important;
+  color: #ffffff !important;
+  border-bottom-color: rgba(var(--primary-rgb), 0.4) !important;
+}
+
+[data-theme-mode=dark] .table.table-primary.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: var(--bs-table-striped-bg);
+  color: #ffffff;
+}
+
+[data-theme-mode=dark] .table.table-primary.table-hover > tbody > tr:hover > * {
+  background-color: var(--bs-table-hover-bg);
+  color: #ffffff;
+}
+
+[data-theme-mode=dark] .table.table-primary .table-active {
+  background-color: var(--bs-table-active-bg);
+  color: #ffffff;
+}
+
+[data-theme-mode=dark] .table-primary {
+  --bs-table-bg: rgba(255, 255, 255, 0.05);
+  --bs-table-color: #ffffff;
+  --bs-table-border-color: rgba(255, 255, 255, 0.1);
+  --bs-table-striped-bg: rgba(255, 255, 255, 0.08);
+  --bs-table-striped-color: #ffffff;
+  --bs-table-active-bg: rgba(255, 255, 255, 0.12);
+  --bs-table-active-color: #ffffff;
+  --bs-table-hover-bg: rgba(255, 255, 255, 0.1);
+  --bs-table-hover-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 [data-theme-mode=dark] div.dtr-modal div.dtr-modal-display {
   background-color: var(--custom-white);
 }
