@@ -5,8 +5,8 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-   <title>Gerenciamento de Empresas - MM Sofwares</title>
-   <meta name="Description" content="Gerenciamento de Empresas - MM Sofwares">
+   <title>Gerenciamento de Empresas e Usuários - MM Sofwares</title>
+   <meta name="Description" content="Gerenciamento de Empresas e Usuários - MM Sofwares">
    <meta name="Author" content="MM Softwares">
    <meta name="keywords" content="admin, dashboard, mmsoftwares, siserv">
    <!-- Favicon -->
@@ -24,9 +24,15 @@
    <link href="../../assets/libs/node-waves/waves.min.css" rel="stylesheet">
    <!-- Simplebar Css -->
    <link href="../../assets/libs/simplebar/simplebar.min.css" rel="stylesheet">
+   <!-- Sweet Alert 2 -->
+   <link rel="stylesheet" href="../../assets/libs/sweetalert2/sweetalert2.min.css">
    <!-- Color Picker Css -->
    <link rel="stylesheet" href="../../assets/libs/flatpickr/flatpickr.min.css">
    <link rel="stylesheet" href="../../assets/libs/@simonwep/pickr/themes/nano.min.css">
+
+   <!-- Filepond CSS -->
+   <link rel="stylesheet" href="../../assets/libs/filepond/filepond.min.css">
+   <link rel="stylesheet" href="../../assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.css">
 
    <!-- Main JS -->
    <script src="../../assets/js/main.js"></script>
@@ -690,7 +696,7 @@
       <!-- End - app-content -->
 
       <!-- Footer Start -->
-      <footer class="footer mt-auto py-3 bg-white text-center" style="min-width: 99vw;">
+      <footer class="footer mt-auto py-3 bg-white text-center bottom-0">
          <div class="container">
             <span class="text-muted"> Copyright ©
                <span id="year">
@@ -711,6 +717,294 @@
    <div class="scrollToTop"> <span class="arrow"><i class="ri-arrow-up-s-fill fs-20"></i></span> </div>
    <div id="responsive-overlay"></div>
    <!-- Scroll To Top -->
+
+   <div class="toast-container position-fixed top-0 end-0 p-3"></div>
+
+   <!-- Modal Cadastro Empresa -->
+   <div class="modal fade" id="modal-new-company" tabindex="-1" aria-labelledby="modalNewCompanyLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+         <div class="modal-content">
+            <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="modalNewCompanyLabel">
+                  <i class="bx bx-buildings me-2"></i>
+                  <span id="title-modal-new-company">Cadastrar Nova Empresa</span>
+               </h1>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <form id="form-new-company">
+                  <input type="hidden" id="company-uuid" name="company-uuid">
+
+                  <!-- Informações Básicas -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-info-circle me-2"></i>Informações Básicas
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-name" class="form-label">Nome da Empresa *</label>
+                           <input type="text" class="form-control" id="company-name" name="company-name" placeholder="Minha Empresa" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-cnpj" class="form-label">CNPJ *</label>
+                           <input type="text" class="form-control" id="company-cnpj" name="company-cnpj" placeholder="00.000.000/0000-00" maxlength="18" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-domain" class="form-label">Domínio *</label>
+                           <input type="text" class="form-control" id="company-domain" name="company-domain" placeholder="empresa.m2softwares.com.br" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-status" class="form-label">Status</label>
+                           <select class="form-select" id="company-status" name="company-status">
+                              <option value="active">Ativo</option>
+                              <option value="inactive">Inativo</option>
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Configurações Firebird -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-clipboard2-data-fill me-2"></i>Configurações do Banco Firebird
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-host" class="form-label">Host do Firebird *</label>
+                           <input type="text" class="form-control" id="company-firebird-host" name="company-firebird-host" placeholder="IP do Servidor" value="localhost" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-port" class="form-label">Porta *</label>
+                           <input type="number" class="form-control" id="company-firebird-port" name="company-firebird-port" placeholder="Porta do Servidor" value="3050" required>
+                        </div>
+                     </div>
+                     <div class="col-12">
+                        <div class="mb-3">
+                           <label for="company-firebird-database" class="form-label">Caminho do Banco *</label>
+                           <input type="text" class="form-control" id="company-firebird-database" name="company-firebird-database" placeholder="C:\Banco\EMPRESA.FDB" value="C:/Siserv/database/database.gdb" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-user" class="form-label">Usuário *</label>
+                           <input type="text" class="form-control" id="company-firebird-user" name="company-firebird-user" placeholder="Usuário do Banco" value="SYSDBA" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <label for="company-firebird-password" class="form-label">Senha *</label>
+                        <div class="mb-3 input-group">
+                           <input type="password" class="form-control" id="company-firebird-password" name="company-firebird-password" placeholder="•••••••••••••••••" required>
+                           <button class="btn btn-light" type="button" onclick="createpassword('company-firebird-password', this)" id="button-addon2">
+                              <i class="ri-eye-off-line align-middle"></i>
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Upload de Imagens -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-image me-2"></i>Imagens da Empresa (Opcional)
+                        </h6>
+                        <div class="alert alert-info mb-4">
+                           <i class="bi bi-info-circle me-2"></i>
+                           <small>
+                              <strong>Tamanhos recomendados:</strong><br>
+                              • Background: 700x1000px (máx)<br>
+                              • Logos: 800x400px (máx)<br>
+                              • Logos quadrados: 512x512px (máx)<br>
+                              • Favicon: 32x32px (máx)<br>
+                              • Tamanho máximo do arquivo: 5MB
+                           </small>
+                        </div>
+                     </div>
+
+                     <!-- Background -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-background" class="form-label">
+                              <i class="bi bi-image me-1"></i>Background da Empresa
+                           </label>
+                           <input type="file" class="filepond" id="company-background" accept="image/*" data-max-width="700" data-max-height="1000">
+                        </div>
+                     </div>
+
+                     <!-- Logo Principal -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo" class="form-label">
+                              <i class="bi bi-palette me-1"></i>Logo Principal
+                           </label>
+                           <input type="file" class="filepond" id="company-logo" accept="image/*" data-max-width="800" data-max-height="400">
+                        </div>
+                     </div>
+
+                     <!-- Logo Branca -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-white" class="form-label">
+                              <i class="bi bi-circle me-1"></i>Logo Branca
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-white" accept="image/*" data-max-width="800" data-max-height="400">
+                        </div>
+                     </div>
+
+                     <!-- Logo Escura -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-dark" class="form-label">
+                              <i class="bi bi-circle-fill me-1"></i>Logo Escura
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-dark" accept="image/*" data-max-width="800" data-max-height="400">
+                        </div>
+                     </div>
+
+                     <!-- Logo Quadrada -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-square" class="form-label">
+                              <i class="bi bi-square me-1"></i>Logo Quadrada
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Logo Quadrada Branca -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-square-white" class="form-label">
+                              <i class="bi bi-square me-1"></i>Logo Quadrada Branca
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square-white" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Logo Quadrada Escura -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-square-dark" class="form-label">
+                              <i class="bi bi-square-fill me-1"></i>Logo Quadrada Escura
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square-dark" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Favicon -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-favicon" class="form-label">
+                              <i class="bi bi-star me-1"></i>Favicon
+                           </label>
+                           <input type="file" class="filepond" id="company-favicon" accept="image/*" data-max-width="32" data-max-height="32">
+                        </div>
+                     </div>
+                  </div>
+               </form>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+               <button type="button" class="btn btn-primary" id="btn-save-company">
+                  <i class="bi bi-check-lg me-1"></i>
+                  <span id="text-save-company">Salvar Empresa</span>
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+
+   <!-- Modal Gerenciar Módulos da Empresa -->
+   <div class="modal fade" id="modal-company-modules" tabindex="-1" aria-labelledby="modalCompanyModulesLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h1 class="modal-title fs-5" id="modalCompanyModulesLabel">
+                  <i class="bi bi-grid-3x3-gap me-2"></i>
+                  <span id="title-modal-company-modules">Gerenciar Módulos da Empresa</span>
+               </h1>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <form id="form-company-modules">
+                  <input type="hidden" id="modules-company-uuid" name="modules-company-uuid">
+
+                  <!-- Informações da Empresa -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <div class="alert alert-info d-flex align-items-center">
+                           <i class="bi bi-info-circle me-2"></i>
+                           <div>
+                              <strong>Empresa:</strong> <span id="company-name-modules"></span><br>
+                              <small class="text-muted">Selecione os módulos que esta empresa terá acesso</small>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Lista de Módulos -->
+                  <div class="row">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-list-check me-2"></i>Módulos Disponíveis
+                        </h6>
+
+                        <!-- Controles de Seleção -->
+                        <div class="mb-3">
+                           <button type="button" class="btn btn-sm btn-outline-primary me-2" id="btn-select-all-modules">
+                              <i class="bi bi-check-all me-1"></i>Selecionar Todos
+                           </button>
+                           <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-deselect-all-modules">
+                              <i class="bi bi-x-square me-1"></i>Desmarcar Todos
+                           </button>
+                        </div>
+
+                        <!-- Loading -->
+                        <div id="modules-loading" class="text-center py-3">
+                           <div class="spinner-border text-primary" role="status">
+                              <span class="visually-hidden">Carregando módulos...</span>
+                           </div>
+                           <p class="mt-2 text-muted">Carregando módulos disponíveis...</p>
+                        </div>
+
+                        <!-- Lista de Módulos -->
+                        <div id="modules-list" class="row" style="display: none;">
+                           <!-- Módulos serão carregados via JavaScript -->
+                        </div>
+
+                        <!-- Mensagem quando não há módulos -->
+                        <div id="no-modules" class="alert alert-warning" style="display: none;">
+                           <i class="bi bi-exclamation-triangle me-2"></i>
+                           Nenhum módulo disponível no sistema.
+                        </div>
+                     </div>
+                  </div>
+               </form>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  <i class="bi bi-x-circle me-1"></i>Cancelar
+               </button>
+               <button type="button" class="btn btn-primary" id="btn-save-company-modules">
+                  <i class="bi bi-check-circle me-1"></i>
+                  <span id="text-save-modules">Salvar Módulos</span>
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+
    <!-- Popper JS -->
    <script src="../../assets/libs/@popperjs/core/umd/popper.min.js"></script>
    <!-- Bootstrap JS -->
@@ -732,7 +1026,19 @@
    <script src="../../assets/js/custom.js"></script>
    <!-- Menu JS -->
    <script src="../../assets/js/menu-manager.js"></script>
+   <!-- Sweet Alert 2 -->
+   <script src="../../assets/libs/sweetalert2/sweetalert2.min.js"></script>
+
+   <!-- Filepond JS -->
+   <script src="../../assets/libs/filepond-plugin-file-encode/filepond-plugin-file-encode.min.js"></script>
+   <script src="../../assets/libs/filepond-plugin-file-validate-size/filepond-plugin-file-validate-size.min.js"></script>
+   <script src="../../assets/libs/filepond-plugin-file-validate-type/filepond-plugin-file-validate-type.min.js"></script>
+   <script src="../../assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js"></script>
+   <script src="../../assets/libs/filepond-plugin-image-resize/filepond-plugin-image-resize.min.js"></script>
+   <script src="../../assets/libs/filepond/filepond.min.js"></script>
+
    <!-- Script JS -->
+   <script src="../../assets/js/show-password.js"></script>
    <script src="/pages/empresas/js/script.js"></script>
 
 </body>
