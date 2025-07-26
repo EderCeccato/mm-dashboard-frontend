@@ -1,3 +1,55 @@
+// Configurações globais para validação de arquivos
+const FILE_VALIDATION_CONFIG = {
+   'company-background': {
+      maxWidth: 700,
+      maxHeight: 1000,
+      maxSize: 5 * 1024 * 1024, // 5MB
+      label: 'Background da Empresa'
+   },
+   'company-logo': {
+      maxWidth: 800,
+      maxHeight: 400,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Principal'
+   },
+   'company-logo-white': {
+      maxWidth: 800,
+      maxHeight: 400,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Branca'
+   },
+   'company-logo-dark': {
+      maxWidth: 800,
+      maxHeight: 400,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Escura'
+   },
+   'company-logo-square': {
+      maxWidth: 512,
+      maxHeight: 512,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Quadrada'
+   },
+   'company-logo-square-white': {
+      maxWidth: 512,
+      maxHeight: 512,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Quadrada Branca'
+   },
+   'company-logo-square-dark': {
+      maxWidth: 512,
+      maxHeight: 512,
+      maxSize: 5 * 1024 * 1024,
+      label: 'Logo Quadrada Escura'
+   },
+   'company-favicon': {
+      maxWidth: 32,
+      maxHeight: 32,
+      maxSize: 1 * 1024 * 1024, // 1MB
+      label: 'Favicon'
+   }
+};
+
 const CompaniesManager = (function() {
    'use strict';
    // Estado global
@@ -6,6 +58,8 @@ const CompaniesManager = (function() {
    let modules = [];
    let companySelected = null;
    let userSelected = null;
+
+
 
    /**
     * Máscara para CNPJ
@@ -507,39 +561,71 @@ const CompaniesManager = (function() {
    }
 
    /**
-      * Valida arquivos antes do upload
-      */
+    * Valida arquivos antes do upload
+    */
    function validateFiles(arquivos) {
-      const maxSizes = {
-         background: { width: 700, height: 1000, size: 5 * 1024 * 1024 }, // 5MB
-         logo: { width: 800, height: 400, size: 5 * 1024 * 1024 },
-         logo_white: { width: 800, height: 400, size: 5 * 1024 * 1024 },
-         logo_dark: { width: 800, height: 400, size: 5 * 1024 * 1024 },
-         logo_square: { width: 512, height: 512, size: 5 * 1024 * 1024 },
-         logo_square_white: { width: 512, height: 512, size: 5 * 1024 * 1024 },
-         logo_square_dark: { width: 512, height: 512, size: 5 * 1024 * 1024 },
-         favicon: { width: 32, height: 32, size: 1 * 1024 * 1024 } // 1MB
-      };
-
       const errors = [];
 
       Object.entries(arquivos).forEach(([key, file]) => {
          if (file) {
-            const limits = maxSizes[key];
+            const config = FILE_VALIDATION_CONFIG[key];
+            if (!config) return;
 
             // Verifica tamanho do arquivo
-            if (file.size > limits.size) {
-               errors.push(`${key}: Arquivo muito grande (máx ${Math.round(limits.size / 1024 / 1024)}MB)`);
+            if (file.size && file.size > config.maxSize) {
+               errors.push(`${config.label}: Arquivo muito grande (máx ${Math.round(config.maxSize / 1024 / 1024)}MB)`);
             }
 
             // Verifica tipo do arquivo
-            if (!file.type.startsWith('image/')) {
-               errors.push(`${key}: Tipo de arquivo inválido (apenas imagens)`);
+            if (!file.type || !file.type.startsWith('image/')) {
+               errors.push(`${config.label}: Tipo de arquivo inválido (apenas imagens)`);
             }
          }
       });
 
       return errors;
+   }
+
+   /**
+    * Valida dimensões da imagem usando FileReader
+    */
+   function validateImageDimensions(file, inputId) {
+      return new Promise((resolve, reject) => {
+         // Verifica se o arquivo existe
+         if (!file) {
+            reject(new Error('Arquivo inválido'));
+            return;
+         }
+
+         const config = FILE_VALIDATION_CONFIG[inputId];
+         if (!config) {
+            resolve(true); // Sem validação configurada
+            return;
+         }
+
+         const img = new Image();
+         const url = URL.createObjectURL(file);
+
+         img.onload = function() {
+            URL.revokeObjectURL(url);
+
+            const width = this.width;
+            const height = this.height;
+
+            if (width > config.maxWidth || height > config.maxHeight) {
+               reject(new Error(`${config.label}: Dimensões inválidas (máx ${config.maxWidth}x${config.maxHeight}px, atual ${width}x${height}px)`));
+            } else {
+               resolve(true);
+            }
+         };
+
+         img.onerror = function() {
+            URL.revokeObjectURL(url);
+            reject(new Error(`${config.label}: Erro ao carregar imagem`));
+         };
+
+         img.src = url;
+      });
    }
 
    /**
@@ -1142,6 +1228,8 @@ const CompaniesManager = (function() {
       toggleStatusCompany: toggleStatusCompany,
       viewCompanyModules: viewCompanyModules,
       manageCompanyModules: manageCompanyModules,
+      showErrorToast: showErrorToast,
+      showSuccessToast: showSuccessToast,
    };
 })();
 
@@ -1208,14 +1296,72 @@ const FilePondManager = (function() {
       // Inicializa cada input FilePond
       const filePondInputs = document.querySelectorAll('.filepond');
       filePondInputs.forEach(input => {
-         const maxWidth = input.dataset.maxWidth;
-         const maxHeight = input.dataset.maxHeight;
+         const inputId = input.id;
+         const config = FILE_VALIDATION_CONFIG[inputId];
 
          const pond = FilePond.create(input, {
-            imageResizeTargetWidth: maxWidth ? parseInt(maxWidth) : null,
-            imageResizeTargetHeight: maxHeight ? parseInt(maxHeight) : null,
+            // Configurações de validação
+            maxFileSize: config ? config.maxSize : '5MB',
+            acceptedFileTypes: ['image/*'],
+
+            // Configurações de imagem
+            imageResizeTargetWidth: config ? config.maxWidth : null,
+            imageResizeTargetHeight: config ? config.maxHeight : null,
+
+            // Label personalizado com informações de dimensões
+            labelIdle: config ?
+               `<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar<br><small class="text-muted">Máx: ${config.maxWidth}x${config.maxHeight}px, ${Math.round(config.maxSize / 1024 / 1024)}MB</small>` :
+               '<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar',
+
+            // Configurações de servidor
             server: {
                process: null, // Processamento será manual
+            },
+
+            // Labels personalizados
+            labelFileProcessingError: config ? `${config.label}: Erro de validação` : 'Erro de validação',
+            labelFileTypeNotAllowed: config ? `${config.label}: Tipo de arquivo não permitido` : 'Tipo de arquivo não permitido',
+            labelFileSizeNotAllowed: config ? `${config.label}: Arquivo muito grande` : 'Arquivo muito grande',
+         });
+
+         // Adiciona evento para validação de dimensões após o arquivo ser adicionado
+         pond.on('addfile', (error, file) => {
+            if (error) {
+               console.log('❌ Erro ao adicionar arquivo:', error);
+               return;
+            }
+
+            if (file && config) {
+               // Valida dimensões da imagem
+               const img = new Image();
+               const url = URL.createObjectURL(file.file);
+
+               img.onload = function() {
+                  URL.revokeObjectURL(url);
+
+                  const width = this.width;
+                  const height = this.height;
+
+                  if (width > config.maxWidth || height > config.maxHeight) {
+                     const errorMsg = `${config.label}: Dimensões inválidas (máx ${config.maxWidth}x${config.maxHeight}px, atual ${width}x${height}px)`;
+                     console.error('❌', errorMsg);
+
+                     // Remove o arquivo e mostra erro
+                     pond.removeFile(file);
+
+                     // Mostra toast de erro usando a função do CompaniesManager
+                     CompaniesManager.showErrorToast(errorMsg);
+                  } else {
+                     console.log(`✅ ${config.label}: Dimensões válidas (${width}x${height}px)`);
+                  }
+               };
+
+               img.onerror = function() {
+                  URL.revokeObjectURL(url);
+                  console.error(`❌ ${config.label}: Erro ao carregar imagem`);
+               };
+
+               img.src = url;
             }
          });
 
@@ -1304,7 +1450,7 @@ const FilePondManager = (function() {
 
       // Cria elemento de preview vazio (à esquerda)
       const previewDiv = document.createElement('div');
-      previewDiv.className = 'card empty-preview';
+      previewDiv.className = 'card empty-preview d-none';
       previewDiv.style.cssText = 'cursor: default; flex-shrink: 0; width: 180px;';
       previewDiv.innerHTML = `
          <div class="empty-image-placeholder" style="height: 90px; background-color: #f9fafb; border: 2px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; border-radius: 12px 12px 0 0;">
@@ -1431,3 +1577,5 @@ window.FilePondManager = FilePondManager;
 document.addEventListener('DOMContentLoaded', function() {
    FilePondManager.init();
 });
+
+
