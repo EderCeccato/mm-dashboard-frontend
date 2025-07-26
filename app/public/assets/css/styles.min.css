@@ -13572,7 +13572,7 @@ h3,
 h4,
 h5,
 h6 {
-   color: var(--default-text-color)
+   color: var(--default-text-color) !important
 }
 
 .table>:not(caption)>*>* {
@@ -16836,7 +16836,8 @@ span.flatpickr-weekday {
 }
 
 .filepond--file {
-   background-color: var(--primary-color) !important
+   background-color: var(--primary-color) !important;
+   min-height: 118px !important;
 }
 
 .single-fileupload {
@@ -20378,9 +20379,9 @@ code[class*=language-] {
 }
 
 @media (min-width:992px) {
-   [data-toggled=open] .page {
+   /* [data-toggled=open] .page {
       position: absolute
-   }
+   } */
 
    [data-toggled=icon-click-closed]:not([data-nav-layout=horizontal]) .app-content,
    [data-toggled=icon-hover-closed]:not([data-nav-layout=horizontal]) .app-content,
