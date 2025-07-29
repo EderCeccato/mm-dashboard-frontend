@@ -81,8 +81,18 @@ const CompanyBranding = (function() {
       try {
          // Converter RGB para Hex para o menu
          const rgbValues = colorRgb.split(',').map(val => parseInt(val.trim()));
+
+         // Verifica se todos os valores são válidos
+         if (rgbValues.length !== 3 || rgbValues.some(val => isNaN(val) || val === null || val === undefined)) {
+            console.warn('❌ Valores RGB inválidos:', colorRgb);
+            return;
+         }
+
          const rgbToHex = (r, g, b) => '#' + [r, g, b]
             .map(x => {
+               if (x === null || x === undefined || isNaN(x)) {
+                  return '00';
+               }
                const hex = x.toString(16);
                return hex.length === 1 ? '0' + hex : hex;
             })
