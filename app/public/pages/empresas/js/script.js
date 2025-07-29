@@ -50,6 +50,20 @@ const FILE_VALIDATION_CONFIG = {
    }
 };
 
+// Configurações para tipos de usuário
+const CONFIG = {
+   TIPOS_USUARIO: {
+      'superuser': { label: 'Super Usuário', badge: 'bg-danger' },
+      'admin': { label: 'Administrador', badge: 'bg-warning' },
+      'user': { label: 'Usuário', badge: 'bg-info' }
+   },
+   TIPOS_MODULO: {
+      'superuser': { label: 'Super Usuário', badge: 'bg-danger' },
+      'admin': { label: 'Administrador', badge: 'bg-warning' },
+      'user': { label: 'Usuário', badge: 'bg-info' }
+   }
+};
+
 const CompaniesManager = (function() {
    'use strict';
    // Estado global
@@ -58,8 +72,7 @@ const CompaniesManager = (function() {
    let modules = [];
    let companySelected = null;
    let userSelected = null;
-
-
+   let availableModules = [];
 
    /**
     * Máscara para CNPJ
@@ -130,15 +143,13 @@ const CompaniesManager = (function() {
    */
    async function loadInitialData() {
       try {
+         console.log('🚀 Iniciando carregamento de dados...');
          await Promise.all([
             loadCompanies(),
             loadUsers(),
             loadModules()
          ]);
-
-         // Popula selects de empresa
-         popularSelectCompanies();
-
+         console.log('✅ Dados iniciais carregados com sucesso');
       } catch (error) {
          console.error('❌ Erro ao carregar dados iniciais:', error);
       }
@@ -149,23 +160,19 @@ const CompaniesManager = (function() {
    */
    async function loadCompanies() {
       try {
-         if (typeof Thefetch !== 'function') {
-            throw new Error('Função Thefetch não encontrada');
-         }
-
+         console.log('🏢 Carregando lista de empresas...');
          const response = await Thefetch('/api/company', 'GET');
 
          if (response && response.success && response.data) {
             companies = response.data;
-            renderTableCompanies(); // Renderiza a tabela de empresas
+            console.log('✅ Empresas carregadas:', companies.length);
+            popularSelectCompanies();
+            renderTableCompanies();
          } else {
-            companies = [];
-            console.log('⚠️ Nenhuma empresa encontrada');
+            console.error('❌ Erro ao carregar empresas:', response);
          }
-
       } catch (error) {
          console.error('❌ Erro ao carregar empresas:', error);
-         companies = [];
       }
    }
 
@@ -174,23 +181,19 @@ const CompaniesManager = (function() {
    */
    async function loadUsers() {
       try {
-         if (typeof Thefetch !== 'function') {
-            throw new Error('Função Thefetch não encontrada');
-         }
-
+         console.log('👥 Carregando lista de usuários...');
          const response = await Thefetch('/api/user', 'GET');
 
          if (response && response.success && response.data) {
             users = response.data;
-            // renderTableUsers();
+            console.log('✅ Usuários carregados:', users.length);
+            console.log('📋 Dados dos usuários:', users);
+            renderTableUsers();
          } else {
-            users = [];
-            console.log('⚠️ Nenhum usuário encontrado');
+            console.error('❌ Erro ao carregar usuários:', response);
          }
-
       } catch (error) {
          console.error('❌ Erro ao carregar usuários:', error);
-         users = [];
       }
    }
 
@@ -199,23 +202,129 @@ const CompaniesManager = (function() {
    */
    async function loadModules() {
       try {
-         if (typeof Thefetch !== 'function') {
-            throw new Error('Função Thefetch não encontrada');
-         }
-
-         const response = await Thefetch('/api/company/modules', 'GET');
+         console.log('📦 Carregando lista de módulos...');
+         const response = await Thefetch('/api/modules', 'GET');
 
          if (response && response.success && response.data) {
-            modules = response.data;
+            availableModules = response.data;
+            console.log('✅ Módulos carregados:', availableModules.length);
          } else {
-            modules = [];
-            console.log('⚠️ Nenhum módulo encontrado');
+            console.error('❌ Erro ao carregar módulos:', response);
          }
-
       } catch (error) {
          console.error('❌ Erro ao carregar módulos:', error);
-         modules = [];
       }
+   }
+
+   /**
+    * Renderiza tabela de usuários
+    */
+   function renderTableUsers() {
+      const tbody = document.querySelector('#tabelaUsuarios tbody');
+      if (!tbody) {
+         console.error('❌ Tabela de usuários não encontrada');
+         console.log('🔍 Procurando por elementos:', {
+            'tabelaUsuarios': document.getElementById('tabelaUsuarios'),
+            'tbody': document.querySelector('#tabelaUsuarios tbody'),
+            'tabelaUsuarios_exists': !!document.getElementById('tabelaUsuarios')
+         });
+         return;
+      }
+
+      console.log('🎨 Renderizando tabela de usuários:', users.length, 'usuários');
+
+      // Aplica filtros
+      let filteredUsers = [...users];
+
+      const companyFilter = document.getElementById('filtroEmpresa')?.value;
+      const userTypeFilter = document.getElementById('filtroTipoUsuario')?.value;
+
+      console.log('🔍 Filtros aplicados:', {
+         companyFilter,
+         userTypeFilter,
+         totalUsers: users.length
+      });
+
+      if (companyFilter && companyFilter !== '') {
+         filteredUsers = filteredUsers.filter(user => user.company_name === companies.find(c => c.uuid === companyFilter)?.name);
+      }
+
+      if (userTypeFilter && userTypeFilter !== '') {
+         filteredUsers = filteredUsers.filter(user => user.user_type === userTypeFilter);
+      }
+
+      console.log('🔍 Usuários filtrados:', filteredUsers.length);
+
+      if (filteredUsers.length === 0) {
+         tbody.innerHTML = `
+            <tr>
+               <td colspan="6" class="text-center text-muted py-4">
+                  <i class="bi bi-people text-muted fs-1 d-block mb-2"></i>
+                  <p class="mb-2">Nenhum usuário encontrado</p>
+                  <small class="text-muted">Clique em "Novo Usuário" para cadastrar o primeiro usuário</small>
+               </td>
+            </tr>
+         `;
+         return;
+      }
+
+      tbody.innerHTML = filteredUsers.map(user => {
+         console.log('👤 Dados do usuário:', {
+            name: user.name,
+            email: user.email,
+            picture: user.profile_picture_url,
+            hasPicture: !!user.profile_picture_url
+         });
+
+         return `
+         <tr>
+            <td>
+               <div class="d-flex align-items-center">
+                  ${user.profile_picture_url
+                     ? `<img src="${user.profile_picture_url}" alt="Avatar" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                     : `<div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; font-weight: bold;">
+                          ${user.name.charAt(0).toUpperCase()}
+                        </div>`
+                  }
+                  <div>
+                     <div class="fw-semibold">${user.name}</div>
+                     <small class="text-muted">${user.email}</small>
+                  </div>
+               </div>
+            </td>
+            <td class="text-center">
+               <span class="badge ${CONFIG.TIPOS_USUARIO[user.user_type]?.badge || 'bg-secondary'}">
+                  ${CONFIG.TIPOS_USUARIO[user.user_type]?.label || user.user_type}
+               </span>
+            </td>
+            <td class="text-center">
+               ${user.company_name || '-'}
+            </td>
+            <td class="text-center">
+               <span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}">
+                  ${user.status === 'active' ? 'Ativo' : 'Inativo'}
+               </span>
+            </td>
+            <td class="text-center">
+               <small class="text-muted">${user.modules || '-'}</small>
+            </td>
+            <td class="text-center">
+               <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="CompaniesManager.editUser('${user.uuid}')" title="Editar">
+                     <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-warning" onclick="CompaniesManager.unlockUser('${user.uuid}')" title="Desbloquear Sessão">
+                     <i class="bi bi-unlock"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm ${user.status === 'active' ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="CompaniesManager.toggleStatusUser('${user.uuid}')" title="${user.status === 'active' ? 'Inativar' : 'Ativar'}">
+                     <i class="bi ${user.status === 'active' ? 'bi-pause-circle' : 'bi-play-circle'}"></i>
+                  </button>
+               </div>
+            </td>
+         </tr>
+      `}).join('');
+
+      console.log('✅ Tabela de usuários renderizada com sucesso');
    }
 
    /**
@@ -283,281 +392,867 @@ const CompaniesManager = (function() {
    }
 
    /**
-      * Popula selects de empresas
+      * Popula select de empresas
    */
    function popularSelectCompanies() {
-      const selects = [
-         document.getElementById('company-user'),
-         document.getElementById('company-filter')
-      ];
+      console.log('🏢 Populando select de empresas...');
 
-      selects.forEach(select => {
-         if (!select) return;
+      // Popula select de filtro
+      const companyFilter = document.getElementById('filtroEmpresa');
+      if (companyFilter) {
+         companyFilter.innerHTML = '<option value="">Todas as empresas</option>';
+         companies.forEach(company => {
+            companyFilter.innerHTML += `<option value="${company.uuid}">${company.name}</option>`;
+         });
+         console.log('✅ Select de filtro populado:', companies.length, 'empresas');
+      }
 
-         // Mantém primeira opção
-         const primeiraOpcao = select.querySelector('option:first-child');
-         select.innerHTML = '';
-         if (primeiraOpcao) {
-            select.appendChild(primeiraOpcao);
+      // Popula select do modal de usuário
+      const userCompanySelect = document.getElementById('user-company');
+      if (userCompanySelect) {
+         userCompanySelect.innerHTML = '<option value="">Selecione uma empresa</option>';
+         companies.forEach(company => {
+            userCompanySelect.innerHTML += `<option value="${company.uuid}">${company.name}</option>`;
+         });
+         console.log('✅ Select do modal de usuário populado:', companies.length, 'empresas');
+      }
+   }
+
+   /**
+    * Carrega módulos disponíveis para uma empresa
+    */
+   async function loadCompanyModules(companyUuid) {
+      try {
+         console.log('🔍 Carregando módulos da empresa:', companyUuid);
+         const response = await Thefetch(`/api/company/${companyUuid}/modules`, 'GET');
+
+         if (response && response.success && response.data && response.data.modules) {
+            console.log('✅ Módulos carregados com sucesso:', response.data.modules);
+            return response.data.modules;
          }
 
-         // Adiciona empresas
-         companies.forEach(company => {
-            const option = document.createElement('option');
-            option.value = company.uuid;
-            option.textContent = company.name;
-            select.appendChild(option);
+         console.log('⚠️ Nenhum módulo encontrado para a empresa:', companyUuid);
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao carregar módulos da empresa:', error);
+         return [];
+      }
+   }
+
+   /**
+    * Carrega todos os módulos disponíveis no sistema
+    */
+   async function loadAllModules() {
+      try {
+         console.log('🔍 Carregando todos os módulos do sistema...');
+
+         // Adiciona timeout de 10 segundos
+         const controller = new AbortController();
+         const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+         const response = await Thefetch('/api/modules', 'GET', null, { signal: controller.signal });
+         clearTimeout(timeoutId);
+
+         if (response && response.success && response.data) {
+            availableModules = response.data;
+            console.log('✅ Todos os módulos carregados:', response.data);
+            return response.data;
+         }
+
+         console.log('⚠️ Nenhum módulo encontrado no sistema');
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao carregar todos os módulos:', error);
+
+         if (error.name === 'AbortError') {
+            console.error('⏰ Timeout ao carregar módulos');
+            return [];
+         }
+
+         return [];
+      }
+   }
+
+   /**
+    * Renderiza módulos disponíveis no modal de usuário
+    */
+   function renderUserModules(modules, selectedModules = []) {
+      const modulesContainer = document.getElementById('user-modules-list');
+      const modulesLoading = document.getElementById('user-modules-loading');
+
+      if (!modulesContainer) {
+         console.error('❌ Container de módulos do usuário não encontrado');
+         console.log('🔍 Elementos relacionados:', {
+            'user-modules-list': document.getElementById('user-modules-list'),
+            'modules-selection-section': document.getElementById('modules-selection-section'),
+            'user-modules-loading': document.getElementById('user-modules-loading'),
+            'no-user-modules': document.getElementById('no-user-modules')
+         });
+         return;
+      }
+
+      // Esconde o loading
+      if (modulesLoading) {
+         modulesLoading.style.display = 'none';
+         console.log('✅ Loading de módulos ocultado');
+      }
+
+      console.log('🎨 Renderizando módulos:', {
+         total: modules?.length || 0,
+         selected: selectedModules?.length || 0,
+         modules: modules,
+         containerExists: !!modulesContainer,
+         containerDisplay: modulesContainer.style.display
+      });
+
+      if (!modules || modules.length === 0) {
+         modulesContainer.innerHTML = `
+            <div class="text-center text-muted py-3">
+               <i class="bi bi-grid-3x3-gap fs-1 d-block mb-2"></i>
+               <p>Nenhum módulo disponível</p>
+            </div>
+         `;
+         modulesContainer.style.display = 'block';
+         console.log('⚠️ Nenhum módulo disponível para renderizar');
+         return;
+      }
+
+      // Mostra o container de módulos
+      const modulesSection = document.getElementById('modules-selection-section');
+      if (modulesSection) {
+         modulesSection.style.display = 'block';
+         console.log('✅ Seção de módulos exibida');
+      }
+
+      // Mostra o container de lista de módulos
+      modulesContainer.style.display = 'block';
+      console.log('✅ Container de módulos exibido');
+
+      const modulesHtml = modules.map(module => {
+         const isSelected = selectedModules.includes(module.id);
+         return `
+            <div class="col-md-6 mb-3">
+               <div class="card module-card ${isSelected ? 'border-primary' : ''}" data-module-id="${module.id}">
+                  <div class="card-body p-3">
+                     <div class="form-check">
+                        <input class="form-check-input module-checkbox" type="checkbox"
+                               id="user-module-${module.id}"
+                               value="${module.id}"
+                               ${isSelected ? 'checked' : ''}>
+                        <label class="form-check-label w-100" for="user-module-${module.id}">
+                           <div class="d-flex justify-content-between align-items-start">
+                              <div>
+                                 <h6 class="card-title mb-1">${module.name}</h6>
+                                 ${module.description ? `<small class="text-muted">${module.description}</small>` : ''}
+                                 <br><span class="badge ${CONFIG.TIPOS_MODULO[module.module_type]?.badge || 'bg-secondary'} badge-sm mt-1">${CONFIG.TIPOS_MODULO[module.module_type]?.label || module.module_type}</span>
+                              </div>
+                              <i class="bi bi-check-circle-fill text-primary module-check-icon" style="display: ${isSelected ? 'inline' : 'none'}"></i>
+                           </div>
+                        </label>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         `;
+      }).join('');
+
+      modulesContainer.innerHTML = `
+         <div class="row">
+            ${modulesHtml}
+         </div>
+      `;
+
+      console.log('✅ HTML dos módulos gerado:', modulesHtml.length, 'caracteres');
+
+      // Adiciona event listeners para os checkboxes
+      const checkboxes = modulesContainer.querySelectorAll('.module-checkbox');
+      console.log('✅ Checkboxes encontrados:', checkboxes.length);
+
+      checkboxes.forEach(checkbox => {
+         checkbox.addEventListener('change', function() {
+            const card = this.closest('.module-card');
+            const icon = card.querySelector('.module-check-icon');
+
+            if (this.checked) {
+               card.classList.add('border-primary');
+               icon.style.display = 'inline';
+            } else {
+               card.classList.remove('border-primary');
+               icon.style.display = 'none';
+            }
          });
       });
+
+      console.log('✅ Módulos renderizados com sucesso:', modules.length);
    }
 
    /**
-      * Vincula eventos
-   */
-   function bindEvents() {
-      // Aguarda um pouco para garantir que os elementos existam
-      setTimeout(() => {
-         // Botões de salvar
-         const btnSaveCompany = document.getElementById('btn-save-company');
-         const btnSaveUser = document.getElementById('btn-save-user');
+    * Handler para mudança no tipo de usuário
+    */
+   async function onUserTypeChange() {
+      const userType = document.getElementById('user-type');
+      const companySelect = document.getElementById('user-company');
+      const modulesContainer = document.getElementById('user-modules-list');
+      const companyGroup = document.getElementById('company-selection-section');
 
-         if (btnSaveCompany) {
-            btnSaveCompany.addEventListener('click', saveCompany);
+      // Verifica se os elementos existem antes de usar
+      if (!userType) return;
+
+      const userTypeValue = userType.value;
+      console.log('👤 Tipo de usuário alterado para:', userTypeValue);
+
+      // Limpa módulos
+      if (modulesContainer) {
+         modulesContainer.innerHTML = '';
+         modulesContainer.style.display = 'none';
+      }
+
+      // Configura visibilidade do campo empresa
+      if (companyGroup && companySelect) {
+         if (userTypeValue === 'superuser') {
+            companyGroup.style.display = 'none';
+            companySelect.value = '';
+            console.log('👑 Superuser selecionado - empresa não necessária');
+         } else {
+            companyGroup.style.display = 'block';
+            console.log('🏢 Usuário admin/user - empresa necessária');
          }
-         if (btnSaveUser) {
-            btnSaveUser.addEventListener('click', saveUser);
-         }
+      }
 
-         // Botões de abrir modais
-         const btnNewCompany = document.querySelector('[data-bs-target="#modal-new-company"]');
-         const btnNewUser = document.querySelector('[data-bs-target="#modal-new-user"]');
-
-                           if (btnNewCompany) {
-            btnNewCompany.addEventListener('click', function() {
-               resetFormCompany();
-
-               // Aplica layout para nova empresa
-               setTimeout(() => {
-                  if (window.FilePondManager) {
-                     FilePondManager.applyNewCompanyLayout();
-                  }
-               }, 100);
-
-               const modal = new bootstrap.Modal(document.getElementById('modal-new-company'));
-               modal.show();
-            });
-         }
-
-         if (btnNewUser) {
-            btnNewUser.addEventListener('click', function() {
-               resetFormUser();
-               const modal = new bootstrap.Modal(document.getElementById('modal-new-user'));
-               modal.show();
-            });
-         }
-
-         // Mudança no tipo de usuário (carrega módulos)
-         const userType = document.getElementById('user-type');
-         const companyUser = document.getElementById('company-user');
-
-         if (userType) {
-            userType.addEventListener('change', onUserTypeChange);
-         }
-         if (companyUser) {
-            companyUser.addEventListener('change', onCompanyChange);
-         }
-
-         // Aba de usuários - carrega dados quando clica
-         const usersTab = document.getElementById('users-tab');
-         if (usersTab) {
-            usersTab.addEventListener('click', function() {
-               setTimeout(() => {
-                  loadUsers();
-               }, 100);
-            });
-         }
-
-         // Filtros da tabela de usuários
-         const companyFilter = document.getElementById('company-filter');
-         const userTypeFilter = document.getElementById('user-type-filter');
-
-         if (companyFilter) {
-            companyFilter.addEventListener('change', renderTableUsers);
-         }
-         if (userTypeFilter) {
-            userTypeFilter.addEventListener('change', renderTableUsers);
-         }
-
-         // Validação de senha
-         const confirmPassword = document.getElementById('confirm-password');
-         if (confirmPassword) {
-            confirmPassword.addEventListener('blur', validatePasswords);
-         }
-
-         // Aplicar máscaras
-         const cnpjInput = document.getElementById('company-cnpj');
-         const domainInput = document.getElementById('company-domain');
-
-         if (cnpjInput) {
-            applyCnpjMask(cnpjInput);
-         }
-         if (domainInput) {
-            applyDomainMask(domainInput);
-         }
-
-         // Reset modais
-         const modalNewCompany = document.getElementById('modal-new-company');
-         const modalNewUser = document.getElementById('modal-new-user');
-         const modalCompanyModules = document.getElementById('modal-company-modules');
-
-         if (modalNewCompany) {
-            modalNewCompany.addEventListener('hidden.bs.modal', resetFormCompany);
-         }
-         if (modalNewUser) {
-            modalNewUser.addEventListener('hidden.bs.modal', resetFormUser);
-         }
-         if (modalCompanyModules) {
-            modalCompanyModules.addEventListener('hidden.bs.modal', resetFormModules);
-         }
-
-         // Event listeners do modal de módulos
-         const btnSaveModules = document.getElementById('btn-save-company-modules');
-         const btnSelectAllModules = document.getElementById('btn-select-all-modules');
-         const btnDeselectAllModules = document.getElementById('btn-deselect-all-modules');
-
-         if (btnSaveModules) {
-            btnSaveModules.addEventListener('click', saveCompanyModules);
-         }
-
-         if (btnSelectAllModules) {
-            btnSelectAllModules.addEventListener('click', function() {
-               const checkboxes = document.querySelectorAll('.module-checkbox');
-               checkboxes.forEach(checkbox => {
-                  if (!checkbox.checked) {
-                     checkbox.checked = true;
-                     checkbox.dispatchEvent(new Event('change'));
-                  }
-               });
-            });
-         }
-
-         if (btnDeselectAllModules) {
-            btnDeselectAllModules.addEventListener('click', function() {
-               const checkboxes = document.querySelectorAll('.module-checkbox');
-               checkboxes.forEach(checkbox => {
-                  if (checkbox.checked) {
-                     checkbox.checked = false;
-                     checkbox.dispatchEvent(new Event('change'));
-                  }
-               });
-            });
-         }
-
-         // Adiciona listener para limpar backdrop em caso de problema
-         document.addEventListener('click', function(e) {
-            if (e.target.classList.contains('modal-backdrop')) {
-               clearModalBackdrop();
+      // Carrega módulos apropriados
+      if (userTypeValue === 'superuser') {
+         // Para superuser, carrega todos os módulos de superuser
+         console.log('🔍 Carregando módulos de superuser...');
+         try {
+            const allModules = await loadAllModules();
+            console.log('📦 Todos os módulos carregados:', allModules);
+            const superuserModules = allModules.filter(module => module.module_type === 'superuser');
+            console.log('👑 Módulos de superuser disponíveis:', superuserModules);
+            renderUserModules(superuserModules);
+         } catch (error) {
+            console.error('❌ Erro ao carregar módulos de superuser:', error);
+            if (modulesContainer) {
+               modulesContainer.innerHTML = `
+                  <div class="text-center text-danger py-3">
+                     <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+                     <p>Erro ao carregar módulos</p>
+                  </div>
+               `;
+               modulesContainer.style.display = 'block';
             }
-         });
-
-         // Listener para ESC key
-         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-               clearModalBackdrop();
-            }
-         });
-
-      }, 1000);
+         }
+      } else if (userTypeValue && companySelect && companySelect.value) {
+         // Para admin/user, carrega módulos da empresa selecionada
+         console.log('🔍 Carregando módulos da empresa selecionada...');
+         await onCompanyChange();
+      } else if (userTypeValue && (userTypeValue === 'admin' || userTypeValue === 'user')) {
+         // Para admin/user sem empresa selecionada, mostra mensagem
+         console.log('⚠️ Usuário admin/user selecionado, mas empresa não selecionada');
+         if (modulesContainer) {
+            modulesContainer.innerHTML = `
+               <div class="text-center text-muted py-3">
+                  <i class="bi bi-building fs-1 d-block mb-2"></i>
+                  <p>Selecione uma empresa para ver os módulos disponíveis</p>
+               </div>
+            `;
+            modulesContainer.style.display = 'block';
+         }
+      }
    }
 
    /**
-      * Salva empresa (criar ou editar)
-   */
-   async function saveCompany() {
+    * Handler para mudança na empresa
+    */
+   async function onCompanyChange() {
+      const userType = document.getElementById('user-type');
+      const companyUser = document.getElementById('user-company');
+
+      if (!userType || !companyUser) return;
+
+      const userTypeValue = userType.value;
+      const companyUuid = companyUser.value;
+
+      if (!userTypeValue || !companyUuid) return;
+
+      console.log('🏢 Empresa alterada:', {
+         userType: userTypeValue,
+         companyUuid: companyUuid
+      });
+
       try {
-         const form = document.getElementById('form-new-company');
+         const companyModules = await loadCompanyModules(companyUuid);
+
+         // Filtra módulos baseado no tipo de usuário
+         let availableModules = [];
+
+         if (userTypeValue === 'admin') {
+            availableModules = companyModules.filter(module =>
+               module.module_type === 'admin' || module.module_type === 'user'
+            );
+         } else if (userTypeValue === 'user') {
+            availableModules = companyModules.filter(module =>
+               module.module_type === 'user'
+            );
+         }
+
+         console.log('✅ Módulos disponíveis para empresa:', availableModules);
+         renderUserModules(availableModules);
+
+      } catch (error) {
+         console.error('❌ Erro ao carregar módulos da empresa:', error);
+         const modulesContainer = document.getElementById('user-modules-list');
+         if (modulesContainer) {
+            modulesContainer.innerHTML = `
+               <div class="text-center text-danger py-3">
+                  <i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>
+                  <p>Erro ao carregar módulos da empresa</p>
+               </div>
+            `;
+            modulesContainer.style.display = 'block';
+         }
+      }
+   }
+
+   /**
+    * Valida senhas (apenas para novo cadastro)
+    */
+   function validatePasswords() {
+      const password = document.getElementById('user-password');
+      const userUuid = document.getElementById('user-uuid');
+
+      if (!password) return;
+
+      // Se é edição (tem UUID), senha é opcional
+      if (userUuid && userUuid.value) {
+         password.removeAttribute('required');
+         password.setCustomValidity('');
+         return;
+      }
+
+      // Se é novo cadastro, senha é obrigatória
+      password.setAttribute('required', 'required');
+
+      // Por enquanto, apenas valida se a senha tem pelo menos 6 caracteres
+      if (password.value && password.value.length < 6) {
+         password.setCustomValidity('A senha deve ter pelo menos 6 caracteres');
+      } else {
+         password.setCustomValidity('');
+      }
+   }
+
+   /**
+    * Salva usuário (criar ou editar)
+    */
+   async function saveUser() {
+      try {
+         const form = document.getElementById('form-new-user');
+         if (!form) {
+            showErrorToast('Formulário de usuário não encontrado');
+            return;
+         }
+
          if (!form.checkValidity()) {
             form.reportValidity();
             return;
          }
 
-         const empresaUuid = document.getElementById('company-uuid')?.value;
+         const userUuid = document.getElementById('user-uuid')?.value;
+         const userType = document.getElementById('user-type')?.value;
+         const companyUuid = document.getElementById('user-company')?.value;
+         const passwordField = document.getElementById('user-password');
+
+         // Validações específicas
+         if (!userType) {
+            showErrorToast('Tipo de usuário é obrigatório');
+            return;
+         }
+
+         if (userType !== 'superuser' && !companyUuid) {
+            showErrorToast('Empresa é obrigatória para usuários admin e user');
+            return;
+         }
+
+         // Coleta módulos selecionados
+         const selectedModules = [];
+         const moduleCheckboxes = document.querySelectorAll('#user-modules-list .module-checkbox:checked');
+         moduleCheckboxes.forEach(checkbox => {
+            selectedModules.push(parseInt(checkbox.value));
+         });
+
          const formData = new FormData(form);
+         const dados = {};
 
          // Converte FormData para objeto
-         const dados = {};
          for (let [key, value] of formData.entries()) {
-            if (key !== 'company-uuid' && typeof value === 'string' && value.trim() !== '') {
+            if (key !== 'user-uuid' && typeof value === 'string' && value.trim() !== '') {
                dados[key] = value;
             }
          }
 
-         // Validações específicas
-         if (!dados['company-name'] || !dados['company-cnpj'] || !dados['company-domain']) {
-            showErrorToast('Nome, CNPJ e Domínio são obrigatórios', 'error');
-            return;
+         // Remove senha vazia na edição
+         if (userUuid && passwordField && (!passwordField.value || passwordField.value.trim() === '')) {
+            delete dados['user-password'];
+            console.log('🔒 Senha removida da edição (campo vazio)');
          }
 
-         const method = empresaUuid ? 'PUT' : 'POST';
-         const url = empresaUuid ? `/api/company/${empresaUuid}` : '/api/company';
+         // Adiciona dados específicos
+         dados.user_type = userType;
+         if (companyUuid) {
+            const company = companies.find(c => c.uuid === companyUuid);
+            dados.company_id = company?.id;
+            console.log('🏢 Empresa selecionada:', {
+               uuid: companyUuid,
+               id: company?.id,
+               name: company?.name
+            });
+         }
+         dados.moduleIds = selectedModules;
+
+         // LOGS DETALHADOS PARA MONITORAMENTO
+         console.log('📋 === DADOS DO USUÁRIO ===');
+         console.log('🆔 UUID do usuário (edição):', userUuid || 'NOVO USUÁRIO');
+         console.log('👤 Tipo de usuário:', userType);
+         console.log('🏢 UUID da empresa:', companyUuid);
+         console.log('🏢 ID da empresa:', dados.company_id);
+         console.log('📦 Módulos selecionados:', selectedModules);
+         console.log('📝 Dados do formulário:', dados);
+         console.log('📊 Dados completos a serem enviados:', {
+            ...dados,
+            method: userUuid ? 'PUT' : 'POST',
+            url: userUuid ? `/api/user/${userUuid}` : '/api/user'
+         });
+
+         const method = userUuid ? 'PUT' : 'POST';
+         const url = userUuid ? `/api/user/${userUuid}` : '/api/user';
+
+         console.log('🚀 Enviando requisição:', {
+            method,
+            url,
+            dados
+         });
 
          const response = await Thefetch(url, method, dados);
 
+         console.log('📥 Resposta do servidor:', response);
+
          if (response && response.success) {
-            // Faz upload das imagens ANTES de fechar o modal
-            let uploadSuccess = true;
-            const companyUuid = response.data?.uuid || empresaUuid;
+            showSuccessToast(
+               userUuid ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!',
+               'success'
+            );
 
-            if (companyUuid) {
-               try {
-                  await uploadImagesCompany(companyUuid);
-               } catch (uploadError) {
-                  console.error('❌ Erro no upload de imagens:', uploadError);
-                  uploadSuccess = false;
-                  // Não fecha o modal se houver erro no upload
-                  showErrorToast('Empresa salva, mas houve erro no upload das imagens: ' + uploadError.message);
-                  return;
-               }
+            // Fecha modal
+            const modalElement = document.getElementById('modal-new-user');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+               modal.hide();
             }
 
-            // Só fecha o modal se tudo estiver OK
-            if (uploadSuccess) {
-               showSuccessToast(
-                  empresaUuid ? 'Empresa atualizada com sucesso!' : 'Empresa criada com sucesso!',
-                  'success'
-               );
-
-               // Fecha modal e recarrega dados
-               const modalElement = document.getElementById('modal-new-company');
-               const modal = bootstrap.Modal.getInstance(modalElement);
-
-               if (modal) {
-                  modal.hide();
-               }
-
-               // Força a remoção do backdrop caso fique travado
-               setTimeout(() => {
-                  const backdrop = document.querySelector('.modal-backdrop');
-                  if (backdrop) {
-                     backdrop.remove();
-                  }
-                  document.body.classList.remove('modal-open');
-                  document.body.style.overflow = '';
-                  document.body.style.paddingRight = '';
-               }, 300);
-
-               await loadCompanies();
-               popularSelectCompanies();
-            }
+            // Recarrega dados
+            await loadUsers();
 
          } else {
-            throw new Error(response?.message || 'Erro ao salvar empresa');
+            throw new Error(response?.message || 'Erro ao salvar usuário');
          }
 
       } catch (error) {
-         console.error('❌ Erro ao salvar empresa:', error);
-         showErrorToast('Erro ao salvar empresa: ' + error.message);
+         console.error('❌ Erro ao salvar usuário:', error);
+         showErrorToast('Erro ao salvar usuário: ' + error.message);
       }
+   }
+
+   /**
+    * Edita usuário
+    */
+   async function editUser(userUuid) {
+      const user = users.find(u => u.uuid === userUuid);
+      if (!user) {
+         showErrorToast('Usuário não encontrado');
+         return;
+      }
+
+      console.log('✏️ Editando usuário:', user);
+
+      userSelected = user;
+
+      // Preenche formulário
+      const userUuidField = document.getElementById('user-uuid');
+      const titleField = document.getElementById('title-modal-new-user');
+      const textField = document.getElementById('text-save-user');
+      const nameField = document.getElementById('user-name-input');
+      const emailField = document.getElementById('user-email');
+      const passwordField = document.getElementById('user-password');
+      const passwordLabel = document.querySelector('label[for="user-password"]');
+      const typeField = document.getElementById('user-type');
+      const statusField = document.getElementById('user-status');
+      const companySelect = document.getElementById('user-company');
+      const companyGroup = document.getElementById('company-selection-section');
+
+      // Preenche campos básicos
+      if (userUuidField) userUuidField.value = user.uuid;
+      if (titleField) titleField.textContent = 'Editar Usuário';
+      if (textField) textField.textContent = 'Atualizar Usuário';
+      if (nameField) {
+         // Primeira tentativa
+         nameField.value = user.name;
+         nameField.dispatchEvent(new Event('input', { bubbles: true }));
+
+         // Segunda tentativa após um pequeno delay
+         setTimeout(() => {
+            if (nameField.value !== user.name) {
+               nameField.value = user.name;
+               nameField.dispatchEvent(new Event('input', { bubbles: true }));
+               console.log('✅ Nome do usuário re-definido após primeira verificação:', user.name);
+            }
+         }, 50);
+
+         // Terceira tentativa após um delay maior
+         setTimeout(() => {
+            if (nameField.value !== user.name) {
+               nameField.value = user.name;
+               nameField.dispatchEvent(new Event('input', { bubbles: true }));
+               console.log('✅ Nome do usuário re-definido após segunda verificação:', user.name);
+            }
+         }, 200);
+
+         console.log('✅ Nome do usuário preenchido:', user.name);
+      }
+      if (emailField) {
+         emailField.value = user.email;
+         console.log('✅ Email do usuário preenchido:', user.email);
+      }
+      if (typeField) {
+         typeField.value = user.user_type;
+         console.log('✅ Tipo de usuário preenchido:', user.user_type);
+      }
+      if (statusField) statusField.value = user.status;
+
+      // Configura senha (opcional na edição)
+      if (passwordField) {
+         passwordField.value = ''; // Limpa senha na edição
+         passwordField.removeAttribute('required');
+         passwordField.placeholder = 'Deixe em branco para manter a senha atual';
+         console.log('✅ Campo de senha configurado como opcional');
+      }
+
+      // Remove asterisco do label da senha na edição
+      if (passwordLabel) {
+         passwordLabel.textContent = 'Senha';
+         console.log('✅ Asterisco removido do label da senha');
+      }
+
+      // Configura empresa
+      if (companySelect && companyGroup) {
+         if (user.user_type === 'superuser') {
+            companyGroup.style.display = 'none';
+            companySelect.value = '';
+            console.log('👑 Superuser - empresa ocultada');
+         } else {
+            companyGroup.style.display = 'block';
+            const company = companies.find(c => c.name === user.company_name);
+            if (company) {
+               companySelect.value = company.uuid;
+               console.log('🏢 Empresa selecionada:', company.name);
+            }
+         }
+      }
+
+      // Esconde o loading desnecessário
+      const modulesLoading = document.getElementById('user-modules-loading');
+      if (modulesLoading) {
+         modulesLoading.style.display = 'none';
+         console.log('✅ Loading de módulos ocultado');
+      }
+
+      // Carrega módulos do usuário
+      await loadUserModules(user);
+
+      // Abre modal
+      const modalElement = document.getElementById('modal-new-user');
+      if (modalElement) {
+         const modal = new bootstrap.Modal(modalElement);
+
+         // Adiciona listener para quando o modal estiver completamente aberto
+         modalElement.addEventListener('shown.bs.modal', function onModalShown() {
+            // Re-preenche o nome para garantir que seja exibido
+            const nameField = document.getElementById('user-name-input');
+            console.log('🔍 Campo de nome encontrado:', !!nameField);
+            if (nameField) {
+               console.log('🔍 Valor atual do campo:', nameField.value);
+               console.log('🔍 Valor esperado:', user.name);
+            }
+
+            if (nameField && user.name) {
+               nameField.value = user.name;
+               nameField.dispatchEvent(new Event('input', { bubbles: true }));
+               nameField.dispatchEvent(new Event('change', { bubbles: true }));
+               console.log('✅ Nome do usuário preenchido após modal aberto:', user.name);
+               console.log('🔍 Valor final do campo:', nameField.value);
+            }
+            // Remove o listener para evitar duplicação
+            modalElement.removeEventListener('shown.bs.modal', onModalShown);
+         }, { once: true });
+
+         modal.show();
+         console.log('✅ Modal de edição aberto');
+      }
+   }
+
+   /**
+    * Carrega módulos do usuário para edição
+    */
+   async function loadUserModules(user) {
+      try {
+         console.log('🔍 Carregando módulos do usuário para edição:', user);
+
+         let availableModules = [];
+         let selectedModules = [];
+
+         // Extrai módulos já selecionados do usuário
+         if (user.modules) {
+            console.log('📦 Módulos do usuário:', user.modules);
+
+            // Se modules é uma string (lista separada por vírgula), vamos extrair os nomes
+            if (typeof user.modules === 'string') {
+               const moduleNames = user.modules.split(',').map(name => name.trim());
+               console.log('📝 Nomes dos módulos extraídos:', moduleNames);
+
+               // Por enquanto, vamos marcar todos os módulos disponíveis como selecionados
+               // Em uma implementação real, você precisaria fazer um mapeamento por nome
+               selectedModules = moduleNames.map(name => {
+                  // Aqui você pode implementar a lógica para encontrar o ID do módulo pelo nome
+                  return name; // Por enquanto, retorna o nome
+               });
+            }
+         }
+
+         if (user.user_type === 'superuser') {
+            // Para superuser, carrega todos os módulos de superuser
+            console.log('👑 Carregando módulos de superuser para edição...');
+            const allModules = await loadAllModules();
+            availableModules = allModules.filter(module => module.module_type === 'superuser');
+
+            // Se o usuário tem módulos, vamos tentar mapear pelos nomes
+            if (user.modules && typeof user.modules === 'string') {
+               const moduleNames = user.modules.split(',').map(name => name.trim());
+               selectedModules = availableModules
+                  .filter(module => moduleNames.includes(module.name))
+                  .map(module => module.id);
+            }
+         } else if (user.company_name) {
+            // Para admin/user, carrega módulos da empresa
+            console.log('🏢 Carregando módulos da empresa para edição...');
+            const company = companies.find(c => c.name === user.company_name);
+            if (company) {
+               const companyModules = await loadCompanyModules(company.uuid);
+
+               if (user.user_type === 'admin') {
+                  availableModules = companyModules.filter(module =>
+                     module.module_type === 'admin' || module.module_type === 'user'
+                  );
+               } else if (user.user_type === 'user') {
+                  availableModules = companyModules.filter(module =>
+                     module.module_type === 'user'
+                  );
+               }
+
+               // Se o usuário tem módulos, vamos tentar mapear pelos nomes
+               if (user.modules && typeof user.modules === 'string') {
+                  const moduleNames = user.modules.split(',').map(name => name.trim());
+                  selectedModules = availableModules
+                     .filter(module => moduleNames.includes(module.name))
+                     .map(module => module.id);
+               }
+            }
+         }
+
+         console.log('✅ Módulos disponíveis para edição:', availableModules);
+         console.log('✅ Módulos selecionados para edição:', selectedModules);
+
+         // Renderiza módulos com os selecionados
+         renderUserModules(availableModules, selectedModules);
+
+      } catch (error) {
+         console.error('❌ Erro ao carregar módulos do usuário:', error);
+         showErrorToast('Erro ao carregar módulos do usuário');
+      }
+   }
+
+   /**
+    * Desbloqueia sessão do usuário
+    */
+   async function unlockUser(userUuid) {
+      const user = users.find(u => u.uuid === userUuid);
+      if (!user) {
+         showErrorToast('Usuário não encontrado');
+         return;
+      }
+
+      console.log('🔓 Tentando desbloquear usuário:', {
+         uuid: userUuid,
+         name: user.name,
+         email: user.email
+      });
+
+      const confirmation = await Swal.fire({
+         title: 'Confirmar Desbloqueio',
+         text: `Tem certeza que deseja desbloquear a sessão do usuário "${user.name}"?`,
+         icon: 'question',
+         showCancelButton: true,
+         confirmButtonColor: '#28a745',
+         cancelButtonColor: '#6c757d',
+         confirmButtonText: 'Sim, desbloquear!',
+         cancelButtonText: 'Cancelar',
+         reverseButtons: true
+      });
+
+      if (!confirmation.isConfirmed) {
+         console.log('❌ Desbloqueio cancelado pelo usuário');
+         return;
+      }
+
+      try {
+         console.log('🚀 Enviando requisição de desbloqueio:', {
+            url: `/api/auth/users/${userUuid}/unlock`,
+            method: 'PATCH'
+         });
+
+         const response = await Thefetch(`/api/auth/users/${userUuid}/unlock`, 'PATCH');
+
+         console.log('📥 Resposta do servidor (desbloqueio):', response);
+
+         if (response && response.success) {
+            console.log('✅ Usuário desbloqueado com sucesso');
+            showSuccessToast('Sessão do usuário desbloqueada com sucesso!');
+         } else {
+            throw new Error(response?.message || 'Erro ao desbloquear sessão');
+         }
+
+      } catch (error) {
+         console.error('❌ Erro ao desbloquear sessão:', error);
+         showErrorToast('Erro ao desbloquear sessão: ' + error.message);
+      }
+   }
+
+   /**
+    * Toggle status do usuário (ativar/inativar)
+    */
+   async function toggleStatusUser(userUuid) {
+      const user = users.find(u => u.uuid === userUuid);
+      if (!user) return;
+
+      const newStatus = user.status === 'active' ? 'inactive' : 'active';
+      const action = newStatus === 'active' ? 'ativar' : 'inativar';
+
+      console.log('🔄 Tentando alterar status do usuário:', {
+         uuid: userUuid,
+         name: user.name,
+         email: user.email,
+         currentStatus: user.status,
+         newStatus: newStatus,
+         action: action
+      });
+
+      const confirmation = await Swal.fire({
+         title: `Confirmar ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+         text: `Tem certeza que deseja ${action} o usuário "${user.name}"?`,
+         icon: 'question',
+         showCancelButton: true,
+         confirmButtonColor: newStatus === 'active' ? '#28a745' : '#ffc107',
+         cancelButtonColor: '#6c757d',
+         confirmButtonText: `Sim, ${action}!`,
+         cancelButtonText: 'Cancelar',
+         reverseButtons: true
+      });
+
+      if (!confirmation.isConfirmed) {
+         console.log('❌ Alteração de status cancelada pelo usuário');
+         return;
+      }
+
+      try {
+         const dadosUpdate = {
+            ...user,
+            status: newStatus
+         };
+
+         console.log('📋 Dados para atualização de status:', dadosUpdate);
+
+         const response = await Thefetch(`/api/user/${userUuid}`, 'PUT', dadosUpdate);
+
+         console.log('📥 Resposta do servidor (status):', response);
+
+         if (response && response.success) {
+            console.log('✅ Status do usuário alterado com sucesso');
+            showSuccessToast(`Usuário ${action}ado com sucesso!`);
+            await loadUsers();
+         } else {
+            throw new Error(response?.message || `Erro ao ${action} usuário`);
+         }
+
+      } catch (error) {
+         console.error(`❌ Erro ao ${action} usuário:`, error);
+         showErrorToast(`Erro ao ${action} usuário: ` + error.message);
+      }
+   }
+
+   /**
+    * Reset do formulário de usuário
+    */
+   function resetFormUser() {
+      const form = document.getElementById('form-new-user');
+      const userUuidField = document.getElementById('user-uuid');
+      const titleField = document.getElementById('title-modal-new-user');
+      const textField = document.getElementById('text-save-user');
+      const nameField = document.getElementById('user-name-input');
+      const emailField = document.getElementById('user-email');
+      const passwordField = document.getElementById('user-password');
+      const passwordLabel = document.querySelector('label[for="user-password"]');
+      const typeField = document.getElementById('user-type');
+      const statusField = document.getElementById('user-status');
+      const companySelect = document.getElementById('user-company');
+      const companyGroup = document.getElementById('company-selection-section');
+      const modulesContainer = document.getElementById('user-modules-list');
+      const modulesLoading = document.getElementById('user-modules-loading');
+
+      if (form) form.reset();
+      if (userUuidField) userUuidField.value = '';
+      if (titleField) titleField.textContent = 'Cadastrar Novo Usuário';
+      if (textField) textField.textContent = 'Salvar Usuário';
+      if (nameField) nameField.value = '';
+      if (emailField) emailField.value = '';
+      if (passwordField) {
+         passwordField.value = '';
+         passwordField.setAttribute('required', 'required');
+         passwordField.placeholder = 'Digite a senha';
+         console.log('✅ Campo de senha configurado como obrigatório');
+      }
+      if (passwordLabel) {
+         passwordLabel.textContent = 'Senha *';
+         console.log('✅ Asterisco restaurado no label da senha');
+      }
+      if (typeField) typeField.value = '';
+      if (statusField) statusField.value = 'active';
+      if (companySelect) companySelect.value = '';
+      if (companyGroup) companyGroup.style.display = 'block';
+      if (modulesContainer) {
+         modulesContainer.innerHTML = '';
+         modulesContainer.style.display = 'none';
+      }
+      if (modulesLoading) {
+         modulesLoading.style.display = 'block';
+         console.log('✅ Loading de módulos restaurado');
+      }
+
+      userSelected = null;
+      console.log('✅ Formulário de usuário resetado');
+   }
+
+   /**
+    * Obtém classe de badge para tipo de usuário
+    */
+   function getBadgeClassForUserType(userType) {
+      return CONFIG.TIPOS_USUARIO[userType]?.badge || 'bg-secondary';
    }
 
    /**
@@ -699,6 +1394,101 @@ const CompaniesManager = (function() {
    }
 
    /**
+    * Salva empresa (criar ou editar)
+    */
+   async function saveCompany() {
+      try {
+         const form = document.getElementById('form-new-company');
+         if (!form) {
+            showErrorToast('Formulário de empresa não encontrado');
+            return;
+         }
+
+         if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+         }
+
+         const empresaUuid = document.getElementById('company-uuid')?.value;
+         const formData = new FormData(form);
+
+         // Converte FormData para objeto
+         const dados = {};
+         for (let [key, value] of formData.entries()) {
+            if (key !== 'company-uuid' && typeof value === 'string' && value.trim() !== '') {
+               dados[key] = value;
+            }
+         }
+
+         // Validações específicas
+         if (!dados['company-name'] || !dados['company-cnpj'] || !dados['company-domain']) {
+            showErrorToast('Nome, CNPJ e Domínio são obrigatórios', 'error');
+            return;
+         }
+
+         const method = empresaUuid ? 'PUT' : 'POST';
+         const url = empresaUuid ? `/api/company/${empresaUuid}` : '/api/company';
+
+         const response = await Thefetch(url, method, dados);
+
+         if (response && response.success) {
+            // Faz upload das imagens ANTES de fechar o modal
+            let uploadSuccess = true;
+            const companyUuid = response.data?.uuid || empresaUuid;
+
+            if (companyUuid) {
+               try {
+                  await uploadImagesCompany(companyUuid);
+               } catch (uploadError) {
+                  console.error('❌ Erro no upload de imagens:', uploadError);
+                  uploadSuccess = false;
+                  // Não fecha o modal se houver erro no upload
+                  showErrorToast('Empresa salva, mas houve erro no upload das imagens: ' + uploadError.message);
+                  return;
+               }
+            }
+
+            // Só fecha o modal se tudo estiver OK
+            if (uploadSuccess) {
+               showSuccessToast(
+                  empresaUuid ? 'Empresa atualizada com sucesso!' : 'Empresa criada com sucesso!',
+                  'success'
+               );
+
+               // Fecha modal e recarrega dados
+               const modalElement = document.getElementById('modal-new-company');
+               const modal = bootstrap.Modal.getInstance(modalElement);
+
+               if (modal) {
+                  modal.hide();
+               }
+
+               // Força a remoção do backdrop caso fique travado
+               setTimeout(() => {
+                  const backdrop = document.querySelector('.modal-backdrop');
+                  if (backdrop) {
+                     backdrop.remove();
+                  }
+                  document.body.classList.remove('modal-open');
+                  document.body.style.overflow = '';
+                  document.body.style.paddingRight = '';
+               }, 300);
+
+               await loadCompanies();
+               popularSelectCompanies();
+            }
+
+         } else {
+            throw new Error(response?.message || 'Erro ao salvar empresa');
+         }
+
+      } catch (error) {
+         console.error('❌ Erro ao salvar empresa:', error);
+         showErrorToast('Erro ao salvar empresa: ' + error.message);
+      }
+   }
+
+   /**
       * Edita empresa
    */
    function editCompany(companyUuid) {
@@ -711,19 +1501,31 @@ const CompaniesManager = (function() {
       companySelected = company;
 
       // Preenche formulário
-      document.getElementById('company-uuid').value = company.uuid;
-      document.getElementById('title-modal-new-company').textContent = 'Editar Empresa';
-      document.getElementById('text-save-company').textContent = 'Atualizar Empresa';
+      const empresaUuidField = document.getElementById('company-uuid');
+      const titleField = document.getElementById('title-modal-new-company');
+      const textField = document.getElementById('text-save-company');
+      const nameField = document.getElementById('company-name');
+      const cnpjField = document.getElementById('company-cnpj');
+      const domainField = document.getElementById('company-domain');
+      const statusField = document.getElementById('company-status');
+      const firebirdHostField = document.getElementById('company-firebird-host');
+      const firebirdPortField = document.getElementById('company-firebird-port');
+      const firebirdDatabaseField = document.getElementById('company-firebird-database');
+      const firebirdUserField = document.getElementById('company-firebird-user');
+      const firebirdPasswordField = document.getElementById('company-firebird-password');
 
-      // Preenche campos
-      const campos = ['name', 'cnpj', 'url', 'status', 'firebird_host', 'firebird_port', 'firebird_database', 'firebird_user', 'firebird_password'];
-
-      campos.forEach(campo => {
-         const elemento = document.getElementById(mapCompanyField(campo));
-         if (elemento && company[campo] !== undefined) {
-            elemento.value = company[campo];
-         }
-      });
+      if (empresaUuidField) empresaUuidField.value = company.uuid;
+      if (titleField) titleField.textContent = 'Editar Empresa';
+      if (textField) textField.textContent = 'Atualizar Empresa';
+      if (nameField) nameField.value = company.name;
+      if (cnpjField) cnpjField.value = company.cnpj;
+      if (domainField) domainField.value = company.url;
+      if (statusField) statusField.value = company.status;
+      if (firebirdHostField) firebirdHostField.value = company.firebird_host;
+      if (firebirdPortField) firebirdPortField.value = company.firebird_port;
+      if (firebirdDatabaseField) firebirdDatabaseField.value = company.firebird_database;
+      if (firebirdUserField) firebirdUserField.value = company.firebird_user;
+      if (firebirdPasswordField) firebirdPasswordField.value = company.firebird_password;
 
       // Carrega imagens existentes no FilePond
       setTimeout(() => {
@@ -733,7 +1535,10 @@ const CompaniesManager = (function() {
       }, 100);
 
       // Abre modal
-      new bootstrap.Modal(document.getElementById('modal-new-company')).show();
+      const modalElement = document.getElementById('modal-new-company');
+      if (modalElement) {
+         new bootstrap.Modal(modalElement).show();
+      }
    }
 
    /**
@@ -758,11 +1563,14 @@ const CompaniesManager = (function() {
       * Reset do formulário de empresa
    */
    function resetFormCompany() {
-      document.getElementById('form-new-company').reset();
-      document.getElementById('company-uuid').value = '';
-      document.getElementById('title-modal-new-company').textContent = 'Cadastrar Nova Empresa';
-      document.getElementById('text-save-company').textContent = 'Salvar Empresa';
-      companySelected = null;
+      const formCompany = document.getElementById('form-new-company');
+      if (formCompany) {
+         formCompany.reset();
+      }
+      const empresaUuidField = document.getElementById('company-uuid');
+      const titleField = document.getElementById('title-modal-new-company');
+      const textField = document.getElementById('text-save-company');
+      const companySelected = null;
 
       // Remove classes de layout específicas
       document.querySelectorAll('.new-company-layout').forEach(el => {
@@ -840,22 +1648,18 @@ const CompaniesManager = (function() {
     */
    async function loadCompanyModules(companyUuid) {
       try {
+         console.log('🔍 Carregando módulos da empresa:', companyUuid);
          const response = await Thefetch(`/api/company/${companyUuid}/modules`, 'GET');
 
-         if (response && response.success) {
-            const modules = normalizeModulesData(response.data);
-            return modules.map(module => module.id || module.uuid || module);
+         if (response && response.success && response.data && response.data.modules) {
+            console.log('✅ Módulos carregados com sucesso:', response.data.modules);
+            return response.data.modules;
          }
 
+         console.log('⚠️ Nenhum módulo encontrado para a empresa:', companyUuid);
          return [];
       } catch (error) {
-         // Se for 404, é normal - empresa não tem módulos associados
-         if (error.message && error.message.includes('404')) {
-            console.error('ℹ️ Empresa não possui módulos associados (404)');
-            showErrorToast('Empresa não possui módulos associados');
-            return [];
-         }
-         showErrorToast('Erro ao carregar módulos da empresa');
+         console.error('❌ Erro ao carregar módulos da empresa:', error);
          return [];
       }
    }
@@ -867,6 +1671,12 @@ const CompaniesManager = (function() {
       const modulesList = document.getElementById('modules-list');
       const modulesLoading = document.getElementById('modules-loading');
       const noModules = document.getElementById('no-modules');
+
+      // Verifica se os elementos existem
+      if (!modulesList || !modulesLoading || !noModules) {
+         console.error('❌ Elementos do modal de módulos não encontrados');
+         return;
+      }
 
       // Esconde loading
       modulesLoading.style.display = 'none';
@@ -936,7 +1746,7 @@ const CompaniesManager = (function() {
     */
    async function saveCompanyModules() {
       try {
-         const companyUuid = document.getElementById('modules-company-uuid').value;
+         const companyUuid = document.getElementById('modules-company-uuid')?.value;
          if (!companyUuid) {
             showErrorToast('UUID da empresa não encontrado');
             return;
@@ -988,13 +1798,20 @@ const CompaniesManager = (function() {
       }
 
       // Configura informações da empresa no modal
-      document.getElementById('modules-company-uuid').value = company.uuid;
-      document.getElementById('company-name-modules').textContent = company.name;
+      const companyUuidField = document.getElementById('modules-company-uuid');
+      const companyNameField = document.getElementById('company-name-modules');
+
+      if (companyUuidField) companyUuidField.value = company.uuid;
+      if (companyNameField) companyNameField.textContent = company.name;
 
       // Mostra loading
-      document.getElementById('modules-loading').style.display = 'block';
-      document.getElementById('modules-list').style.display = 'none';
-      document.getElementById('no-modules').style.display = 'none';
+      const modulesLoading = document.getElementById('modules-loading');
+      const modulesList = document.getElementById('modules-list');
+      const noModules = document.getElementById('no-modules');
+
+      if (modulesLoading) modulesLoading.style.display = 'block';
+      if (modulesList) modulesList.style.display = 'none';
+      if (noModules) noModules.style.display = 'none';
 
       // Abre modal
       const modal = new bootstrap.Modal(document.getElementById('modal-company-modules'));
@@ -1012,8 +1829,8 @@ const CompaniesManager = (function() {
 
       } catch (error) {
          console.error('❌ Erro ao carregar dados do modal:', error);
-         document.getElementById('modules-loading').style.display = 'none';
-         document.getElementById('no-modules').style.display = 'block';
+         if (modulesLoading) modulesLoading.style.display = 'none';
+         if (noModules) noModules.style.display = 'block';
          showErrorToast('Erro ao carregar módulos');
       }
    }
@@ -1022,17 +1839,28 @@ const CompaniesManager = (function() {
     * Reset do formulário de módulos
     */
    function resetFormModules() {
-      document.getElementById('form-company-modules').reset();
-      document.getElementById('modules-company-uuid').value = '';
-      document.getElementById('company-name-modules').textContent = '';
+      const formModules = document.getElementById('form-company-modules');
+      const companyUuidField = document.getElementById('modules-company-uuid');
+      const companyNameField = document.getElementById('company-name-modules');
+
+      if (formModules) formModules.reset();
+      if (companyUuidField) companyUuidField.value = '';
+      if (companyNameField) companyNameField.textContent = '';
 
       // Reset visual
-      document.getElementById('modules-loading').style.display = 'block';
-      document.getElementById('modules-list').style.display = 'none';
-      document.getElementById('no-modules').style.display = 'none';
+      const modulesLoading = document.getElementById('modules-loading');
+      const modulesList = document.getElementById('modules-list');
+      const noModules = document.getElementById('no-modules');
+
+      if (modulesLoading) modulesLoading.style.display = 'block';
+      if (modulesList) modulesList.style.display = 'none';
+      if (noModules) noModules.style.display = 'none';
 
       // Limpa lista
-      document.getElementById('modules-list').innerHTML = '';
+      const modulesListElement = document.getElementById('modules-list');
+      if (modulesListElement) {
+         modulesListElement.innerHTML = '';
+      }
    }
 
    /**
@@ -1056,27 +1884,6 @@ const CompaniesManager = (function() {
             modalInstance.hide();
          }
       });
-   }
-
-   /**
-    * Reset do formulário de usuário
-    */
-   function resetFormUser() {
-      const formUser = document.getElementById('form-new-user');
-      if (formUser) {
-         formUser.reset();
-      }
-
-      // Garante que o backdrop seja removido e o body seja resetado
-      setTimeout(() => {
-         const backdrop = document.querySelector('.modal-backdrop');
-         if (backdrop) {
-            backdrop.remove();
-         }
-         document.body.classList.remove('modal-open');
-         document.body.style.overflow = '';
-         document.body.style.paddingRight = '';
-      }, 100);
    }
 
    /**
@@ -1109,8 +1916,6 @@ const CompaniesManager = (function() {
             status: newStatus
          };
 
-         console.log(dadosUpdate, 'dadosUpdate');
-
          const response = await Thefetch(`/api/company/${companyUuid}`, 'PUT', dadosUpdate);
 
          if (response && response.success) {
@@ -1133,6 +1938,172 @@ const CompaniesManager = (function() {
    async function viewCompanyModules(companyUuid) {
       // Agora abre o modal de gerenciamento em vez de apenas visualizar
       await manageCompanyModules(companyUuid);
+   }
+
+   /**
+      * Vincula eventos
+   */
+   function bindEvents() {
+      // Aguarda um pouco para garantir que os elementos existam
+      setTimeout(() => {
+         // Botões de salvar
+         const btnSaveCompany = document.getElementById('btn-save-company');
+         const btnSaveUser = document.getElementById('btn-save-user');
+
+         if (btnSaveCompany) {
+            btnSaveCompany.addEventListener('click', saveCompany);
+         }
+         if (btnSaveUser) {
+            btnSaveUser.addEventListener('click', saveUser);
+         }
+
+         // Botões de abrir modais
+         const btnNewCompany = document.querySelector('[data-bs-target="#modal-new-company"]');
+         const btnNewUser = document.querySelector('[data-bs-target="#modal-new-user"]');
+
+         if (btnNewCompany) {
+            btnNewCompany.addEventListener('click', function() {
+               resetFormCompany();
+
+               // Aplica layout para nova empresa
+               setTimeout(() => {
+                  if (window.FilePondManager) {
+                     FilePondManager.applyNewCompanyLayout();
+                  }
+               }, 100);
+
+               const modal = new bootstrap.Modal(document.getElementById('modal-new-company'));
+               modal.show();
+            });
+         }
+
+         if (btnNewUser) {
+            btnNewUser.addEventListener('click', function() {
+               resetFormUser();
+               const modal = new bootstrap.Modal(document.getElementById('modal-new-user'));
+               modal.show();
+            });
+         }
+
+         // Mudança no tipo de usuário (carrega módulos)
+         const userType = document.getElementById('user-type');
+         const companyUser = document.getElementById('user-company');
+
+         if (userType) {
+            userType.addEventListener('change', onUserTypeChange);
+         }
+         if (companyUser) {
+            companyUser.addEventListener('change', onCompanyChange);
+         }
+
+         // Aba de usuários - carrega dados quando clica
+         const usersTab = document.getElementById('usuarios-tab');
+         if (usersTab) {
+            usersTab.addEventListener('click', function() {
+               console.log('👥 Aba de usuários clicada - recarregando dados...');
+               setTimeout(() => {
+                  loadUsers();
+               }, 100);
+            });
+         }
+
+         // Filtros da tabela de usuários
+         const companyFilter = document.getElementById('filtroEmpresa');
+         const userTypeFilter = document.getElementById('filtroTipoUsuario');
+
+         if (companyFilter) {
+            companyFilter.addEventListener('change', function() {
+               console.log('🏢 Filtro de empresa alterado:', this.value);
+               renderTableUsers();
+            });
+         }
+         if (userTypeFilter) {
+            userTypeFilter.addEventListener('change', function() {
+               console.log('👤 Filtro de tipo de usuário alterado:', this.value);
+               renderTableUsers();
+            });
+         }
+
+         // Validação de senha
+         const password = document.getElementById('user-password');
+         if (password) {
+            password.addEventListener('blur', validatePasswords);
+         }
+
+         // Aplicar máscaras
+         const cnpjInput = document.getElementById('company-cnpj');
+         const domainInput = document.getElementById('company-domain');
+
+         if (cnpjInput) {
+            applyCnpjMask(cnpjInput);
+         }
+         if (domainInput) {
+            applyDomainMask(domainInput);
+         }
+
+         // Reset modais
+         const modalNewCompany = document.getElementById('modal-new-company');
+         const modalNewUser = document.getElementById('modal-new-user');
+         const modalCompanyModules = document.getElementById('modal-company-modules');
+
+         if (modalNewCompany) {
+            modalNewCompany.addEventListener('hidden.bs.modal', resetFormCompany);
+         }
+         if (modalNewUser) {
+            modalNewUser.addEventListener('hidden.bs.modal', resetFormUser);
+         }
+         if (modalCompanyModules) {
+            modalCompanyModules.addEventListener('hidden.bs.modal', resetFormModules);
+         }
+
+         // Event listeners do modal de módulos
+         const btnSaveModules = document.getElementById('btn-save-company-modules');
+         const btnSelectAllModules = document.getElementById('btn-select-all-modules');
+         const btnDeselectAllModules = document.getElementById('btn-deselect-all-modules');
+
+         if (btnSaveModules) {
+            btnSaveModules.addEventListener('click', saveCompanyModules);
+         }
+
+         if (btnSelectAllModules) {
+            btnSelectAllModules.addEventListener('click', function() {
+               const checkboxes = document.querySelectorAll('.module-checkbox');
+               checkboxes.forEach(checkbox => {
+                  if (!checkbox.checked) {
+                     checkbox.checked = true;
+                     checkbox.dispatchEvent(new Event('change'));
+                  }
+               });
+            });
+         }
+
+         if (btnDeselectAllModules) {
+            btnDeselectAllModules.addEventListener('click', function() {
+               const checkboxes = document.querySelectorAll('.module-checkbox');
+               checkboxes.forEach(checkbox => {
+                  if (checkbox.checked) {
+                     checkbox.checked = false;
+                     checkbox.dispatchEvent(new Event('change'));
+                  }
+               });
+            });
+         }
+
+         // Adiciona listener para limpar backdrop em caso de problema
+         document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-backdrop')) {
+               clearModalBackdrop();
+            }
+         });
+
+         // Listener para ESC key
+         document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+               clearModalBackdrop();
+            }
+         });
+
+      }, 1000);
    }
 
    // Função para criar e exibir um toast de erro
@@ -1228,6 +2199,9 @@ const CompaniesManager = (function() {
       toggleStatusCompany: toggleStatusCompany,
       viewCompanyModules: viewCompanyModules,
       manageCompanyModules: manageCompanyModules,
+      editUser: editUser,
+      unlockUser: unlockUser,
+      toggleStatusUser: toggleStatusUser,
       showErrorToast: showErrorToast,
       showSuccessToast: showSuccessToast,
    };
@@ -1577,5 +2551,3 @@ window.FilePondManager = FilePondManager;
 document.addEventListener('DOMContentLoaded', function() {
    FilePondManager.init();
 });
-
-

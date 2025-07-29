@@ -670,13 +670,12 @@
                                  <table class="table table-bordered table-striped" id="tabelaUsuarios">
                                     <thead class="table-success">
                                        <tr>
-                                          <th>Avatar</th>
-                                          <th>Nome</th>
-                                          <th>Email</th>
-                                          <th>Tipo</th>
-                                          <th>Empresa</th>
-                                          <th>Módulos</th>
-                                          <th>Ações</th>
+                                          <th style="width: 25%;">Usuário</th>
+                                          <th style="width: 12%;">Tipo</th>
+                                          <th style="width: 15%;">Empresa</th>
+                                          <th style="width: 10%;">Status</th>
+                                          <th style="width: 20%;">Módulos</th>
+                                          <th style="width: 18%;">Ações</th>
                                        </tr>
                                     </thead>
                                     <tbody>
@@ -806,7 +805,7 @@
                         <label for="company-firebird-password" class="form-label">Senha *</label>
                         <div class="mb-3 input-group">
                            <input type="password" class="form-control" id="company-firebird-password" name="company-firebird-password" placeholder="•••••••••••••••••" required>
-                           <button class="btn btn-light" type="button" onclick="createpassword('company-firebird-password', this)" id="button-addon2">
+                           <button class="btn btn-light" type="button" onclick="createpassword('company-firebird-password', this)" id="button-addon-company">
                               <i class="ri-eye-off-line align-middle"></i>
                            </button>
                         </div>
@@ -899,6 +898,23 @@
                               <i class="bi bi-star me-1"></i>Favicon
                            </label>
                            <input type="file" class="filepond" id="company-favicon" accept="image/*" data-max-width="32" data-max-height="32">
+                        </div>
+                     </div>
+
+                     <!-- Cor da Empresa -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-color" class="form-label">
+                              <i class="bi bi-palette me-1"></i>Cor da Empresa
+                           </label>
+                           <div class="d-flex align-items-center gap-2">
+                              <input type="color" class="form-control form-control-color" id="company-color" name="company-color" value="#008100" style="width: 60px; height: 40px;">
+                              <input type="text" class="form-control" id="company-color-rgb" name="company-color-rgb" placeholder="0, 129, 0" readonly style="flex: 1;">
+                              <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-color" title="Cor padrão">
+                                 <i class="bi bi-arrow-clockwise"></i>
+                              </button>
+                           </div>
+                           <div class="form-text">Esta cor será usada para personalizar o tema da empresa</div>
                         </div>
                      </div>
                   </div>
@@ -995,6 +1011,162 @@
       </div>
    </div>
 
+   <!-- Modal Cadastro/Edição de Usuário -->
+   <div class="modal fade" id="modal-new-user" tabindex="-1" aria-labelledby="modalNewUserLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h1 class="modal-title fs-5" id="modalNewUserLabel">
+                  <i class="bx bx-user me-2"></i>
+                  <span id="title-modal-new-user">Cadastrar Novo Usuário</span>
+               </h1>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <form id="form-new-user">
+                  <input type="hidden" id="user-uuid" name="user-uuid">
+
+                  <!-- Informações Básicas -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-info-circle me-2"></i>Informações Básicas
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="user-name-input" class="form-label">Nome do Usuário *</label>
+                           <input type="text" class="form-control" id="user-name-input" name="user-name" placeholder="Nome completo" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="user-email" class="form-label">E-mail *</label>
+                           <input type="email" class="form-control" id="user-email" name="user-email" placeholder="usuario@empresa.com" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="user-password" class="form-label">Senha *</label>
+                           <div class="input-group">
+                              <input type="password" class="form-control" id="user-password" name="user-password" placeholder="•••••••••••••••••" required>
+                              <button class="btn btn-light" type="button" onclick="createpassword('user-password', this)" id="button-addon-user">
+                                 <i class="ri-eye-off-line align-middle"></i>
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="user-type" class="form-label">Tipo de Usuário *</label>
+                           <select class="form-select" id="user-type" name="user-type" required>
+                              <option value="">Selecione o tipo</option>
+                              <option value="superuser">Super Usuário</option>
+                              <option value="admin">Administrador</option>
+                              <option value="user">Usuário</option>
+                           </select>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Seleção de Empresa (apenas para admin e user) -->
+                  <div class="row mb-4" id="company-selection-section" style="display: none;">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-building me-2"></i>Empresa
+                        </h6>
+                     </div>
+                     <div class="col-md-12">
+                        <div class="mb-3">
+                           <label for="user-company" class="form-label">Empresa *</label>
+                           <select class="form-select" id="user-company" name="user-company">
+                              <option value="">Selecione uma empresa</option>
+                           </select>
+                           <div class="form-text">Selecione a empresa para qual o usuário trabalha</div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Seleção de Módulos -->
+                  <div class="row mb-4" id="modules-selection-section" style="display: none;">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-grid-3x3-gap me-2"></i>Módulos do Usuário
+                        </h6>
+                     </div>
+                     <div class="col-12">
+                        <div class="mb-3">
+                           <label class="form-label">Módulos Disponíveis</label>
+
+                           <!-- Loading -->
+                           <div id="user-modules-loading" class="text-center py-3">
+                              <div class="spinner-border text-primary" role="status">
+                                 <span class="visually-hidden">Carregando módulos...</span>
+                              </div>
+                              <p class="mt-2 text-muted">Carregando módulos disponíveis...</p>
+                           </div>
+
+                           <!-- Lista de Módulos -->
+                           <div id="user-modules-list" class="row" style="display: none;">
+                              <!-- Módulos serão carregados via JavaScript -->
+                           </div>
+
+                           <!-- Mensagem quando não há módulos -->
+                           <div id="no-user-modules" class="alert alert-warning" style="display: none;">
+                              <i class="bi bi-exclamation-triangle me-2"></i>
+                              Nenhum módulo disponível para este tipo de usuário.
+                           </div>
+
+                           <!-- Controles de Seleção -->
+                           <div class="mt-3" id="user-modules-controls" style="display: none;">
+                              <button type="button" class="btn btn-sm btn-outline-primary me-2" id="btn-select-all-user-modules">
+                                 <i class="bi bi-check-all me-1"></i>Selecionar Todos
+                              </button>
+                              <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-deselect-all-user-modules">
+                                 <i class="bi bi-x-square me-1"></i>Desmarcar Todos
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Status do Usuário (apenas na edição) -->
+                  <div class="row mb-4" id="user-status-section" style="display: none;">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-toggle-on me-2"></i>Status do Usuário
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="user-status" class="form-label">Status</label>
+                           <select class="form-select" id="user-status" name="user-status">
+                              <option value="active">Ativo</option>
+                              <option value="inactive">Inativo</option>
+                           </select>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <button type="button" class="btn btn-warning btn-sm" id="btn-unlock-user" style="display: none;">
+                              <i class="bi bi-unlock me-1"></i>Desbloquear Usuário
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+               </form>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+               <button type="button" class="btn btn-primary" id="btn-save-user">
+                  <i class="bi bi-check-lg me-1"></i>
+                  <span id="text-save-user">Salvar Usuário</span>
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+
    <!-- Popper JS -->
    <script src="../../assets/libs/@popperjs/core/umd/popper.min.js"></script>
    <!-- Bootstrap JS -->
@@ -1029,6 +1201,87 @@
 
    <!-- Script JS -->
    <script src="../../assets/js/show-password.js"></script>
+
+   <!-- Color Picker Script -->
+   <script>
+      document.addEventListener('DOMContentLoaded', function() {
+         const colorInput = document.getElementById('company-color');
+         const rgbInput = document.getElementById('company-color-rgb');
+         const resetBtn = document.getElementById('btn-reset-color');
+
+         if (colorInput && rgbInput && resetBtn) {
+            // Converter Hex para RGB
+            function hexToRgb(hex) {
+               const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+               return result ? {
+                  r: parseInt(result[1], 16),
+                  g: parseInt(result[2], 16),
+                  b: parseInt(result[3], 16)
+               } : null;
+            }
+
+            // Converter RGB para Hex
+            function rgbToHex(r, g, b) {
+               return '#' + [r, g, b].map(x => {
+                  const hex = x.toString(16);
+                  return hex.length === 1 ? '0' + hex : hex;
+               }).join('');
+            }
+
+            // Atualizar campo RGB quando cor for alterada
+            function updateRgbField() {
+               const hexColor = colorInput.value;
+               const rgb = hexToRgb(hexColor);
+               if (rgb) {
+                  rgbInput.value = `${rgb.r}, ${rgb.g}, ${rgb.b}`;
+               }
+            }
+
+            // Atualizar campo Hex quando RGB for alterado
+            function updateHexField() {
+               const rgbString = rgbInput.value;
+               const rgb = rgbString.split(',').map(val => parseInt(val.trim()));
+               if (rgb.length === 3 && !isNaN(rgb[0]) && !isNaN(rgb[1]) && !isNaN(rgb[2])) {
+                  colorInput.value = rgbToHex(rgb[0], rgb[1], rgb[2]);
+               }
+            }
+
+            // Event listeners
+            colorInput.addEventListener('input', updateRgbField);
+            rgbInput.addEventListener('input', updateHexField);
+
+            // Botão de reset para cor padrão
+            resetBtn.addEventListener('click', function() {
+               colorInput.value = '#008100';
+               rgbInput.value = '0, 129, 0';
+            });
+
+            // Inicializar com cor padrão
+            updateRgbField();
+
+            // Expor funções para o script principal
+            window.ColorManager = {
+               setDefaultColor: function() {
+                  colorInput.value = '#008100';
+                  rgbInput.value = '0, 129, 0';
+               },
+               setColor: function(rgbString) {
+                  if (rgbString) {
+                     const rgb = rgbString.split(',').map(val => parseInt(val.trim()));
+                     if (rgb.length === 3) {
+                        colorInput.value = rgbToHex(rgb[0], rgb[1], rgb[2]);
+                        rgbInput.value = rgbString;
+                     }
+                  }
+               },
+               getColor: function() {
+                  return rgbInput.value;
+               }
+            };
+         }
+      });
+   </script>
+
    <script src="/pages/empresas/js/script.js"></script>
 
 </body>

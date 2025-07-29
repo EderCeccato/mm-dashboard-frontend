@@ -566,3 +566,56 @@ thead.table {
 [data-theme-mode=dark] .existing-image-preview .text-muted {
   color: #9ca3af !important;
 }
+
+/* Estilos para a tabela de usuários */
+#tabelaUsuarios {
+  font-size: 0.9rem;
+}
+
+#tabelaUsuarios th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+#tabelaUsuarios td {
+  vertical-align: middle;
+  padding: 0.75rem 0.5rem;
+}
+
+#tabelaUsuarios .btn-group .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+#tabelaUsuarios .badge {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Melhorar espaçamento da coluna de módulos */
+#tabelaUsuarios td:nth-child(5) {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+  #tabelaUsuarios {
+    font-size: 0.8rem;
+  }
+
+  #tabelaUsuarios th {
+    font-size: 0.75rem;
+  }
+
+  #tabelaUsuarios td {
+    padding: 0.5rem 0.25rem;
+  }
+
+  #tabelaUsuarios .btn-group .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}
