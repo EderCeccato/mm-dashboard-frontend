@@ -47,6 +47,12 @@ const FILE_VALIDATION_CONFIG = {
       maxHeight: 32,
       maxSize: 1 * 1024 * 1024, // 1MB
       label: 'Favicon'
+   },
+   'user-avatar': {
+      maxWidth: 512,
+      maxHeight: 512,
+      maxSize: 2 * 1024 * 1024, // 2MB
+      label: 'Avatar do Usuário'
    }
 };
 
@@ -63,6 +69,8 @@ const CONFIG = {
       'user': { label: 'Usuário', badge: 'bg-info' }
    }
 };
+
+const URL_BASE = 'http://localhost:3301';
 
 const CompaniesManager = (function() {
    'use strict';
@@ -795,6 +803,23 @@ const CompaniesManager = (function() {
          const response = await Thefetch(url, method, dados);
 
          if (response && response.success) {
+            // Se há avatar para upload, faz o upload
+            if (window.FilePondManager) {
+               const avatarFile = FilePondManager.getFile('user-avatar');
+               if (avatarFile) {
+                  try {
+                     // Para novos usuários, usa o UUID retornado na resposta
+                     const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
+                     if (targetUuid) {
+                        await uploadUserAvatar(targetUuid);
+                     }
+                  } catch (avatarError) {
+                     console.warn('⚠️ Erro ao fazer upload do avatar:', avatarError);
+                     // Não falha o cadastro por causa do avatar
+                  }
+               }
+            }
+
             showSuccessToast(
                userUuid ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!',
                'success'
@@ -913,6 +938,13 @@ const CompaniesManager = (function() {
 
       // Carrega módulos do usuário
       await loadUserModules(user);
+
+      // Carrega avatar existente se houver
+      if (window.FilePondManager && user.profile_picture_url) {
+         setTimeout(() => {
+            FilePondManager.loadUserAvatar(user);
+         }, 100);
+      }
 
       // Abre modal
       const modalElement = document.getElementById('modal-new-user');
@@ -1175,6 +1207,11 @@ const CompaniesManager = (function() {
          modulesLoading.style.display = 'block';
       }
 
+      // Limpa avatar se FilePondManager estiver disponível
+      if (window.FilePondManager) {
+         FilePondManager.clearAllFiles();
+      }
+
       userSelected = null;
    }
 
@@ -1292,7 +1329,7 @@ const CompaniesManager = (function() {
          });
 
          // Para upload de arquivos, precisamos usar fetch diretamente com FormData
-         const uploadResponse = await fetch(`http://localhost:3301/api/company/${companyUuid}/upload-images`, {
+         const uploadResponse = await fetch(`${URL_BASE}/api/company/${companyUuid}/upload-images`, {
             method: 'POST',
             body: formData,
             credentials: 'include'
@@ -2249,8 +2286,6 @@ const FilePondManager = (function() {
 
                      // Mostra toast de erro usando a função do CompaniesManager
                      CompaniesManager.showErrorToast(errorMsg);
-                  } else {
-                     console.log(`✅ ${config.label}: Dimensões válidas (${width}x${height}px)`);
                   }
                };
 
@@ -2456,6 +2491,15 @@ const FilePondManager = (function() {
       });
    }
 
+   /**
+    * Carrega avatar existente do usuário
+    */
+   function loadUserAvatar(user) {
+      if (user.profile_picture_url) {
+         showExistingImagePreview('user-avatar', user.profile_picture_url);
+      }
+   }
+
    // Retorna métodos públicos
    return {
       init: initFilePond,
@@ -2463,6 +2507,7 @@ const FilePondManager = (function() {
       getFile: getFile,
       clearAllFiles: clearAllFiles,
       loadCompanyImages: loadCompanyImages,
+      loadUserAvatar: loadUserAvatar,
       recreateFilePondInputs: recreateFilePondInputs,
       applyNewCompanyLayout: applyNewCompanyLayout
    };
@@ -2481,18 +2526,6 @@ document.addEventListener('DOMContentLoaded', function() {
     * Esta função é chamada periodicamente para verificar se algum bloqueio expirou
     */
    function updateLockStatus() {
-      // Verifica se a variável users existe e está definida
-      if (typeof users === 'undefined' || !users || !Array.isArray(users)) {
-         console.log('⚠️ Variável users não está disponível para verificação de bloqueio');
-         return;
-      }
-
-      // Verifica se há usuários carregados
-      if (users.length === 0) {
-         console.log('⚠️ Nenhum usuário carregado para verificação de bloqueio');
-         return;
-      }
-
       // Verifica se a aba de usuários está ativa
       const usersTab = document.getElementById('usuarios-tab');
       const isUsersTabActive = usersTab && usersTab.classList.contains('active');
@@ -2600,4 +2633,176 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
          </tr>
       `).join('');
+   }
+
+   /**
+    * Faz upload do avatar do usuário
+    */
+   async function uploadUserAvatar(userUuid) {
+      try {
+         if (!window.FilePondManager) {
+            console.warn('FilePondManager não disponível');
+            return;
+         }
+
+         const avatarFile = FilePondManager.getFile('user-avatar');
+         if (!avatarFile) {
+            console.log('Nenhum avatar para upload');
+            return;
+         }
+
+         // Valida arquivo antes do upload
+         const config = FILE_VALIDATION_CONFIG['user-avatar'];
+         if (config) {
+            const validationErrors = [];
+
+            // Valida tamanho
+            if (avatarFile.size > config.maxSize) {
+               validationErrors.push(`Tamanho máximo: ${Math.round(config.maxSize / 1024 / 1024)}MB`);
+            }
+
+            // Valida tipo
+            if (!avatarFile.type.startsWith('image/')) {
+               validationErrors.push('Apenas arquivos de imagem são permitidos');
+            }
+
+            if (validationErrors.length > 0) {
+               throw new Error('Erro de validação: ' + validationErrors.join(', '));
+            }
+         }
+
+         const formData = new FormData();
+         formData.append('avatar', avatarFile);
+
+         // Para upload de arquivos, precisamos usar fetch diretamente com FormData
+         const uploadResponse = await fetch(`${URL_BASE}/api/user/${userUuid}/upload-avatar`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include'
+         });
+
+         // Verifica se a resposta foi bem-sucedida
+         if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            const errorMessage = errorData?.message || errorData?.error || `Erro ${uploadResponse.status}: ${uploadResponse.statusText}`;
+            throw new Error(errorMessage);
+         }
+
+         const response = await uploadResponse.json();
+         return response;
+
+      } catch (error) {
+         console.error('❌ Erro ao fazer upload do avatar:', error);
+         throw error;
+      }
+   }
+
+   /**
+    * Salva usuário (criar ou editar)
+    */
+   async function saveUser() {
+      try {
+         const form = document.getElementById('form-new-user');
+         if (!form) {
+            showErrorToast('Formulário de usuário não encontrado');
+            return;
+         }
+
+         if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+         }
+
+         const userUuid = document.getElementById('user-uuid')?.value;
+         const userType = document.getElementById('user-type')?.value;
+         const companyUuid = document.getElementById('user-company')?.value;
+         const passwordField = document.getElementById('user-password');
+
+         // Validações específicas
+         if (!userType) {
+            showErrorToast('Tipo de usuário é obrigatório');
+            return;
+         }
+
+         if (userType !== 'superuser' && !companyUuid) {
+            showErrorToast('Empresa é obrigatória para usuários admin e user');
+            return;
+         }
+
+         // Coleta módulos selecionados
+         const selectedModules = [];
+         const moduleCheckboxes = document.querySelectorAll('#user-modules-list .module-checkbox:checked');
+         moduleCheckboxes.forEach(checkbox => {
+            selectedModules.push(parseInt(checkbox.value));
+         });
+
+         const formData = new FormData(form);
+         const dados = {};
+
+         // Converte FormData para objeto
+         for (let [key, value] of formData.entries()) {
+            if (key !== 'user-uuid' && typeof value === 'string' && value.trim() !== '') {
+               dados[key] = value;
+            }
+         }
+
+         // Remove senha vazia na edição
+         if (userUuid && passwordField && (!passwordField.value || passwordField.value.trim() === '')) {
+            delete dados['user-password'];
+         }
+
+         // Adiciona dados específicos
+         dados.user_type = userType;
+         if (companyUuid) {
+            const company = companies.find(c => c.uuid === companyUuid);
+            dados.company_id = company?.id;
+         }
+         dados.moduleIds = selectedModules;
+
+         const method = userUuid ? 'PUT' : 'POST';
+         const url = userUuid ? `/api/user/${userUuid}` : '/api/user';
+
+         const response = await Thefetch(url, method, dados);
+
+         if (response && response.success) {
+            // Se há avatar para upload, faz o upload
+            if (window.FilePondManager) {
+               const avatarFile = FilePondManager.getFile('user-avatar');
+               if (avatarFile) {
+                  try {
+                     // Para novos usuários, usa o UUID retornado na resposta
+                     const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
+                     if (targetUuid) {
+                        await uploadUserAvatar(targetUuid);
+                     }
+                  } catch (avatarError) {
+                     console.warn('⚠️ Erro ao fazer upload do avatar:', avatarError);
+                     // Não falha o cadastro por causa do avatar
+                  }
+               }
+            }
+
+            showSuccessToast(
+               userUuid ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!',
+               'success'
+            );
+
+            // Fecha modal
+            const modalElement = document.getElementById('modal-new-user');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+               modal.hide();
+            }
+
+            // Recarrega dados
+            await loadUsers();
+
+         } else {
+            throw new Error(response?.message || 'Erro ao salvar usuário');
+         }
+
+      } catch (error) {
+         console.error('❌ Erro ao salvar usuário:', error);
+         showErrorToast('Erro ao salvar usuário: ' + error.message);
+      }
    }

@@ -1069,6 +1069,24 @@
                      </div>
                   </div>
 
+                  <!-- Upload de Avatar -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-person-circle me-2"></i>Foto do Perfil (Opcional)
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3 user-avatar-section">
+                           <label for="user-avatar" class="form-label">
+                              <i class="bi bi-camera me-1"></i>Avatar do Usuário
+                           </label>
+                           <input type="file" class="filepond" id="user-avatar" accept="image/*" data-max-width="512" data-max-height="512">
+                           <div class="form-text">Máximo: 512x512px, 2MB. Formatos: JPG, PNG, GIF</div>
+                        </div>
+                     </div>
+                  </div>
+
                   <!-- Seleção de Empresa (apenas para admin e user) -->
                   <div class="row mb-4" id="company-selection-section" style="display: none;">
                      <div class="col-12">
