@@ -136,6 +136,11 @@ const CompaniesManager = (function() {
       // Continua inicialização
       bindEvents();
       loadInitialData();
+
+      // Inicia o monitoramento de status de bloqueio após um delay
+      setTimeout(() => {
+         startLockStatusMonitoring();
+      }, 5000); // 5 segundos após a inicialização
    }
 
    /**
@@ -143,13 +148,11 @@ const CompaniesManager = (function() {
    */
    async function loadInitialData() {
       try {
-         console.log('🚀 Iniciando carregamento de dados...');
          await Promise.all([
             loadCompanies(),
             loadUsers(),
             loadModules()
          ]);
-         console.log('✅ Dados iniciais carregados com sucesso');
       } catch (error) {
          console.error('❌ Erro ao carregar dados iniciais:', error);
       }
@@ -160,12 +163,10 @@ const CompaniesManager = (function() {
    */
    async function loadCompanies() {
       try {
-         console.log('🏢 Carregando lista de empresas...');
          const response = await Thefetch('/api/company', 'GET');
 
          if (response && response.success && response.data) {
             companies = response.data;
-            console.log('✅ Empresas carregadas:', companies.length);
             popularSelectCompanies();
             renderTableCompanies();
          } else {
@@ -181,13 +182,10 @@ const CompaniesManager = (function() {
    */
    async function loadUsers() {
       try {
-         console.log('👥 Carregando lista de usuários...');
          const response = await Thefetch('/api/user', 'GET');
 
          if (response && response.success && response.data) {
             users = response.data;
-            console.log('✅ Usuários carregados:', users.length);
-            console.log('📋 Dados dos usuários:', users);
             renderTableUsers();
          } else {
             console.error('❌ Erro ao carregar usuários:', response);
@@ -202,12 +200,10 @@ const CompaniesManager = (function() {
    */
    async function loadModules() {
       try {
-         console.log('📦 Carregando lista de módulos...');
          const response = await Thefetch('/api/modules', 'GET');
 
          if (response && response.success && response.data) {
             availableModules = response.data;
-            console.log('✅ Módulos carregados:', availableModules.length);
          } else {
             console.error('❌ Erro ao carregar módulos:', response);
          }
@@ -217,33 +213,53 @@ const CompaniesManager = (function() {
    }
 
    /**
+    * Verifica se o usuário está bloqueado baseado no campo locked_until
+    * @param {Object} user - Dados do usuário
+    * @returns {Object} - {isLocked: boolean, lockInfo: string}
+    */
+   function checkUserLockStatus(user) {
+      if (!user.locked_until) {
+         return { isLocked: false, lockInfo: null };
+      }
+
+      const lockDate = new Date(user.locked_until);
+      const now = new Date();
+
+      // Se a data de bloqueio é futura, o usuário está bloqueado
+      if (lockDate > now) {
+         const timeDiff = lockDate - now;
+         const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+         const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+         let lockInfo = '';
+         if (hours > 0) {
+            lockInfo = `${hours}h ${minutes}m restantes`;
+         } else {
+            lockInfo = `${minutes}m restantes`;
+         }
+
+         return { isLocked: true, lockInfo };
+      }
+
+      return { isLocked: false, lockInfo: null };
+   }
+
+   /**
     * Renderiza tabela de usuários
     */
    function renderTableUsers() {
       const tbody = document.querySelector('#tabelaUsuarios tbody');
       if (!tbody) {
          console.error('❌ Tabela de usuários não encontrada');
-         console.log('🔍 Procurando por elementos:', {
-            'tabelaUsuarios': document.getElementById('tabelaUsuarios'),
-            'tbody': document.querySelector('#tabelaUsuarios tbody'),
-            'tabelaUsuarios_exists': !!document.getElementById('tabelaUsuarios')
-         });
          return;
       }
 
-      console.log('🎨 Renderizando tabela de usuários:', users.length, 'usuários');
 
       // Aplica filtros
       let filteredUsers = [...users];
 
       const companyFilter = document.getElementById('filtroEmpresa')?.value;
       const userTypeFilter = document.getElementById('filtroTipoUsuario')?.value;
-
-      console.log('🔍 Filtros aplicados:', {
-         companyFilter,
-         userTypeFilter,
-         totalUsers: users.length
-      });
 
       if (companyFilter && companyFilter !== '') {
          filteredUsers = filteredUsers.filter(user => user.company_name === companies.find(c => c.uuid === companyFilter)?.name);
@@ -252,8 +268,6 @@ const CompaniesManager = (function() {
       if (userTypeFilter && userTypeFilter !== '') {
          filteredUsers = filteredUsers.filter(user => user.user_type === userTypeFilter);
       }
-
-      console.log('🔍 Usuários filtrados:', filteredUsers.length);
 
       if (filteredUsers.length === 0) {
          tbody.innerHTML = `
@@ -269,15 +283,10 @@ const CompaniesManager = (function() {
       }
 
       tbody.innerHTML = filteredUsers.map(user => {
-         console.log('👤 Dados do usuário:', {
-            name: user.name,
-            email: user.email,
-            picture: user.profile_picture_url,
-            hasPicture: !!user.profile_picture_url
-         });
+         const lockStatus = checkUserLockStatus(user);
 
          return `
-         <tr>
+         <tr class="${lockStatus.isLocked ? 'table-warning' : ''}">
             <td>
                <div class="d-flex align-items-center">
                   ${user.profile_picture_url
@@ -287,8 +296,12 @@ const CompaniesManager = (function() {
                         </div>`
                   }
                   <div>
-                     <div class="fw-semibold">${user.name}</div>
+                     <div class="fw-semibold d-flex align-items-center">
+                        ${user.name}
+                        ${lockStatus.isLocked ? '<i class="bi bi-lock-fill text-warning ms-2" title="Usuário bloqueado"></i>' : ''}
+                     </div>
                      <small class="text-muted">${user.email}</small>
+                     ${lockStatus.isLocked ? `<br><small class="text-warning"><i class="bi bi-clock me-1"></i>${lockStatus.lockInfo}</small>` : ''}
                   </div>
                </div>
             </td>
@@ -313,9 +326,14 @@ const CompaniesManager = (function() {
                   <button type="button" class="btn btn-sm btn-outline-primary" onclick="CompaniesManager.editUser('${user.uuid}')" title="Editar">
                      <i class="bi bi-pencil"></i>
                   </button>
-                  <button type="button" class="btn btn-sm btn-outline-warning" onclick="CompaniesManager.unlockUser('${user.uuid}')" title="Desbloquear Sessão">
-                     <i class="bi bi-unlock"></i>
-                  </button>
+                  ${lockStatus.isLocked
+                     ? `<button type="button" class="btn btn-sm btn-outline-warning" onclick="CompaniesManager.unlockUser('${user.uuid}')" title="Desbloquear Usuário (${lockStatus.lockInfo})">
+                          <i class="bi bi-unlock-fill"></i>
+                        </button>`
+                     : `<button type="button" class="btn btn-sm btn-outline-secondary" onclick="CompaniesManager.unlockUser('${user.uuid}')" title="Desbloquear Sessão" disabled>
+                          <i class="bi bi-unlock"></i>
+                        </button>`
+                  }
                   <button type="button" class="btn btn-sm ${user.status === 'active' ? 'btn-outline-danger' : 'btn-outline-success'}" onclick="CompaniesManager.toggleStatusUser('${user.uuid}')" title="${user.status === 'active' ? 'Inativar' : 'Ativar'}">
                      <i class="bi ${user.status === 'active' ? 'bi-pause-circle' : 'bi-play-circle'}"></i>
                   </button>
@@ -324,7 +342,6 @@ const CompaniesManager = (function() {
          </tr>
       `}).join('');
 
-      console.log('✅ Tabela de usuários renderizada com sucesso');
    }
 
    /**
@@ -395,7 +412,6 @@ const CompaniesManager = (function() {
       * Popula select de empresas
    */
    function popularSelectCompanies() {
-      console.log('🏢 Populando select de empresas...');
 
       // Popula select de filtro
       const companyFilter = document.getElementById('filtroEmpresa');
@@ -404,7 +420,6 @@ const CompaniesManager = (function() {
          companies.forEach(company => {
             companyFilter.innerHTML += `<option value="${company.uuid}">${company.name}</option>`;
          });
-         console.log('✅ Select de filtro populado:', companies.length, 'empresas');
       }
 
       // Popula select do modal de usuário
@@ -414,7 +429,6 @@ const CompaniesManager = (function() {
          companies.forEach(company => {
             userCompanySelect.innerHTML += `<option value="${company.uuid}">${company.name}</option>`;
          });
-         console.log('✅ Select do modal de usuário populado:', companies.length, 'empresas');
       }
    }
 
@@ -423,15 +437,12 @@ const CompaniesManager = (function() {
     */
    async function loadCompanyModules(companyUuid) {
       try {
-         console.log('🔍 Carregando módulos da empresa:', companyUuid);
          const response = await Thefetch(`/api/company/${companyUuid}/modules`, 'GET');
 
          if (response && response.success && response.data && response.data.modules) {
-            console.log('✅ Módulos carregados com sucesso:', response.data.modules);
             return response.data.modules;
          }
 
-         console.log('⚠️ Nenhum módulo encontrado para a empresa:', companyUuid);
          return [];
       } catch (error) {
          console.error('❌ Erro ao carregar módulos da empresa:', error);
@@ -444,7 +455,6 @@ const CompaniesManager = (function() {
     */
    async function loadAllModules() {
       try {
-         console.log('🔍 Carregando todos os módulos do sistema...');
 
          // Adiciona timeout de 10 segundos
          const controller = new AbortController();
@@ -455,7 +465,6 @@ const CompaniesManager = (function() {
 
          if (response && response.success && response.data) {
             availableModules = response.data;
-            console.log('✅ Todos os módulos carregados:', response.data);
             return response.data;
          }
 
@@ -482,28 +491,13 @@ const CompaniesManager = (function() {
 
       if (!modulesContainer) {
          console.error('❌ Container de módulos do usuário não encontrado');
-         console.log('🔍 Elementos relacionados:', {
-            'user-modules-list': document.getElementById('user-modules-list'),
-            'modules-selection-section': document.getElementById('modules-selection-section'),
-            'user-modules-loading': document.getElementById('user-modules-loading'),
-            'no-user-modules': document.getElementById('no-user-modules')
-         });
          return;
       }
 
       // Esconde o loading
       if (modulesLoading) {
          modulesLoading.style.display = 'none';
-         console.log('✅ Loading de módulos ocultado');
       }
-
-      console.log('🎨 Renderizando módulos:', {
-         total: modules?.length || 0,
-         selected: selectedModules?.length || 0,
-         modules: modules,
-         containerExists: !!modulesContainer,
-         containerDisplay: modulesContainer.style.display
-      });
 
       if (!modules || modules.length === 0) {
          modulesContainer.innerHTML = `
@@ -521,12 +515,10 @@ const CompaniesManager = (function() {
       const modulesSection = document.getElementById('modules-selection-section');
       if (modulesSection) {
          modulesSection.style.display = 'block';
-         console.log('✅ Seção de módulos exibida');
       }
 
       // Mostra o container de lista de módulos
       modulesContainer.style.display = 'block';
-      console.log('✅ Container de módulos exibido');
 
       const modulesHtml = modules.map(module => {
          const isSelected = selectedModules.includes(module.id);
@@ -562,11 +554,9 @@ const CompaniesManager = (function() {
          </div>
       `;
 
-      console.log('✅ HTML dos módulos gerado:', modulesHtml.length, 'caracteres');
 
       // Adiciona event listeners para os checkboxes
       const checkboxes = modulesContainer.querySelectorAll('.module-checkbox');
-      console.log('✅ Checkboxes encontrados:', checkboxes.length);
 
       checkboxes.forEach(checkbox => {
          checkbox.addEventListener('change', function() {
@@ -583,7 +573,6 @@ const CompaniesManager = (function() {
          });
       });
 
-      console.log('✅ Módulos renderizados com sucesso:', modules.length);
    }
 
    /**
@@ -599,7 +588,6 @@ const CompaniesManager = (function() {
       if (!userType) return;
 
       const userTypeValue = userType.value;
-      console.log('👤 Tipo de usuário alterado para:', userTypeValue);
 
       // Limpa módulos
       if (modulesContainer) {
@@ -612,22 +600,17 @@ const CompaniesManager = (function() {
          if (userTypeValue === 'superuser') {
             companyGroup.style.display = 'none';
             companySelect.value = '';
-            console.log('👑 Superuser selecionado - empresa não necessária');
          } else {
             companyGroup.style.display = 'block';
-            console.log('🏢 Usuário admin/user - empresa necessária');
          }
       }
 
       // Carrega módulos apropriados
       if (userTypeValue === 'superuser') {
          // Para superuser, carrega todos os módulos de superuser
-         console.log('🔍 Carregando módulos de superuser...');
          try {
             const allModules = await loadAllModules();
-            console.log('📦 Todos os módulos carregados:', allModules);
             const superuserModules = allModules.filter(module => module.module_type === 'superuser');
-            console.log('👑 Módulos de superuser disponíveis:', superuserModules);
             renderUserModules(superuserModules);
          } catch (error) {
             console.error('❌ Erro ao carregar módulos de superuser:', error);
@@ -643,7 +626,6 @@ const CompaniesManager = (function() {
          }
       } else if (userTypeValue && companySelect && companySelect.value) {
          // Para admin/user, carrega módulos da empresa selecionada
-         console.log('🔍 Carregando módulos da empresa selecionada...');
          await onCompanyChange();
       } else if (userTypeValue && (userTypeValue === 'admin' || userTypeValue === 'user')) {
          // Para admin/user sem empresa selecionada, mostra mensagem
@@ -674,11 +656,6 @@ const CompaniesManager = (function() {
 
       if (!userTypeValue || !companyUuid) return;
 
-      console.log('🏢 Empresa alterada:', {
-         userType: userTypeValue,
-         companyUuid: companyUuid
-      });
-
       try {
          const companyModules = await loadCompanyModules(companyUuid);
 
@@ -695,7 +672,6 @@ const CompaniesManager = (function() {
             );
          }
 
-         console.log('✅ Módulos disponíveis para empresa:', availableModules);
          renderUserModules(availableModules);
 
       } catch (error) {
@@ -792,7 +768,6 @@ const CompaniesManager = (function() {
          // Remove senha vazia na edição
          if (userUuid && passwordField && (!passwordField.value || passwordField.value.trim() === '')) {
             delete dados['user-password'];
-            console.log('🔒 Senha removida da edição (campo vazio)');
          }
 
          // Adiciona dados específicos
@@ -800,40 +775,13 @@ const CompaniesManager = (function() {
          if (companyUuid) {
             const company = companies.find(c => c.uuid === companyUuid);
             dados.company_id = company?.id;
-            console.log('🏢 Empresa selecionada:', {
-               uuid: companyUuid,
-               id: company?.id,
-               name: company?.name
-            });
          }
          dados.moduleIds = selectedModules;
-
-         // LOGS DETALHADOS PARA MONITORAMENTO
-         console.log('📋 === DADOS DO USUÁRIO ===');
-         console.log('🆔 UUID do usuário (edição):', userUuid || 'NOVO USUÁRIO');
-         console.log('👤 Tipo de usuário:', userType);
-         console.log('🏢 UUID da empresa:', companyUuid);
-         console.log('🏢 ID da empresa:', dados.company_id);
-         console.log('📦 Módulos selecionados:', selectedModules);
-         console.log('📝 Dados do formulário:', dados);
-         console.log('📊 Dados completos a serem enviados:', {
-            ...dados,
-            method: userUuid ? 'PUT' : 'POST',
-            url: userUuid ? `/api/user/${userUuid}` : '/api/user'
-         });
 
          const method = userUuid ? 'PUT' : 'POST';
          const url = userUuid ? `/api/user/${userUuid}` : '/api/user';
 
-         console.log('🚀 Enviando requisição:', {
-            method,
-            url,
-            dados
-         });
-
          const response = await Thefetch(url, method, dados);
-
-         console.log('📥 Resposta do servidor:', response);
 
          if (response && response.success) {
             showSuccessToast(
@@ -871,8 +819,6 @@ const CompaniesManager = (function() {
          return;
       }
 
-      console.log('✏️ Editando usuário:', user);
-
       userSelected = user;
 
       // Preenche formulário
@@ -902,7 +848,6 @@ const CompaniesManager = (function() {
             if (nameField.value !== user.name) {
                nameField.value = user.name;
                nameField.dispatchEvent(new Event('input', { bubbles: true }));
-               console.log('✅ Nome do usuário re-definido após primeira verificação:', user.name);
             }
          }, 50);
 
@@ -911,19 +856,15 @@ const CompaniesManager = (function() {
             if (nameField.value !== user.name) {
                nameField.value = user.name;
                nameField.dispatchEvent(new Event('input', { bubbles: true }));
-               console.log('✅ Nome do usuário re-definido após segunda verificação:', user.name);
             }
          }, 200);
 
-         console.log('✅ Nome do usuário preenchido:', user.name);
       }
       if (emailField) {
          emailField.value = user.email;
-         console.log('✅ Email do usuário preenchido:', user.email);
       }
       if (typeField) {
          typeField.value = user.user_type;
-         console.log('✅ Tipo de usuário preenchido:', user.user_type);
       }
       if (statusField) statusField.value = user.status;
 
@@ -932,13 +873,11 @@ const CompaniesManager = (function() {
          passwordField.value = ''; // Limpa senha na edição
          passwordField.removeAttribute('required');
          passwordField.placeholder = 'Deixe em branco para manter a senha atual';
-         console.log('✅ Campo de senha configurado como opcional');
       }
 
       // Remove asterisco do label da senha na edição
       if (passwordLabel) {
          passwordLabel.textContent = 'Senha';
-         console.log('✅ Asterisco removido do label da senha');
       }
 
       // Configura empresa
@@ -946,13 +885,11 @@ const CompaniesManager = (function() {
          if (user.user_type === 'superuser') {
             companyGroup.style.display = 'none';
             companySelect.value = '';
-            console.log('👑 Superuser - empresa ocultada');
          } else {
             companyGroup.style.display = 'block';
             const company = companies.find(c => c.name === user.company_name);
             if (company) {
                companySelect.value = company.uuid;
-               console.log('🏢 Empresa selecionada:', company.name);
             }
          }
       }
@@ -961,7 +898,6 @@ const CompaniesManager = (function() {
       const modulesLoading = document.getElementById('user-modules-loading');
       if (modulesLoading) {
          modulesLoading.style.display = 'none';
-         console.log('✅ Loading de módulos ocultado');
       }
 
       // Carrega módulos do usuário
@@ -976,25 +912,17 @@ const CompaniesManager = (function() {
          modalElement.addEventListener('shown.bs.modal', function onModalShown() {
             // Re-preenche o nome para garantir que seja exibido
             const nameField = document.getElementById('user-name-input');
-            console.log('🔍 Campo de nome encontrado:', !!nameField);
-            if (nameField) {
-               console.log('🔍 Valor atual do campo:', nameField.value);
-               console.log('🔍 Valor esperado:', user.name);
-            }
 
             if (nameField && user.name) {
                nameField.value = user.name;
                nameField.dispatchEvent(new Event('input', { bubbles: true }));
                nameField.dispatchEvent(new Event('change', { bubbles: true }));
-               console.log('✅ Nome do usuário preenchido após modal aberto:', user.name);
-               console.log('🔍 Valor final do campo:', nameField.value);
             }
             // Remove o listener para evitar duplicação
             modalElement.removeEventListener('shown.bs.modal', onModalShown);
          }, { once: true });
 
          modal.show();
-         console.log('✅ Modal de edição aberto');
       }
    }
 
@@ -1003,19 +931,16 @@ const CompaniesManager = (function() {
     */
    async function loadUserModules(user) {
       try {
-         console.log('🔍 Carregando módulos do usuário para edição:', user);
 
          let availableModules = [];
          let selectedModules = [];
 
          // Extrai módulos já selecionados do usuário
          if (user.modules) {
-            console.log('📦 Módulos do usuário:', user.modules);
 
             // Se modules é uma string (lista separada por vírgula), vamos extrair os nomes
             if (typeof user.modules === 'string') {
                const moduleNames = user.modules.split(',').map(name => name.trim());
-               console.log('📝 Nomes dos módulos extraídos:', moduleNames);
 
                // Por enquanto, vamos marcar todos os módulos disponíveis como selecionados
                // Em uma implementação real, você precisaria fazer um mapeamento por nome
@@ -1028,7 +953,6 @@ const CompaniesManager = (function() {
 
          if (user.user_type === 'superuser') {
             // Para superuser, carrega todos os módulos de superuser
-            console.log('👑 Carregando módulos de superuser para edição...');
             const allModules = await loadAllModules();
             availableModules = allModules.filter(module => module.module_type === 'superuser');
 
@@ -1041,7 +965,6 @@ const CompaniesManager = (function() {
             }
          } else if (user.company_name) {
             // Para admin/user, carrega módulos da empresa
-            console.log('🏢 Carregando módulos da empresa para edição...');
             const company = companies.find(c => c.name === user.company_name);
             if (company) {
                const companyModules = await loadCompanyModules(company.uuid);
@@ -1066,9 +989,6 @@ const CompaniesManager = (function() {
             }
          }
 
-         console.log('✅ Módulos disponíveis para edição:', availableModules);
-         console.log('✅ Módulos selecionados para edição:', selectedModules);
-
          // Renderiza módulos com os selecionados
          renderUserModules(availableModules, selectedModules);
 
@@ -1088,18 +1008,38 @@ const CompaniesManager = (function() {
          return;
       }
 
-      console.log('🔓 Tentando desbloquear usuário:', {
-         uuid: userUuid,
-         name: user.name,
-         email: user.email
-      });
+      const lockStatus = checkUserLockStatus(user);
+
+      // Se o usuário não está bloqueado, mostra mensagem informativa
+      if (!lockStatus.isLocked) {
+         await Swal.fire({
+            title: 'Usuário não está bloqueado',
+            text: `O usuário "${user.name}" não está atualmente bloqueado.`,
+            icon: 'info',
+            confirmButtonColor: '#3085d6',
+            confirmButtonText: 'OK'
+         });
+         return;
+      }
 
       const confirmation = await Swal.fire({
          title: 'Confirmar Desbloqueio',
-         text: `Tem certeza que deseja desbloquear a sessão do usuário "${user.name}"?`,
-         icon: 'question',
+         html: `
+            <div class="text-start">
+               <p>Tem certeza que deseja desbloquear o usuário <strong>"${user.name}"</strong>?</p>
+               <div class="alert alert-warning mt-3">
+                  <i class="bi bi-clock me-2"></i>
+                  <strong>Tempo restante de bloqueio:</strong> ${lockStatus.lockInfo}
+               </div>
+               <small class="text-muted">
+                  <i class="bi bi-info-circle me-1"></i>
+                  O usuário poderá fazer login novamente imediatamente após o desbloqueio.
+               </small>
+            </div>
+         `,
+         icon: 'warning',
          showCancelButton: true,
-         confirmButtonColor: '#28a745',
+         confirmButtonColor: '#ffc107',
          cancelButtonColor: '#6c757d',
          confirmButtonText: 'Sim, desbloquear!',
          cancelButtonText: 'Cancelar',
@@ -1112,25 +1052,22 @@ const CompaniesManager = (function() {
       }
 
       try {
-         console.log('🚀 Enviando requisição de desbloqueio:', {
-            url: `/api/auth/users/${userUuid}/unlock`,
-            method: 'PATCH'
-         });
-
          const response = await Thefetch(`/api/auth/users/${userUuid}/unlock`, 'PATCH');
 
-         console.log('📥 Resposta do servidor (desbloqueio):', response);
 
          if (response && response.success) {
-            console.log('✅ Usuário desbloqueado com sucesso');
-            showSuccessToast('Sessão do usuário desbloqueada com sucesso!');
-         } else {
-            throw new Error(response?.message || 'Erro ao desbloquear sessão');
-         }
+            showSuccessToast('Usuário desbloqueado com sucesso!');
 
+            // Recarrega a lista de usuários para atualizar o status
+            await loadUsers();
+         } else {
+            const errorMessage = response?.message || response?.error || 'Erro desconhecido no desbloqueio';
+            console.error('❌ Erro no desbloqueio:', errorMessage);
+            showErrorToast('Erro ao desbloquear usuário: ' + errorMessage);
+         }
       } catch (error) {
-         console.error('❌ Erro ao desbloquear sessão:', error);
-         showErrorToast('Erro ao desbloquear sessão: ' + error.message);
+         console.error('❌ Erro ao desbloquear usuário:', error);
+         showErrorToast('Erro ao desbloquear usuário: ' + error.message);
       }
    }
 
@@ -1143,15 +1080,6 @@ const CompaniesManager = (function() {
 
       const newStatus = user.status === 'active' ? 'inactive' : 'active';
       const action = newStatus === 'active' ? 'ativar' : 'inativar';
-
-      console.log('🔄 Tentando alterar status do usuário:', {
-         uuid: userUuid,
-         name: user.name,
-         email: user.email,
-         currentStatus: user.status,
-         newStatus: newStatus,
-         action: action
-      });
 
       const confirmation = await Swal.fire({
          title: `Confirmar ${action.charAt(0).toUpperCase() + action.slice(1)}`,
@@ -1176,14 +1104,9 @@ const CompaniesManager = (function() {
             status: newStatus
          };
 
-         console.log('📋 Dados para atualização de status:', dadosUpdate);
-
          const response = await Thefetch(`/api/user/${userUuid}`, 'PUT', dadosUpdate);
 
-         console.log('📥 Resposta do servidor (status):', response);
-
          if (response && response.success) {
-            console.log('✅ Status do usuário alterado com sucesso');
             showSuccessToast(`Usuário ${action}ado com sucesso!`);
             await loadUsers();
          } else {
@@ -1225,11 +1148,9 @@ const CompaniesManager = (function() {
          passwordField.value = '';
          passwordField.setAttribute('required', 'required');
          passwordField.placeholder = 'Digite a senha';
-         console.log('✅ Campo de senha configurado como obrigatório');
       }
       if (passwordLabel) {
          passwordLabel.textContent = 'Senha *';
-         console.log('✅ Asterisco restaurado no label da senha');
       }
       if (typeField) typeField.value = '';
       if (statusField) statusField.value = 'active';
@@ -1241,11 +1162,9 @@ const CompaniesManager = (function() {
       }
       if (modulesLoading) {
          modulesLoading.style.display = 'block';
-         console.log('✅ Loading de módulos restaurado');
       }
 
       userSelected = null;
-      console.log('✅ Formulário de usuário resetado');
    }
 
    /**
@@ -1648,15 +1567,12 @@ const CompaniesManager = (function() {
     */
    async function loadCompanyModules(companyUuid) {
       try {
-         console.log('🔍 Carregando módulos da empresa:', companyUuid);
          const response = await Thefetch(`/api/company/${companyUuid}/modules`, 'GET');
 
          if (response && response.success && response.data && response.data.modules) {
-            console.log('✅ Módulos carregados com sucesso:', response.data.modules);
             return response.data.modules;
          }
 
-         console.log('⚠️ Nenhum módulo encontrado para a empresa:', companyUuid);
          return [];
       } catch (error) {
          console.error('❌ Erro ao carregar módulos da empresa:', error);
@@ -2000,7 +1916,6 @@ const CompaniesManager = (function() {
          const usersTab = document.getElementById('usuarios-tab');
          if (usersTab) {
             usersTab.addEventListener('click', function() {
-               console.log('👥 Aba de usuários clicada - recarregando dados...');
                setTimeout(() => {
                   loadUsers();
                }, 100);
@@ -2013,13 +1928,11 @@ const CompaniesManager = (function() {
 
          if (companyFilter) {
             companyFilter.addEventListener('change', function() {
-               console.log('🏢 Filtro de empresa alterado:', this.value);
                renderTableUsers();
             });
          }
          if (userTypeFilter) {
             userTypeFilter.addEventListener('change', function() {
-               console.log('👤 Filtro de tipo de usuário alterado:', this.value);
                renderTableUsers();
             });
          }
@@ -2551,3 +2464,108 @@ window.FilePondManager = FilePondManager;
 document.addEventListener('DOMContentLoaded', function() {
    FilePondManager.init();
 });
+
+   /**
+    * Atualiza automaticamente o status de bloqueio dos usuários
+    * Esta função é chamada periodicamente para verificar se algum bloqueio expirou
+    */
+   function updateLockStatus() {
+      const tbody = document.querySelector('#tabelaUsuarios tbody');
+      if (!tbody) return;
+
+      const rows = tbody.querySelectorAll('tr');
+      let hasChanges = false;
+
+      rows.forEach(row => {
+         const userUuid = row.querySelector('button[onclick*="editUser"]')?.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
+         if (!userUuid) return;
+
+         const user = users.find(u => u.uuid === userUuid);
+         if (!user) return;
+
+         const lockStatus = checkUserLockStatus(user);
+         const currentLockStatus = row.classList.contains('table-warning');
+
+         // Se o status mudou, atualiza a linha
+         if (lockStatus.isLocked !== currentLockStatus) {
+            hasChanges = true;
+         }
+      });
+
+      // Se houve mudanças, recarrega a tabela
+      if (hasChanges) {
+         renderTableUsers();
+      }
+   }
+
+   /**
+    * Inicia o monitoramento automático do status de bloqueio
+    */
+   function startLockStatusMonitoring() {
+      // Atualiza a cada 30 segundos
+      setInterval(updateLockStatus, 30000);
+   }
+
+   /**
+    * Renderiza tabela de empresas
+    */
+   function renderTableCompanies() {
+      const tbody = document.querySelector('#table-companies tbody');
+      if (!tbody) return;
+
+      if (companies.length === 0) {
+         tbody.innerHTML = `
+            <tr>
+               <td colspan="6" class="text-center text-muted py-4">
+                  <i class="bi bi-building text-muted fs-1 d-block mb-2"></i>
+                  <p class="mb-2">Nenhuma empresa encontrada</p>
+                  <small class="text-muted">Clique em "Nova Empresa" para cadastrar a primeira empresa</small>
+               </td>
+            </tr>
+         `;
+         return;
+      }
+
+      tbody.innerHTML = companies.map(company => `
+         <tr>
+            <td class="text-center">
+               ${company.logo_url
+                  ? `
+                     <div class="d-flex align-items-center justify-content-center">
+                        <img src="${company.logo_url}" alt="logo" class="desktop-logo" width="40">
+                        <img src="${company.logo_dark_url}" alt="logo" class="desktop-dark" width="40">
+                        <img src="${company.logo_white_url}" alt="logo" class="desktop-white" width="40">
+                        <img src="${company.logo_square_url}" alt="logo" class="desktop-white" width="40">
+                        <img src="${company.logo_square_dark_url}" alt="logo" class="desktop-white" width="40">
+                        <img src="${company.logo_square_white_url}" alt="logo" class="desktop-white" width="40">
+                     </div>
+                  `
+                  : `<div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-weight: bold;">${company.name.charAt(0).toUpperCase()}</div>`
+               }
+            </td>
+            <td class="text-center">
+               <div class="fw-semibold">${company.name}</div>
+               <small class="text-muted">UUID: ${company.uuid}</small>
+            </td>
+            <td class="text-center">${company.cnpj}</td>
+            <td class="text-center">
+               <span class="badge ${company.status === 'active' ? 'bg-success' : 'bg-danger'}">
+                  ${company.status === 'active' ? 'Ativo' : 'Inativo'}
+               </span>
+            </td>
+            <td class="text-center">
+               <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-outline-primary" onclick="CompaniesManager.editCompany('${company.uuid}')" title="Editar">
+                     <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-info" onclick="CompaniesManager.viewCompanyModules('${company.uuid}')" title="Módulos">
+                     <i class="bi bi-grid-3x3-gap"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm ${company.status === 'active' ? 'btn-outline-warning' : 'btn-outline-success'}" onclick="CompaniesManager.toggleStatusCompany('${company.uuid}')" title="${company.status === 'active' ? 'Inativar' : 'Ativar'}">
+                     <i class="bi ${company.status === 'active' ? 'bi-pause-circle' : 'bi-play-circle'}"></i>
+                  </button>
+               </div>
+            </td>
+         </tr>
+      `).join('');
+   }
