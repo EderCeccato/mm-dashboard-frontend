@@ -2526,6 +2526,11 @@ document.addEventListener('DOMContentLoaded', function() {
     * Esta função é chamada periodicamente para verificar se algum bloqueio expirou
     */
    function updateLockStatus() {
+      // Verifica se a variável users existe e é um array
+      if (!users || !Array.isArray(users)) {
+         return;
+      }
+
       // Verifica se a aba de usuários está ativa
       const usersTab = document.getElementById('usuarios-tab');
       const isUsersTabActive = usersTab && usersTab.classList.contains('active');
