@@ -137,10 +137,8 @@ const CompaniesManager = (function() {
       bindEvents();
       loadInitialData();
 
-      // Inicia o monitoramento de status de bloqueio após um delay
-      setTimeout(() => {
-         startLockStatusMonitoring();
-      }, 5000); // 5 segundos após a inicialização
+      // O monitoramento será iniciado após os dados serem carregados
+      // na função loadInitialData
    }
 
    /**
@@ -153,6 +151,17 @@ const CompaniesManager = (function() {
             loadUsers(),
             loadModules()
          ]);
+
+         // Verifica se os dados foram carregados com sucesso antes de iniciar o monitoramento
+         if (users && Array.isArray(users) && users.length > 0) {
+            // Inicia o monitoramento de status de bloqueio após os dados serem carregados
+            setTimeout(() => {
+               startLockStatusMonitoring();
+            }, 2000); // 2 segundos após o carregamento
+         } else {
+            console.log('⚠️ Dados de usuários não carregados, monitoramento não iniciado');
+         }
+
       } catch (error) {
          console.error('❌ Erro ao carregar dados iniciais:', error);
       }
@@ -185,13 +194,15 @@ const CompaniesManager = (function() {
          const response = await Thefetch('/api/user', 'GET');
 
          if (response && response.success && response.data) {
-            users = response.data;
+            users = response.data || [];
             renderTableUsers();
          } else {
             console.error('❌ Erro ao carregar usuários:', response);
+            users = []; // Garante que a variável seja um array vazio
          }
       } catch (error) {
          console.error('❌ Erro ao carregar usuários:', error);
+         users = []; // Garante que a variável seja um array vazio em caso de erro
       }
    }
 
@@ -2470,6 +2481,27 @@ document.addEventListener('DOMContentLoaded', function() {
     * Esta função é chamada periodicamente para verificar se algum bloqueio expirou
     */
    function updateLockStatus() {
+      // Verifica se a variável users existe e está definida
+      if (typeof users === 'undefined' || !users || !Array.isArray(users)) {
+         console.log('⚠️ Variável users não está disponível para verificação de bloqueio');
+         return;
+      }
+
+      // Verifica se há usuários carregados
+      if (users.length === 0) {
+         console.log('⚠️ Nenhum usuário carregado para verificação de bloqueio');
+         return;
+      }
+
+      // Verifica se a aba de usuários está ativa
+      const usersTab = document.getElementById('usuarios-tab');
+      const isUsersTabActive = usersTab && usersTab.classList.contains('active');
+
+      if (!isUsersTabActive) {
+         // Se a aba de usuários não está ativa, não precisa verificar
+         return;
+      }
+
       const tbody = document.querySelector('#tabelaUsuarios tbody');
       if (!tbody) return;
 
