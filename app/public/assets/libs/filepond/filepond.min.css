@@ -740,7 +740,7 @@
 .filepond--root[data-style-panel-layout~=compact] .filepond--list-scroller,
 .filepond--root[data-style-panel-layout~=integrated] .filepond--list-scroller {
    overflow: hidden;
-   height: 100%;
+   height: 107% !important;
    margin-top: 0;
    margin-bottom: 0
 }
@@ -809,7 +809,7 @@
    top: 0;
    right: 0;
    margin: 0;
-   height: 100% !important;
+   /* height: 100% !important; */
    pointer-events: none
 }
 
