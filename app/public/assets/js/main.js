@@ -2,7 +2,6 @@
 const BASE_URL = 'http://localhost:3301'; // Troque para a URL de produção quando necessário
 
 // Função utilitária para requisições autenticadas usando cookies
-// Função utilitária para requisições autenticadas usando cookies
 async function Thefetch(path, method = 'GET', body = null) {
    const url = BASE_URL + path;
    const options = {
@@ -20,11 +19,16 @@ async function Thefetch(path, method = 'GET', body = null) {
       // Tenta extrair JSON (pode falhar se for HTML puro)
       const payload = await response.json().catch(() => ({}));
 
-      // Se veio erro e indicou redirectTo, redireciona e interrompe
-      if (!response.ok && payload.redirectTo) {
-         window.location.href = payload.redirectTo;
-         // interrompe a execução desta função
-         return;
+      if (payload.success === false) {
+         // salva a mensagem para o próximo carregamento
+         sessionStorage.setItem('errorCode', payload.code);
+         sessionStorage.setItem('errorMessage', payload.message);
+         // Se veio erro e indicou redirectTo, redireciona e interrompe
+         if (!response.ok && payload.redirectTo) {
+            window.location.href = payload.redirectTo;
+            // interrompe a execução desta função
+            return;
+         }
       }
 
       // Se veio erro sem redirectTo, lança para o catch lá embaixo
@@ -36,8 +40,7 @@ async function Thefetch(path, method = 'GET', body = null) {
 
       // Se tudo ok, retorna o JSON normalmente
       return payload;
-   }
-      catch (error) {
+   } catch (error) {
       console.error('Thefetch error:', error);
       // aqui você pode mostrar um toast/modal ou re-lançar o erro pro chamador
       throw error;

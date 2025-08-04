@@ -100,41 +100,54 @@ function event_click() {
       if (btn_submit) btn_submit.style.display = 'none';
       if (btn_loading) btn_loading.style.display = 'flex';
 
-      const data_login = await login(signin_email.value, signin_password.value);
+      try {
+         const data_login = await login(signin_email.value, signin_password.value);
 
-      if (data_login && data_login.success) {
-         // Salva os dados da sessão usando o AuthManager
-         if (window.AuthManager) {
-            // Passa a resposta completa para o AuthManager processar
-            AuthManager.saveAuthData(data_login);
-         } else {
-            // Fallback caso o AuthManager não esteja carregado
-            // Verifica a estrutura da resposta
-            if (data_login.data && data_login.data.user) {
-               // Nova estrutura
-               localStorage.setItem('userData', JSON.stringify(data_login.data.user));
-            } else if (data_login.user) {
-               // Estrutura antiga
-               localStorage.setItem('userData', JSON.stringify(data_login.user));
+         if (data_login && data_login.success) {
+            // Salva os dados da sessão usando o AuthManager
+            if (window.AuthManager) {
+               // Passa a resposta completa para o AuthManager processar
+               AuthManager.saveAuthData(data_login);
+            } else {
+               // Fallback caso o AuthManager não esteja carregado
+               // Verifica a estrutura da resposta
+               if (data_login.data && data_login.data.user) {
+                  // Nova estrutura
+                  localStorage.setItem('userData', JSON.stringify(data_login.data.user));
+               } else if (data_login.user) {
+                  // Estrutura antiga
+                  localStorage.setItem('userData', JSON.stringify(data_login.user));
+               }
+
+               // Salva informações do token
+               localStorage.setItem('tokenData', JSON.stringify({
+                  loginTime: Date.now(),
+                  expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
+               }));
             }
 
-            // Salva informações do token
-            localStorage.setItem('tokenData', JSON.stringify({
-               loginTime: Date.now(),
-               expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
-            }));
+            const successMessage = data_login && data_login.message ? data_login.message : 'Login realizado com sucesso';
+            showSuccessToast(successMessage);
+
+            setTimeout(() => {
+               // Redireciona para página principal
+               window.location.href = '/pages/home/';
+            }, 1000);
+         } else {
+            // Exibe o toast com a mensagem de erro do servidor
+            const errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
+            showErrorToast(errorMessage);
+
+            // Restaura os botões
+            if (btn_submit) btn_submit.style.display = 'block';
+            if (btn_loading) btn_loading.style.display = 'none';
          }
+      } catch (error) {
+         // Captura erros da requisição (como 401, 500, etc.)
+         console.error('Erro no login:', error);
 
-         const successMessage = data_login && data_login.message ? data_login.message : 'Login realizado com sucesso';
-         showSuccessToast(successMessage);
-
-         setTimeout(() => {
-            // Redireciona para página principal
-            window.location.href = '/pages/home/';
-         }, 1000);
-      } else {
-         // Exibe o toast com a mensagem de erro do servidor
-         const errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
+         // Exibe o toast com a mensagem de erro
+         const errorMessage = error.message || 'Erro ao fazer login. Tente novamente.';
          showErrorToast(errorMessage);
 
          // Restaura os botões
@@ -160,6 +173,13 @@ document.addEventListener('DOMContentLoaded', async function() {
          console.error('❌ Erro ao verificar autenticação na página de login:', error);
          // Em caso de erro, continua para mostrar a tela de login normalmente
       }
+   }
+
+   // Exibe o toast com a mensagem de erro
+   const msg = sessionStorage.getItem('errorMessage');
+   if (msg) {
+      showErrorToast(msg);
+      sessionStorage.removeItem('errorMessage');
    }
 
    // Registra eventos se o usuário não estiver autenticado
