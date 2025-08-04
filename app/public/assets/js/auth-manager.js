@@ -129,6 +129,7 @@ const AuthManager = (function() {
          console.log('❌ Erro na verificação da sessão:', response?.message || 'Resposta inválida');
          return false;
       } catch (error) {
+         sessionStorage.setItem('errorMessage', error.message);
          console.error('❌ Erro ao verificar sessão com o servidor:', error);
          return false;
       }
