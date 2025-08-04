@@ -141,6 +141,22 @@ const CompaniesManager = (function() {
       * Inicializa o sistema
    */
    function init() {
+      // Verifica se a função Thefetch está disponível
+      if (typeof Thefetch !== 'function') {
+         console.error('❌ Função Thefetch não encontrada. Aguardando...');
+         // Tenta novamente após um delay
+         setTimeout(() => {
+            if (typeof Thefetch === 'function') {
+               console.log('✅ Função Thefetch encontrada. Inicializando...');
+               bindEvents();
+               loadInitialData();
+            } else {
+               console.error('❌ Função Thefetch ainda não encontrada após delay');
+            }
+         }, 1000);
+         return;
+      }
+
       // Continua inicialização
       bindEvents();
       loadInitialData();
@@ -180,6 +196,12 @@ const CompaniesManager = (function() {
    */
    async function loadCompanies() {
       try {
+         // Verifica se a função Thefetch está disponível
+         if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            return;
+         }
+
          const response = await Thefetch('/api/company', 'GET');
 
          if (response && response.success && response.data) {
@@ -199,6 +221,13 @@ const CompaniesManager = (function() {
    */
    async function loadUsers() {
       try {
+         // Verifica se a função Thefetch está disponível
+         if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            users = [];
+            return;
+         }
+
          const response = await Thefetch('/api/user', 'GET');
 
          if (response && response.success && response.data) {
@@ -219,6 +248,12 @@ const CompaniesManager = (function() {
    */
    async function loadModules() {
       try {
+         // Verifica se a função Thefetch está disponível
+         if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            return;
+         }
+
          const response = await Thefetch('/api/modules', 'GET');
 
          if (response && response.success && response.data) {
@@ -513,7 +548,7 @@ const CompaniesManager = (function() {
          return;
       }
 
-      // Esconde o loading
+      // Esconde o loading imediatamente
       if (modulesLoading) {
          modulesLoading.style.display = 'none';
       }
@@ -602,11 +637,17 @@ const CompaniesManager = (function() {
       const companySelect = document.getElementById('user-company');
       const modulesContainer = document.getElementById('user-modules-list');
       const companyGroup = document.getElementById('company-selection-section');
+      const modulesLoading = document.getElementById('user-modules-loading');
 
       // Verifica se os elementos existem antes de usar
       if (!userType) return;
 
       const userTypeValue = userType.value;
+
+      // Esconde o loading imediatamente
+      if (modulesLoading) {
+         modulesLoading.style.display = 'none';
+      }
 
       // Limpa módulos
       if (modulesContainer) {
@@ -943,7 +984,7 @@ const CompaniesManager = (function() {
       if (window.FilePondManager && user.profile_picture_url) {
          setTimeout(() => {
             FilePondManager.loadUserAvatar(user);
-         }, 100);
+         }, 200);
       }
 
       // Abre modal
@@ -1204,10 +1245,10 @@ const CompaniesManager = (function() {
          modulesContainer.style.display = 'none';
       }
       if (modulesLoading) {
-         modulesLoading.style.display = 'block';
+         modulesLoading.style.display = 'none';
       }
 
-      // Limpa avatar se FilePondManager estiver disponível
+      // Limpa avatar de forma simples
       if (window.FilePondManager) {
          FilePondManager.clearAllFiles();
       }
@@ -1944,6 +1985,11 @@ const CompaniesManager = (function() {
          if (btnNewUser) {
             btnNewUser.addEventListener('click', function() {
                resetFormUser();
+               // Esconde o loading imediatamente para novo usuário
+               const modulesLoading = document.getElementById('user-modules-loading');
+               if (modulesLoading) {
+                  modulesLoading.style.display = 'none';
+               }
                const modal = new bootstrap.Modal(document.getElementById('modal-new-user'));
                modal.show();
             });
@@ -2011,7 +2057,13 @@ const CompaniesManager = (function() {
             modalNewCompany.addEventListener('hidden.bs.modal', resetFormCompany);
          }
          if (modalNewUser) {
-            modalNewUser.addEventListener('hidden.bs.modal', resetFormUser);
+            modalNewUser.addEventListener('hidden.bs.modal', function() {
+               resetFormUser();
+               // Limpa backdrop para evitar tela preta
+               if (window.CompaniesManager && CompaniesManager.clearModalBackdrop) {
+                  CompaniesManager.clearModalBackdrop();
+               }
+            });
          }
          if (modalCompanyModules) {
             modalCompanyModules.addEventListener('hidden.bs.modal', resetFormModules);
@@ -2053,14 +2105,29 @@ const CompaniesManager = (function() {
          // Adiciona listener para limpar backdrop em caso de problema
          document.addEventListener('click', function(e) {
             if (e.target.classList.contains('modal-backdrop')) {
-               clearModalBackdrop();
+               if (window.CompaniesManager && CompaniesManager.clearModalBackdrop) {
+                  CompaniesManager.clearModalBackdrop();
+               }
             }
          });
 
          // Listener para ESC key
          document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-               clearModalBackdrop();
+               if (window.CompaniesManager && CompaniesManager.clearModalBackdrop) {
+                  CompaniesManager.clearModalBackdrop();
+               }
+            }
+         });
+
+         // Listener para botões de cancelar dos modais
+         document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('btn-secondary') && e.target.textContent.includes('Cancelar')) {
+               setTimeout(() => {
+                  if (window.CompaniesManager && CompaniesManager.clearModalBackdrop) {
+                     CompaniesManager.clearModalBackdrop();
+                  }
+               }, 100);
             }
          });
 
@@ -2165,6 +2232,7 @@ const CompaniesManager = (function() {
       toggleStatusUser: toggleStatusUser,
       showErrorToast: showErrorToast,
       showSuccessToast: showSuccessToast,
+      clearModalBackdrop: clearModalBackdrop,
    };
 })();
 
@@ -2426,23 +2494,37 @@ const FilePondManager = (function() {
     * Limpa todos os FilePonds e previews
     */
    function clearAllFiles() {
-      Object.values(filePondInstances).forEach(pond => {
-         pond.removeFiles();
-      });
-
-      // Remove apenas os previews de imagens existentes, mantendo os inputs
-      document.querySelectorAll('.existing-image-preview').forEach(preview => {
-         // Remove apenas o preview, não o container inteiro
-         const filePondElement = preview.querySelector('.filepond--root');
-         if (filePondElement) {
-            // Move o FilePond de volta para o container original
-            const originalContainer = filePondElement.closest('.mb-3');
-            if (originalContainer) {
-               originalContainer.appendChild(filePondElement);
+      try {
+         // Remove arquivos de todas as instâncias FilePond
+         Object.values(filePondInstances).forEach(pond => {
+            try {
+               pond.removeFiles();
+            } catch (error) {
+               console.log('⚠️ Erro ao remover arquivos do FilePond:', error);
             }
-         }
-         preview.remove();
-      });
+         });
+
+         // Remove apenas os previews de imagens existentes, mantendo os inputs
+         document.querySelectorAll('.existing-image-preview').forEach(preview => {
+            try {
+               // Remove apenas o preview, não o container inteiro
+               const filePondElement = preview.querySelector('.filepond--root');
+               if (filePondElement) {
+                  // Move o FilePond de volta para o container original
+                  const originalContainer = filePondElement.closest('.mb-3');
+                  if (originalContainer) {
+                     originalContainer.appendChild(filePondElement);
+                  }
+               }
+               preview.remove();
+            } catch (error) {
+               console.log('⚠️ Erro ao remover preview:', error);
+               preview.remove();
+            }
+         });
+      } catch (error) {
+         console.error('❌ Erro ao limpar arquivos:', error);
+      }
    }
 
    /**
@@ -2451,8 +2533,24 @@ const FilePondManager = (function() {
    function recreateFilePondInputs() {
       const filePondInputs = document.querySelectorAll('.filepond');
       filePondInputs.forEach(input => {
-         // Verifica se já existe uma instância do FilePond para este input
-         if (!filePondInstances[input.id]) {
+         try {
+            // Remove instância anterior se existir
+            if (filePondInstances[input.id]) {
+               try {
+                  filePondInstances[input.id].destroy();
+               } catch (error) {
+                  console.log('⚠️ Erro ao destruir instância FilePond:', error);
+               }
+               delete filePondInstances[input.id];
+            }
+
+            // Verifica se o elemento ainda existe no DOM
+            if (!document.contains(input)) {
+               console.log('⚠️ Elemento FilePond não está mais no DOM, pulando...');
+               return;
+            }
+
+            // Cria nova instância
             const maxWidth = input.dataset.maxWidth;
             const maxHeight = input.dataset.maxHeight;
 
@@ -2465,6 +2563,8 @@ const FilePondManager = (function() {
             });
 
             filePondInstances[input.id] = pond;
+         } catch (error) {
+            console.error('❌ Erro ao recriar FilePond para', input.id, ':', error);
          }
       });
    }
@@ -2508,7 +2608,6 @@ const FilePondManager = (function() {
       clearAllFiles: clearAllFiles,
       loadCompanyImages: loadCompanyImages,
       loadUserAvatar: loadUserAvatar,
-      recreateFilePondInputs: recreateFilePondInputs,
       applyNewCompanyLayout: applyNewCompanyLayout
    };
 })();
@@ -2518,7 +2617,11 @@ window.FilePondManager = FilePondManager;
 
 // Inicializa FilePond quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-   FilePondManager.init();
+   if (window.FilePondManager && typeof FilePondManager.init === 'function') {
+      FilePondManager.init();
+   } else {
+      console.error('❌ FilePondManager não está disponível');
+   }
 });
 
    /**
@@ -2527,7 +2630,7 @@ document.addEventListener('DOMContentLoaded', function() {
     */
    function updateLockStatus() {
       // Verifica se a variável users existe e é um array
-      if (!users || !Array.isArray(users)) {
+      if (typeof users === 'undefined' || !Array.isArray(users)) {
          return;
       }
 

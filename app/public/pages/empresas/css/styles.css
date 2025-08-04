@@ -463,7 +463,7 @@ thead.table {
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  margin-top: 8px;
+  margin-top: 40px;
   justify-content: center;
 }
 
@@ -661,7 +661,12 @@ thead.table {
 
 /* Estilos específicos para avatar do usuário */
 .user-avatar-section {
-  margin-bottom: 1.5rem;
+  height: 160px;
+}
+
+.user-avatar-section > .filepond {
+  margin: 0 auto;
+  margin-top: 36px !important;
 }
 
 .user-avatar-section .form-label {
@@ -682,8 +687,9 @@ thead.table {
 }
 
 /* Estilo específico para o FilePond do avatar */
-#user-avatar.filepond {
-  max-width: 300px;
+.user-avatar-section > .filepond {
+  max-width: 200px;
+  height: 100%;
 }
 
 /* Preview do avatar existente */
