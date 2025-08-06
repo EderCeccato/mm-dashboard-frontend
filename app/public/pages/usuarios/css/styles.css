@@ -1,0 +1,604 @@
+/* Botões de ação específicos da tela de usuários */
+#btn-new-user {
+   background-color: var(--primary-color);
+   color: #f3f3f3;
+}
+
+#btn-new-user:hover {
+   background-color: var(--primary07);
+}
+
+#btn-edit-company {
+   border-color: var(--primary-color);
+   color: var(--primary-color);
+}
+
+#btn-edit-company:hover {
+   background-color: var(--primary-color);
+   border-color: var(--primary-color);
+   color: #fff;
+}
+
+/* Estilos para a tabela de usuários */
+#table-users {
+   font-size: 0.9rem;
+}
+
+#table-users th {
+   font-weight: 600;
+   font-size: 0.85rem;
+   letter-spacing: 0.5px;
+   text-align: center;
+}
+
+#table-users td {
+   vertical-align: middle;
+   padding: 0.75rem 0.5rem;
+}
+
+#table-users .btn-group .btn {
+   padding: 0.25rem 0.5rem;
+   font-size: 0.8rem;
+}
+
+#table-users .badge {
+   font-size: 0.75rem;
+   font-weight: 500;
+}
+
+/* Melhorar espaçamento da coluna de clientes */
+#table-users td:nth-child(5) {
+   min-width: 150px;
+   max-width: 200px;
+}
+
+/* Estilos para usuários bloqueados */
+#table-users tr.table-warning {
+   background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+#table-users tr.table-warning:hover {
+   background-color: rgba(255, 193, 7, 0.2) !important;
+}
+
+#table-users .bi-lock-fill {
+   font-size: 0.8rem;
+}
+
+#table-users .text-warning {
+   font-weight: 500;
+}
+
+#table-users .btn-outline-warning:hover {
+   background-color: #ffc107;
+   border-color: #ffc107;
+   color: #000;
+}
+
+#table-users .btn-outline-secondary:disabled {
+   opacity: 0.5;
+   cursor: not-allowed;
+}
+
+/* Animação para o ícone de bloqueio */
+@keyframes lockPulse {
+   0% { opacity: 1; }
+   50% { opacity: 0.7; }
+   100% { opacity: 1; }
+}
+
+#table-users .bi-lock-fill {
+   animation: lockPulse 2s infinite;
+}
+
+/* Estilos para avatar do usuário na tabela */
+.user-avatar {
+   width: 40px;
+   height: 40px;
+   object-fit: cover;
+   border-radius: 50%;
+   border: 2px solid #fff;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.user-avatar-placeholder {
+   width: 40px;
+   height: 40px;
+   border-radius: 50%;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   font-weight: bold;
+   color: #fff;
+   background-color: var(--primary-color);
+   font-size: 16px;
+}
+
+/* Estilos para badges de tipo de usuário */
+.badge.bg-admin {
+   background-color: #fd7e14 !important;
+}
+
+.badge.bg-user {
+   background-color: #0d6efd !important;
+}
+
+.badge.bg-client {
+   background-color: #198754 !important;
+}
+
+/* Estilos para seção de clientes */
+#clients-selection-section {
+   margin-top: 1rem;
+}
+
+#clients-selection-section .choices {
+   margin-bottom: 0;
+}
+
+#clients-selection-section .choices__inner {
+   min-height: 44px;
+   border-radius: 6px;
+   border: 1px solid #dee2e6;
+   background-color: #fff;
+   padding: 7.5px 7.5px 3.75px;
+}
+
+#clients-selection-section .choices__input {
+   background-color: transparent;
+   border: none;
+   margin-bottom: 4px;
+}
+
+#clients-selection-section .choices__item {
+   background-color: var(--primary-color);
+   border: 1px solid var(--primary-color);
+   color: #fff;
+   padding: 4px 10px;
+   margin-bottom: 3.75px;
+   border-radius: 4px;
+   font-size: 12px;
+   font-weight: 500;
+}
+
+#clients-selection-section .choices__item--selectable {
+   border: 1px solid #dee2e6;
+   background-color: #f8f9fa;
+   color: #495057;
+}
+
+#clients-selection-section .choices__item--selectable:hover {
+   background-color: var(--primary-color);
+   border-color: var(--primary-color);
+   color: #fff;
+}
+
+#clients-selection-section .choices__button {
+   background-image: none;
+   background-color: transparent;
+   border: none;
+   color: #fff;
+   font-size: 14px;
+   font-weight: bold;
+   padding: 0;
+   margin-left: 8px;
+}
+
+#clients-selection-section .choices__button:hover {
+   color: #f8f9fa;
+}
+
+#clients-selection-section .choices__list--dropdown {
+   border: 1px solid #dee2e6;
+   border-radius: 6px;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+   max-height: 200px;
+   overflow-y: auto;
+}
+
+#clients-selection-section .choices__item--choice {
+   padding: 8px 12px;
+   border-bottom: 1px solid #f8f9fa;
+   font-size: 13px;
+}
+
+#clients-selection-section .choices__item--choice:last-child {
+   border-bottom: none;
+}
+
+#clients-selection-section .choices__item--choice:hover {
+   background-color: rgba(var(--primary-rgb), 0.1);
+}
+
+#clients-selection-section .choices__item--choice.choices__item--highlighted {
+   background-color: var(--primary-color);
+   color: #fff;
+}
+
+/* Estilos para a seção de filtros */
+.card-body .row:first-child {
+   background-color: #f8f9fa;
+   border-radius: 8px;
+   padding: 1rem;
+   margin: -0.5rem -0.75rem 1.5rem -0.75rem;
+   border: 1px solid #e9ecef;
+}
+
+.card-body .row:first-child .form-label {
+   font-weight: 600;
+   color: #495057;
+   margin-bottom: 0.5rem;
+}
+
+.card-body .row:first-child .form-select,
+.card-body .row:first-child .form-control {
+   border-radius: 6px;
+   border: 1px solid #ced4da;
+   font-size: 0.9rem;
+}
+
+.card-body .row:first-child .form-select:focus,
+.card-body .row:first-child .form-control:focus {
+   border-color: var(--primary-color);
+   box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+}
+
+/* Estilos específicos para avatar do usuário no modal */
+.user-avatar-section {
+   height: 160px;
+}
+
+.user-avatar-section > .filepond {
+   margin: 0 auto;
+   margin-top: 36px !important;
+}
+
+.user-avatar-section .form-label {
+   font-weight: 500;
+   color: #374151;
+   margin-bottom: 0.75rem;
+}
+
+.user-avatar-section .form-label i {
+   color: var(--primary-color);
+   margin-right: 0.5rem;
+}
+
+.user-avatar-section .form-text {
+   font-size: 12px;
+   color: #6b7280;
+   margin-top: 0.5rem;
+}
+
+/* Estilo específico para o FilePond do avatar */
+.user-avatar-section > .filepond {
+   max-width: 200px;
+   height: 100%;
+}
+
+/* Preview do avatar existente */
+.user-avatar-preview {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   margin-top: 8px;
+}
+
+.user-avatar-preview .avatar-preview-card {
+   border: 1px solid #e5e7eb;
+   border-radius: 12px;
+   overflow: hidden;
+   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+   transition: all 0.3s ease;
+   flex-shrink: 0;
+   width: 120px;
+   height: 120px;
+}
+
+.user-avatar-preview .avatar-preview-card:hover {
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+   transform: translateY(-2px);
+   border-color: var(--primary-color);
+}
+
+.user-avatar-preview .avatar-preview-img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+   border-radius: 12px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 768px) {
+   #table-users {
+      font-size: 0.8rem;
+   }
+
+   #table-users th {
+      font-size: 0.75rem;
+   }
+
+   #table-users td {
+      padding: 0.5rem 0.25rem;
+   }
+
+   #table-users .btn-group .btn {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.75rem;
+   }
+
+   .card-body .row:first-child {
+      margin: -0.5rem -0.5rem 1rem -0.5rem;
+      padding: 0.75rem;
+   }
+}
+
+/* Dark mode para avatar */
+[data-theme-mode=dark] .user-avatar-section .form-label {
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] .user-avatar-section .form-text {
+   color: #9ca3af;
+}
+
+[data-theme-mode=dark] .user-avatar-preview .avatar-preview-card {
+   border-color: #374151;
+   background-color: #1f2937;
+}
+
+[data-theme-mode=dark] .user-avatar-preview .avatar-preview-card:hover {
+   border-color: var(--primary-color);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode para filtros */
+[data-theme-mode=dark] .card-body .row:first-child {
+   background-color: #1f2937;
+   border-color: #374151;
+}
+
+[data-theme-mode=dark] .card-body .row:first-child .form-label {
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] .card-body .row:first-child .form-select,
+[data-theme-mode=dark] .card-body .row:first-child .form-control {
+   background-color: #374151;
+   border-color: #4b5563;
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] .card-body .row:first-child .form-select:focus,
+[data-theme-mode=dark] .card-body .row:first-child .form-control:focus {
+   border-color: var(--primary-color);
+   box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
+   background-color: #374151;
+}
+
+/* Dark mode para choices */
+[data-theme-mode=dark] #clients-selection-section .choices__inner {
+   background-color: #374151;
+   border-color: #4b5563;
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] #clients-selection-section .choices__input {
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] #clients-selection-section .choices__item--selectable {
+   background-color: #4b5563;
+   border-color: #6b7280;
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] #clients-selection-section .choices__list--dropdown {
+   background-color: #374151;
+   border-color: #4b5563;
+}
+
+[data-theme-mode=dark] #clients-selection-section .choices__item--choice {
+   border-color: #4b5563;
+   color: #d1d5db;
+}
+
+[data-theme-mode=dark] #clients-selection-section .choices__item--choice:hover {
+   background-color: rgba(var(--primary-rgb), 0.2);
+}
+
+/* Estilos para listagem de clientes na tabela */
+.clients-list {
+   max-width: 200px;
+   overflow: hidden;
+}
+
+.clients-list .client-item {
+   display: inline-block;
+   background-color: rgba(var(--primary-rgb), 0.1);
+   color: var(--primary-color);
+   padding: 2px 6px;
+   margin: 1px;
+   border-radius: 10px;
+   font-size: 10px;
+   font-weight: 500;
+   border: 1px solid rgba(var(--primary-rgb), 0.2);
+}
+
+.clients-list .client-item:hover {
+   background-color: rgba(var(--primary-rgb), 0.2);
+   cursor: default;
+}
+
+.clients-count {
+   color: #6c757d;
+   font-size: 11px;
+   font-weight: 500;
+   margin-top: 2px;
+}
+
+/* Tooltip para lista de clientes */
+.clients-tooltip {
+   position: relative;
+   cursor: help;
+}
+
+.clients-tooltip:hover::after {
+   content: attr(data-clients);
+   position: absolute;
+   bottom: 100%;
+   left: 50%;
+   transform: translateX(-50%);
+   background-color: rgba(0, 0, 0, 0.8);
+   color: #fff;
+   padding: 8px 12px;
+   border-radius: 6px;
+   font-size: 12px;
+   white-space: nowrap;
+   z-index: 1000;
+   max-width: 300px;
+   overflow: hidden;
+   text-overflow: ellipsis;
+}
+
+/* Ajustes para modal de usuário */
+#modal-new-user .modal-dialog {
+   max-width: 900px;
+}
+
+#modal-new-user .modal-body {
+   max-height: 75vh;
+   overflow-y: auto;
+}
+
+/* Estilos para módulos do usuário */
+.module-card {
+   transition: all 0.3s ease;
+   cursor: pointer;
+   border: 2px solid transparent;
+}
+
+.module-card:hover {
+   border-color: var(--primary-color);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+   transform: translateY(-2px);
+}
+
+.module-card.border-primary {
+   border-color: var(--primary-color) !important;
+   background-color: rgba(var(--primary-rgb), 0.05);
+}
+
+.module-card .form-check-input:checked + .form-check-label .module-check-icon {
+   display: inline !important;
+}
+
+.module-card .module-check-icon {
+   font-size: 1.2rem;
+   transition: all 0.3s ease;
+}
+
+.module-card .form-check-label {
+   cursor: pointer;
+}
+
+.module-card .card-body {
+   position: relative;
+}
+
+.module-card .badge {
+   font-size: 0.65rem;
+}
+
+/* Loading Animation */
+#user-modules-loading .spinner-border {
+   width: 3rem;
+   height: 3rem;
+}
+
+/* Select All/Deselect All Buttons para módulos */
+#btn-select-all-user-modules,
+#btn-deselect-all-user-modules {
+   border-radius: 6px;
+   font-weight: 500;
+}
+
+/* FilePond Custom Styles para avatar */
+.user-avatar-section .filepond--root {
+   margin-bottom: 0;
+   max-width: 200px;
+}
+
+.user-avatar-section .filepond--list-scroller {
+   cursor: pointer !important;
+}
+
+.user-avatar-section .filepond--drop-label {
+   color: #6b7280;
+   font-size: 12px;
+   font-weight: 400;
+   padding: 15px 12px;
+   text-align: center;
+   line-height: 1.4;
+}
+
+.user-avatar-section .filepond--drop-label i {
+   font-size: 20px;
+   color: #9ca3af;
+   display: block;
+   margin-bottom: 6px;
+}
+
+.user-avatar-section .filepond--panel-root {
+   border-radius: 50%;
+   background-color: #ffffff;
+   border: 2px dashed #e5e7eb;
+   transition: all 0.3s ease;
+   min-height: 120px;
+   width: 120px;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+}
+
+.user-avatar-section .filepond--panel-root:hover {
+   border-color: var(--primary-color);
+   background-color: rgba(var(--primary-rgb), 0.02);
+   transform: translateY(-1px);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.user-avatar-section .filepond--item {
+   border-radius: 50%;
+   overflow: hidden;
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+   border: 2px solid #e5e7eb;
+   background-color: #ffffff;
+   width: 120px;
+   height: 120px;
+}
+
+.user-avatar-section .filepond--image-preview {
+   border-radius: 50%;
+   overflow: hidden;
+   height: 120px;
+   width: 120px;
+   object-fit: cover;
+}
+
+/* Dark mode para avatar FilePond */
+[data-theme-mode=dark] .user-avatar-section .filepond--panel-root {
+   background-color: #1f2937;
+   border-color: #374151;
+}
+
+[data-theme-mode=dark] .user-avatar-section .filepond--panel-root:hover {
+   border-color: var(--primary-color);
+   background-color: rgba(var(--primary-rgb), 0.1);
+   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme-mode=dark] .user-avatar-section .filepond--item {
+   background-color: #111827;
+   border-color: #374151;
+}
