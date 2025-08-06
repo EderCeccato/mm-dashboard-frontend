@@ -1,4 +1,4 @@
-// Função para criar e exibir um toast de erro
+// Função para criar e exibir um toast de erro simples para o usuário
 function showErrorToast(code, message) {
    // Obtém o container de toasts
    const toastContainer = document.querySelector('.toast-container');
@@ -6,7 +6,7 @@ function showErrorToast(code, message) {
    // Cria um ID único para o toast
    const toastId = 'toast-' + Date.now();
 
-   // Cria o HTML do toast com largura maior para mensagens longas
+   // Toast simples para o usuário (sem detalhes técnicos)
    const toastHTML = `
       <div id="${toastId}" class="toast colored-toast bg-danger text-fixed-white fade" role="alert" aria-live="assertive" aria-atomic="true" style="max-width: 400px;">
          <div class="toast-header bg-danger text-fixed-white">
@@ -14,7 +14,7 @@ function showErrorToast(code, message) {
             <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
          </div>
          <div class="toast-body">
-            ${message || 'Erro ao fazer login'}
+            ${message || 'Erro interno do servidor. Tente novamente mais tarde.'}
          </div>
       </div>
    `;
@@ -27,7 +27,7 @@ function showErrorToast(code, message) {
 
    // Inicializa o toast com o Bootstrap
    const toast = new bootstrap.Toast(toastElement, {
-      delay: 8000, // Tempo aumentado para dar tempo de ler mensagens longas
+      delay: 8000,
       autohide: true
    });
 
@@ -40,12 +40,30 @@ function showErrorToast(code, message) {
    toast.show();
 }
 
+// Função para exibir relatório detalhado de todos os erros da sessão
+function displaySessionErrorReport() {
+   // Usa o ErrorCollector para exibir todos os erros coletados
+   if (window.ErrorCollector) {
+      console.log('\n🔍 INICIANDO ANÁLISE DE ERROS DA SESSÃO...\n');
+      ErrorCollector.displayErrorReport();
+   } else {
+      console.warn('❌ Sistema ErrorCollector não encontrado');
+   }
+}
+
 window.addEventListener('DOMContentLoaded', function () {
+   // Exibe o toast simples para o usuário
    const code = this.sessionStorage.getItem('errorCode');
    const msg = this.sessionStorage.getItem('errorMessage');
    if (msg) {
       showErrorToast(code, msg);
+      // Limpa dados básicos do erro
       this.sessionStorage.removeItem('errorCode');
       this.sessionStorage.removeItem('errorMessage');
    }
+
+   // Exibe relatório completo de erros para debug (com delay para não conflitar)
+   setTimeout(function() {
+      displaySessionErrorReport();
+   }, 1000);
 })
