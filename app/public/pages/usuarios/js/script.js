@@ -42,7 +42,6 @@ const UsersManager = (function() {
          console.error('❌ Função Thefetch não encontrada. Aguardando...');
          setTimeout(() => {
             if (typeof Thefetch === 'function') {
-               console.log('✅ Função Thefetch encontrada. Inicializando...');
                bindEvents();
                loadInitialData();
             } else {
@@ -119,6 +118,10 @@ const UsersManager = (function() {
 
          if (response && response.success && response.data) {
             ownCompany = response.data.company;
+            // Adiciona os módulos da empresa ao objeto ownCompany
+            if (response.data.modules) {
+               ownCompany.modules = response.data.modules;
+            }
             populateCompanySelect();
          } else {
             console.error('❌ Erro ao carregar dados da empresa:', response);
@@ -435,12 +438,23 @@ const UsersManager = (function() {
 
       // Configura visibilidade baseada no tipo
       if (userTypeValue === 'admin' || userTypeValue === 'user') {
-         if (companySection) companySection.style.display = 'block';
+         // Na edição, não mostra a seção de empresa pois será sempre a empresa do usuário logado
+         if (userSelected) {
+            // Se está editando, não mostra a seção de empresa
+            if (companySection) companySection.style.display = 'none';
+         } else {
+            // Se está criando novo usuário, mostra a seção de empresa
+            if (companySection) companySection.style.display = 'block';
+         }
+
+         // Sempre mostra a seção de módulos para admin e user
          if (modulesSection) modulesSection.style.display = 'block';
 
          // Carrega módulos se empresa estiver selecionada
          if (companySelect && companySelect.value) {
             await loadUserModules(userTypeValue, companySelect.value);
+         } else {
+            console.log('🔍 Nenhuma empresa selecionada ainda');
          }
       } else if (userTypeValue === 'client') {
          if (companySection) companySection.style.display = 'block';
@@ -465,6 +479,8 @@ const UsersManager = (function() {
 
       if ((userTypeValue === 'admin' || userTypeValue === 'user') && companyUuid) {
          await loadUserModules(userTypeValue, companyUuid);
+      } else {
+         console.log('🔍 Não carregando módulos - tipo:', userTypeValue, 'empresa:', companyUuid);
       }
    }
 
@@ -492,6 +508,7 @@ const UsersManager = (function() {
 
             renderUserModules(availableModules, selectedModules);
          } else {
+            console.log('❌ Não há módulos disponíveis na empresa');
             // Se não há módulos disponíveis, mostra mensagem
             renderUserModules([], selectedModules);
          }
@@ -509,7 +526,10 @@ const UsersManager = (function() {
       const modulesLoading = document.getElementById('user-modules-loading');
       const modulesSection = document.getElementById('modules-selection-section');
 
-      if (!modulesContainer) return;
+      if (!modulesContainer) {
+         console.error('❌ Container de módulos não encontrado');
+         return;
+      }
 
       // Esconde o loading
       if (modulesLoading) modulesLoading.style.display = 'none';
@@ -579,6 +599,7 @@ const UsersManager = (function() {
       // Mostra controles de seleção
       const modulesControls = document.getElementById('user-modules-controls');
       if (modulesControls) modulesControls.style.display = 'block';
+
    }
 
    /**
@@ -781,11 +802,16 @@ const UsersManager = (function() {
       // Mostra seção de status na edição
       if (statusSection) statusSection.style.display = 'block';
 
-      // Configura empresa
-      if (companySelect && user.company_name) {
+      // Configura empresa - oculta o campo pois será sempre a empresa do usuário logado
+      if (companySelect) {
          const company = ownCompany; // Usar ownCompany para a própria empresa
          if (company) {
             companySelect.value = company.uuid;
+            // Oculta a seção de seleção de empresa na edição
+            const companySection = document.getElementById('company-selection-section');
+            if (companySection) {
+               companySection.style.display = 'none';
+            }
          }
       }
 
@@ -801,7 +827,21 @@ const UsersManager = (function() {
          }
       } else if ((user.user_type === 'admin' || user.user_type === 'user') && companySelect.value) {
          // Carrega módulos do usuário
-         const selectedModules = []; // Aqui você pode extrair os módulos do usuário se disponível
+         let selectedModules = [];
+
+         // Extrai módulos do usuário se disponível
+         if (user.modules) {
+            // Os módulos vêm como string separada por vírgula, ex: "Usuários,TMS"
+            const userModules = user.modules.split(',').map(module => module.trim());
+
+            // Busca os IDs dos módulos baseado nos nomes
+            if (ownCompany && ownCompany.modules) {
+               selectedModules = ownCompany.modules
+                  .filter(module => userModules.includes(module.name))
+                  .map(module => module.id);
+            }
+         }
+
          await loadUserModules(user.user_type, companySelect.value, selectedModules);
       }
 
@@ -1062,6 +1102,14 @@ const UsersManager = (function() {
       }
 
       userSelected = null;
+
+      // Carrega módulos se a empresa estiver disponível
+      const companySelect = document.getElementById('user-company');
+      if (companySelect && companySelect.value && ownCompany && ownCompany.modules) {
+         setTimeout(() => {
+            loadUserModules('admin', companySelect.value);
+         }, 100);
+      }
    }
 
    /**
