@@ -28,7 +28,7 @@ const UsersManager = (function() {
 
    // Estado global
    let users = [];
-   let companies = [];
+   let ownCompany = null;
    let modules = [];
    let userSelected = null;
    let clientsChoices = null;
@@ -63,7 +63,7 @@ const UsersManager = (function() {
       try {
          await Promise.all([
             loadUsers(),
-            loadCompanies(),
+            loadOwnCompany(),
             loadModules()
          ]);
 
@@ -80,7 +80,7 @@ const UsersManager = (function() {
    }
 
    /**
-    * Carrega lista de usuários
+    * Carrega lista de usuários da própria empresa
     */
    async function loadUsers() {
       try {
@@ -106,60 +106,43 @@ const UsersManager = (function() {
    }
 
    /**
-    * Carrega lista de empresas
+    * Carrega dados da própria empresa
     */
-   async function loadCompanies() {
+   async function loadOwnCompany() {
       try {
          if (typeof Thefetch !== 'function') {
             console.error('❌ Função Thefetch não encontrada');
             return;
          }
 
-         const response = await Thefetch('/api/company', 'GET');
+         const response = await Thefetch('/api/company/own', 'GET');
 
          if (response && response.success && response.data) {
-            companies = response.data;
+            ownCompany = response.data.company;
             populateCompanySelect();
          } else {
-            console.error('❌ Erro ao carregar empresas:', response);
+            console.error('❌ Erro ao carregar dados da empresa:', response);
          }
       } catch (error) {
-         console.error('❌ Erro ao carregar empresas:', error);
+         console.error('❌ Erro ao carregar dados da empresa:', error);
       }
    }
 
    /**
-    * Carrega módulos disponíveis
+    * Carrega módulos disponíveis (não utilizado mais)
     */
    async function loadModules() {
-      try {
-         if (typeof Thefetch !== 'function') {
-            console.error('❌ Função Thefetch não encontrada');
-            return;
-         }
-
-         const response = await Thefetch('/api/modules', 'GET');
-
-         if (response && response.success && response.data) {
-            modules = response.data;
-         } else {
-            console.error('❌ Erro ao carregar módulos:', response);
-         }
-      } catch (error) {
-         console.error('❌ Erro ao carregar módulos:', error);
-      }
+      // Esta função não é mais utilizada, mas mantida para compatibilidade
+      modules = [];
    }
 
    /**
-    * Popula select de empresas
+    * Popula select de empresas (apenas com a própria empresa)
     */
    function populateCompanySelect() {
       const companySelect = document.getElementById('user-company');
-      if (companySelect) {
-         companySelect.innerHTML = '<option value="">Selecione uma empresa</option>';
-         companies.forEach(company => {
-            companySelect.innerHTML += `<option value="${company.uuid}">${company.name}</option>`;
-         });
+      if (companySelect && ownCompany) {
+         companySelect.innerHTML = `<option value="${ownCompany.uuid}">${ownCompany.name}</option>`;
       }
    }
 
@@ -490,10 +473,9 @@ const UsersManager = (function() {
     */
    async function loadUserModules(userType, companyUuid, selectedModules = []) {
       try {
-         const response = await Thefetch(`/api/company/${companyUuid}/modules`, 'GET');
-
-         if (response && response.success && response.data && response.data.modules) {
-            const companyModules = response.data.modules;
+         // Usa os módulos da própria empresa que já foram carregados
+         if (ownCompany && ownCompany.modules) {
+            const companyModules = ownCompany.modules;
 
             // Filtra módulos baseado no tipo de usuário
             let availableModules = [];
@@ -509,9 +491,13 @@ const UsersManager = (function() {
             }
 
             renderUserModules(availableModules, selectedModules);
+         } else {
+            // Se não há módulos disponíveis, mostra mensagem
+            renderUserModules([], selectedModules);
          }
       } catch (error) {
          console.error('❌ Erro ao carregar módulos:', error);
+         renderUserModules([], selectedModules);
       }
    }
 
@@ -645,7 +631,7 @@ const UsersManager = (function() {
          // Adiciona dados específicos
          dados.user_type = userType;
          if (companyUuid) {
-            const company = companies.find(c => c.uuid === companyUuid);
+            const company = ownCompany; // Usar ownCompany para a própria empresa
             dados.company_id = company?.id;
          }
 
@@ -797,7 +783,7 @@ const UsersManager = (function() {
 
       // Configura empresa
       if (companySelect && user.company_name) {
-         const company = companies.find(c => c.name === user.company_name);
+         const company = ownCompany; // Usar ownCompany para a própria empresa
          if (company) {
             companySelect.value = company.uuid;
          }
@@ -943,8 +929,91 @@ const UsersManager = (function() {
     * Abre modal para editar empresa atual
     */
    async function editCompany() {
-      // Redireciona para a tela de empresas com parâmetro para editar a empresa atual
-      window.location.href = '/pages/empresas/';
+      if (!ownCompany) {
+         showErrorToast('Dados da empresa não disponíveis');
+         return;
+      }
+
+      // Preenche formulário com dados da empresa
+      const companyNameField = document.getElementById('company-name');
+      const companyCnpjField = document.getElementById('company-cnpj');
+      const companyUrlField = document.getElementById('company-url');
+      const companyStatusField = document.getElementById('company-status');
+      const companyColorField = document.getElementById('company-color');
+      const companyFirebirdHostField = document.getElementById('company-firebird-host');
+      const companyFirebirdPortField = document.getElementById('company-firebird-port');
+      const companyFirebirdDatabaseField = document.getElementById('company-firebird-database');
+      const companyFirebirdUserField = document.getElementById('company-firebird-user');
+      const companyFirebirdPasswordField = document.getElementById('company-firebird-password');
+
+      if (companyNameField) companyNameField.value = ownCompany.name || '';
+      if (companyCnpjField) companyCnpjField.value = ownCompany.cnpj || '';
+      if (companyUrlField) companyUrlField.value = ownCompany.url || '';
+      if (companyStatusField) companyStatusField.value = ownCompany.status || 'active';
+      if (companyColorField) companyColorField.value = ownCompany.color || '';
+      if (companyFirebirdHostField) companyFirebirdHostField.value = ownCompany.firebird_host || '';
+      if (companyFirebirdPortField) companyFirebirdPortField.value = ownCompany.firebird_port || '';
+      if (companyFirebirdDatabaseField) companyFirebirdDatabaseField.value = ownCompany.firebird_database || '';
+      if (companyFirebirdUserField) companyFirebirdUserField.value = ownCompany.firebird_user || '';
+      if (companyFirebirdPasswordField) companyFirebirdPasswordField.value = ownCompany.firebird_password || '';
+
+      // Abre modal
+      const modalElement = document.getElementById('modal-edit-company');
+      if (modalElement) {
+         const modal = new bootstrap.Modal(modalElement);
+         modal.show();
+      }
+   }
+
+   /**
+    * Salva dados da empresa
+    */
+   async function saveCompany() {
+      try {
+         const form = document.getElementById('form-edit-company');
+         if (!form) {
+            showErrorToast('Formulário de empresa não encontrado');
+            return;
+         }
+
+         if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+         }
+
+         const formData = new FormData(form);
+         const dados = {};
+
+         // Converte FormData para objeto
+         for (let [key, value] of formData.entries()) {
+            if (typeof value === 'string' && value.trim() !== '') {
+               dados[key] = value;
+            }
+         }
+
+         const response = await Thefetch('/api/company/own', 'PUT', dados);
+
+         if (response && response.success) {
+            showSuccessToast('Dados da empresa atualizados com sucesso!');
+
+            // Atualiza dados locais
+            await loadOwnCompany();
+
+            // Fecha modal
+            const modalElement = document.getElementById('modal-edit-company');
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+               modal.hide();
+            }
+
+         } else {
+            throw new Error(response?.message || 'Erro ao atualizar empresa');
+         }
+
+      } catch (error) {
+         console.error('❌ Erro ao salvar empresa:', error);
+         showErrorToast('Erro ao salvar empresa: ' + error.message);
+      }
    }
 
    /**
@@ -1044,6 +1113,12 @@ const UsersManager = (function() {
          const btnEditCompany = document.getElementById('btn-edit-company');
          if (btnEditCompany) {
             btnEditCompany.addEventListener('click', editCompany);
+         }
+
+         // Botão de salvar empresa
+         const btnSaveCompany = document.getElementById('btn-save-company');
+         if (btnSaveCompany) {
+            btnSaveCompany.addEventListener('click', saveCompany);
          }
 
          // Botão de novo usuário
@@ -1195,6 +1270,7 @@ const UsersManager = (function() {
       unlockUser: unlockUser,
       toggleStatusUser: toggleStatusUser,
       editCompany: editCompany,
+      saveCompany: saveCompany,
       showErrorToast: showErrorToast,
       showSuccessToast: showSuccessToast
    };

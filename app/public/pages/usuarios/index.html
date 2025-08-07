@@ -881,6 +881,119 @@
       </div>
    </div>
 
+   <!-- Modal Edição de Empresa -->
+   <div class="modal fade" id="modal-edit-company" tabindex="-1" aria-labelledby="modalEditCompanyLabel" aria-hidden="true">
+      <div class="modal-dialog modal-xl">
+         <div class="modal-content">
+            <div class="modal-header">
+               <h1 class="modal-title fs-5" id="modalEditCompanyLabel">
+                  <i class="bx bx-building me-2"></i>
+                  Editar Dados da Empresa
+               </h1>
+               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+               <form id="form-edit-company">
+                  <!-- Informações Básicas da Empresa -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-info-circle me-2"></i>Informações Básicas
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-name" class="form-label">Nome da Empresa *</label>
+                           <input type="text" class="form-control" id="company-name" name="name" placeholder="Nome da empresa" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-cnpj" class="form-label">CNPJ *</label>
+                           <input type="text" class="form-control" id="company-cnpj" name="cnpj" placeholder="00.000.000/0000-00" required>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-url" class="form-label">URL da Empresa</label>
+                           <input type="text" class="form-control" id="company-url" name="url" placeholder="empresa-url">
+                           <div class="form-text">Use apenas letras minúsculas, números e hífens</div>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-status" class="form-label">Status</label>
+                           <select class="form-select" id="company-status" name="status">
+                              <option value="active">Ativo</option>
+                              <option value="inactive">Inativo</option>
+                           </select>
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-color" class="form-label">Cor da Empresa</label>
+                           <input type="color" class="form-control form-control-color" id="company-color" name="color" value="#0d6efd">
+                           <div class="form-text">Cor principal da empresa (formato hexadecimal)</div>
+                        </div>
+                     </div>
+                  </div>
+
+                  <!-- Configurações do Firebird -->
+                  <div class="row mb-4">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-database me-2"></i>Configurações do Firebird
+                        </h6>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-host" class="form-label">Host do Firebird</label>
+                           <input type="text" class="form-control" id="company-firebird-host" name="firebird_host" placeholder="localhost">
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-port" class="form-label">Porta do Firebird</label>
+                           <input type="number" class="form-control" id="company-firebird-port" name="firebird_port" placeholder="3050">
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-database" class="form-label">Database do Firebird</label>
+                           <input type="text" class="form-control" id="company-firebird-database" name="firebird_database" placeholder="C:/path/to/database.fdb">
+                        </div>
+                     </div>
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-firebird-user" class="form-label">Usuário do Firebird</label>
+                           <input type="text" class="form-control" id="company-firebird-user" name="firebird_user" placeholder="SYSDBA">
+                        </div>
+                     </div>
+                     <div class="col-md-12">
+                        <div class="mb-3">
+                           <label for="company-firebird-password" class="form-label">Senha do Firebird</label>
+                           <div class="input-group">
+                              <input type="password" class="form-control" id="company-firebird-password" name="firebird_password" placeholder="•••••••••••••••••">
+                              <button class="btn btn-light" type="button" onclick="createpassword('company-firebird-password', this)">
+                                 <i class="ri-eye-off-line align-middle"></i>
+                              </button>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </form>
+            </div>
+            <div class="modal-footer">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+               <button type="button" class="btn btn-primary" id="btn-save-company">
+                  <i class="bi bi-check-lg me-1"></i>
+                  Salvar Alterações
+               </button>
+            </div>
+         </div>
+      </div>
+   </div>
+
    <!-- Popper JS -->
    <script src="../../assets/libs/@popperjs/core/umd/popper.min.js"></script>
    <!-- Bootstrap JS -->
