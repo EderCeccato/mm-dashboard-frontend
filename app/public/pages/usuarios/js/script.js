@@ -438,25 +438,20 @@ const UsersManager = (function() {
 
       // Configura visibilidade baseada no tipo
       if (userTypeValue === 'admin' || userTypeValue === 'user') {
-         // Na edição, não mostra a seção de empresa pois será sempre a empresa do usuário logado
-         if (userSelected) {
-            // Se está editando, não mostra a seção de empresa
-            if (companySection) companySection.style.display = 'none';
-         } else {
-            // Se está criando novo usuário, mostra a seção de empresa
-            if (companySection) companySection.style.display = 'block';
-         }
+         // Não mostra a seção de empresa - será sempre a empresa do usuário logado
+         if (companySection) companySection.style.display = 'none';
 
          // Sempre mostra a seção de módulos para admin e user
          if (modulesSection) modulesSection.style.display = 'block';
 
-         // Carrega módulos se empresa estiver selecionada
-         if (companySelect && companySelect.value) {
-            await loadUserModules(userTypeValue, companySelect.value);
+         // Carrega módulos da empresa do usuário logado
+         if (ownCompany && ownCompany.modules) {
+            await loadUserModules(userTypeValue, ownCompany.uuid);
          } else {
-            console.log('🔍 Nenhuma empresa selecionada ainda');
+            console.log('🔍 Nenhuma empresa disponível ainda');
          }
       } else if (userTypeValue === 'client') {
+         // Para client, ainda mostra a seção de empresa pois pode precisar selecionar
          if (companySection) companySection.style.display = 'block';
          if (clientsSection) clientsSection.style.display = 'block';
 
@@ -651,7 +646,12 @@ const UsersManager = (function() {
 
          // Adiciona dados específicos
          dados.user_type = userType;
-         if (companyUuid) {
+
+         // Para novos usuários, sempre usa a empresa do usuário logado
+         if (!userUuid) {
+            dados.company_id = ownCompany?.id;
+         } else if (companyUuid) {
+            // Para edição, usa a empresa selecionada se disponível
             const company = ownCompany; // Usar ownCompany para a própria empresa
             dados.company_id = company?.id;
          }
@@ -1086,7 +1086,8 @@ const UsersManager = (function() {
 
       // Esconde seções específicas
       if (statusSection) statusSection.style.display = 'none';
-      if (companySection) companySection.style.display = 'block';
+      // Não mostra a seção de empresa para novos usuários - será sempre a empresa do usuário logado
+      if (companySection) companySection.style.display = 'none';
       if (modulesSection) modulesSection.style.display = 'none';
       if (clientsSection) clientsSection.style.display = 'none';
 
@@ -1103,11 +1104,10 @@ const UsersManager = (function() {
 
       userSelected = null;
 
-      // Carrega módulos se a empresa estiver disponível
-      const companySelect = document.getElementById('user-company');
-      if (companySelect && companySelect.value && ownCompany && ownCompany.modules) {
+      // Carrega módulos da empresa do usuário logado
+      if (ownCompany && ownCompany.modules) {
          setTimeout(() => {
-            loadUserModules('admin', companySelect.value);
+            loadUserModules('admin', ownCompany.uuid);
          }, 100);
       }
    }
@@ -1174,6 +1174,20 @@ const UsersManager = (function() {
          if (btnNewUser) {
             btnNewUser.addEventListener('click', function() {
                resetFormUser();
+
+               // Limpa qualquer backdrop residual antes de abrir o modal
+               const backdrops = document.querySelectorAll('.modal-backdrop');
+               backdrops.forEach(backdrop => {
+                  if (backdrop.parentNode) {
+                     backdrop.parentNode.removeChild(backdrop);
+                  }
+               });
+
+               // Remove classes de modal do body
+               document.body.classList.remove('modal-open');
+               document.body.style.overflow = '';
+               document.body.style.paddingRight = '';
+
                const modal = new bootstrap.Modal(document.getElementById('modal-new-user'));
                modal.show();
             });
@@ -1238,6 +1252,42 @@ const UsersManager = (function() {
          const modalNewUser = document.getElementById('modal-new-user');
          if (modalNewUser) {
             modalNewUser.addEventListener('hidden.bs.modal', resetFormUser);
+
+            // Adiciona listener para limpeza do backdrop
+            modalNewUser.addEventListener('hidden.bs.modal', function() {
+               // Remove backdrops extras que possam ter ficado
+               const backdrops = document.querySelectorAll('.modal-backdrop');
+               backdrops.forEach(backdrop => {
+                  if (backdrop.parentNode) {
+                     backdrop.parentNode.removeChild(backdrop);
+                  }
+               });
+
+               // Remove classes de modal do body
+               document.body.classList.remove('modal-open');
+               document.body.style.overflow = '';
+               document.body.style.paddingRight = '';
+            });
+
+            // Adiciona listener para botões de fechar do modal
+            const closeButtons = modalNewUser.querySelectorAll('[data-bs-dismiss="modal"]');
+            closeButtons.forEach(button => {
+               button.addEventListener('click', function() {
+                  // Força a limpeza do backdrop após fechar
+                  setTimeout(() => {
+                     const backdrops = document.querySelectorAll('.modal-backdrop');
+                     backdrops.forEach(backdrop => {
+                        if (backdrop.parentNode) {
+                           backdrop.parentNode.removeChild(backdrop);
+                        }
+                     });
+
+                     document.body.classList.remove('modal-open');
+                     document.body.style.overflow = '';
+                     document.body.style.paddingRight = '';
+                  }, 150);
+               });
+            });
          }
 
       }, 1000);
