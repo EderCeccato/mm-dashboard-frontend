@@ -1364,6 +1364,7 @@ const UsersManager = (function() {
 
    // API pública
    return {
+      init: init,
       editUser: editUser,
       unlockUser: unlockUser,
       toggleStatusUser: toggleStatusUser,
@@ -1374,13 +1375,12 @@ const UsersManager = (function() {
    };
 })();
 
-// Expõe globalmente
+// Expõe UsersManager globalmente
 window.UsersManager = UsersManager;
 
-/**
- * Gerenciador do FilePond para upload de avatar
- */
+// FilePondManager separado
 const FilePondManager = (function() {
+   'use strict';
    let filePondInstances = {};
 
    /**
@@ -1458,6 +1458,50 @@ const FilePondManager = (function() {
             server: {
                process: null, // Processamento será manual
             },
+
+            // Labels personalizados
+            labelFileProcessingError: config ? `${config.label}: Erro de validação` : 'Erro de validação',
+            labelFileTypeNotAllowed: config ? `${config.label}: Tipo de arquivo não permitido` : 'Tipo de arquivo não permitido',
+            labelFileSizeNotAllowed: config ? `${config.label}: Arquivo muito grande` : 'Arquivo muito grande',
+         });
+
+         // Adiciona evento para validação de dimensões após o arquivo ser adicionado
+         pond.on('addfile', (error, file) => {
+            if (error) {
+               console.log('❌ Erro ao adicionar arquivo:', error);
+               return;
+            }
+
+            if (file && config) {
+               // Valida dimensões da imagem
+               const img = new Image();
+               const url = URL.createObjectURL(file.file);
+
+               img.onload = function() {
+                  URL.revokeObjectURL(url);
+
+                  const width = this.width;
+                  const height = this.height;
+
+                  if (width > config.maxWidth || height > config.maxHeight) {
+                     const errorMsg = `${config.label}: Dimensões inválidas (máx ${config.maxWidth}x${config.maxHeight}px, atual ${width}x${height}px)`;
+                     console.error('❌', errorMsg);
+
+                     // Remove o arquivo e mostra erro
+                     pond.removeFile(file);
+
+                     // Mostra toast de erro usando a função do UsersManager
+                     UsersManager.showErrorToast(errorMsg);
+                  }
+               };
+
+               img.onerror = function() {
+                  URL.revokeObjectURL(url);
+                  console.error(`❌ ${config.label}: Erro ao carregar imagem`);
+               };
+
+               img.src = url;
+            }
          });
 
          filePondInstances[input.id] = pond;
@@ -1521,5 +1565,14 @@ document.addEventListener('DOMContentLoaded', function() {
       FilePondManager.init();
    } else {
       console.error('❌ FilePondManager não está disponível');
+   }
+});
+
+// Inicializa UsersManager quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+   if (window.UsersManager && typeof UsersManager.init === 'function') {
+      UsersManager.init();
+   } else {
+      console.error('❌ UsersManager não está disponível');
    }
 });
