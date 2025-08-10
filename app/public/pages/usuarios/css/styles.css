@@ -575,10 +575,10 @@
    max-width: 900px;
 }
 
-#modal-new-user .modal-body {
+/* #modal-new-user .modal-body {
    max-height: 75vh;
    overflow-y: auto;
-}
+} */
 
 /* Estilos para módulos do usuário */
 .module-card {
