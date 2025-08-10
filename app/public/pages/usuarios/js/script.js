@@ -845,18 +845,19 @@ const UsersManager = (function() {
          await loadUserModules(user.user_type, companySelect.value, selectedModules);
       }
 
-      // Carrega avatar existente se houver
-      if (window.FilePondManager && user.profile_picture_url) {
-         setTimeout(() => {
-            FilePondManager.loadUserAvatar(user);
-         }, 200);
-      }
-
       // Abre modal
       const modalElement = document.getElementById('modal-new-user');
       if (modalElement) {
          const modal = new bootstrap.Modal(modalElement);
          modal.show();
+
+         // Garante que o FilePond está pronto e carrega o avatar imediatamente
+         if (window.FilePondManager) {
+            FilePondManager.recreateFilePondInputs();
+            if (user.profile_picture_url) {
+               FilePondManager.loadUserAvatar(user);
+            }
+         }
       }
    }
 
@@ -1151,6 +1152,16 @@ const UsersManager = (function() {
     */
    function bindEvents() {
       setTimeout(() => {
+         // Evento para garantir que o FilePond esteja sempre disponível
+         const modalElement = document.getElementById('modal-new-user');
+         if (modalElement) {
+            modalElement.addEventListener('show.bs.modal', function() {
+               if (window.FilePondManager) {
+                  // Sempre recria o FilePond para garantir que esteja funcionando
+                  FilePondManager.recreateFilePondInputs();
+               }
+            });
+         }
          // Botão de salvar usuário
          const btnSaveUser = document.getElementById('btn-save-user');
          if (btnSaveUser) {
@@ -1188,8 +1199,18 @@ const UsersManager = (function() {
                document.body.style.overflow = '';
                document.body.style.paddingRight = '';
 
-               const modal = new bootstrap.Modal(document.getElementById('modal-new-user'));
+               const modalElement = document.getElementById('modal-new-user');
+               const modal = new bootstrap.Modal(modalElement);
                modal.show();
+
+               // Limpa o FilePond para novos usuários
+               modalElement.addEventListener('shown.bs.modal', function onModalShown() {
+                  if (window.FilePondManager) {
+                     // Limpa imediatamente, sem delay
+                     FilePondManager.clearAllFiles();
+                  }
+                  modalElement.removeEventListener('shown.bs.modal', onModalShown);
+               });
             });
          }
 
@@ -1398,7 +1419,7 @@ const FilePondManager = (function() {
 
       // Define configurações padrão
       FilePond.setOptions({
-         labelIdle: '<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar',
+         labelIdle: '<i class="bi bi-person-circle me-2"></i>Clique para selecionar avatar<br><small class="text-muted">Máx: 512px por 512px, 2MB</small>',
          labelFileWaitingForSize: 'Aguardando tamanho',
          labelFileSizeNotAvailable: 'Tamanho não disponível',
          labelFileLoading: 'Carregando',
@@ -1427,19 +1448,31 @@ const FilePondManager = (function() {
          imageCropAspectRatio: 1,
          imageResizeTargetWidth: 512,
          imageResizeTargetHeight: 512,
-         stylePanelLayout: 'compact circle',
+         stylePanelLayout: 'compact',
          styleLoadIndicatorPosition: 'center bottom',
          styleProgressIndicatorPosition: 'right bottom',
          styleButtonRemoveItemPosition: 'left bottom',
          styleButtonProcessItemPosition: 'right bottom',
       });
 
-      // Inicializa cada input FilePond
+            // Inicializa cada input FilePond
       const filePondInputs = document.querySelectorAll('.filepond');
       filePondInputs.forEach(input => {
          const inputId = input.id;
+
+         // Verifica se já existe uma instância para este input
+         if (filePondInstances[inputId]) {
+            return; // Pula se já existe
+         }
+
+         // Verifica se o elemento ainda existe no DOM e não tem instância
+         if (!document.contains(input) || filePondInstances[inputId]) {
+            return; // Pula se o elemento não está no DOM ou já tem instância
+         }
+
          const config = FILE_VALIDATION_CONFIG[inputId];
 
+         // Cria instância do FilePond de forma otimizada
          const pond = FilePond.create(input, {
             // Configurações de validação
             maxFileSize: config ? config.maxSize : '2MB',
@@ -1463,6 +1496,11 @@ const FilePondManager = (function() {
             labelFileProcessingError: config ? `${config.label}: Erro de validação` : 'Erro de validação',
             labelFileTypeNotAllowed: config ? `${config.label}: Tipo de arquivo não permitido` : 'Tipo de arquivo não permitido',
             labelFileSizeNotAllowed: config ? `${config.label}: Arquivo muito grande` : 'Arquivo muito grande',
+
+            // Configurações específicas para avatar
+            stylePanelLayout: 'compact',
+            imagePreviewHeight: 120,
+            imageCropAspectRatio: 1,
          });
 
          // Adiciona evento para validação de dimensões após o arquivo ser adicionado
@@ -1525,9 +1563,25 @@ const FilePondManager = (function() {
     */
    function clearAllFiles() {
       try {
-         Object.values(filePondInstances).forEach(pond => {
+         // Remove previews existentes PRIMEIRO
+         const existingPreviews = document.querySelectorAll('.existing-image-preview');
+         existingPreviews.forEach(preview => {
+            preview.remove();
+         });
+
+         // Limpa arquivos do FilePond de forma ultra segura
+         const instancesToClean = { ...filePondInstances };
+
+         Object.keys(instancesToClean).forEach(inputId => {
             try {
-               pond.removeFiles();
+               const pond = instancesToClean[inputId];
+               if (pond && typeof pond.removeFiles === 'function') {
+                  try {
+                     pond.removeFiles();
+                  } catch (removeError) {
+                     console.log('⚠️ Erro ao remover arquivos, mas continuando:', removeError);
+                  }
+               }
             } catch (error) {
                console.log('⚠️ Erro ao remover arquivos do FilePond:', error);
             }
@@ -1538,13 +1592,167 @@ const FilePondManager = (function() {
    }
 
    /**
+    * Recria inputs do FilePond
+    */
+   function recreateFilePondInputs() {
+      try {
+         // Remove previews existentes de forma síncrona
+         document.querySelectorAll('.existing-image-preview').forEach(preview => preview.remove());
+
+         // Limpa instâncias existentes de forma ultra segura
+         const instancesToClean = { ...filePondInstances };
+         filePondInstances = {}; // Limpa o objeto primeiro
+
+         Object.keys(instancesToClean).forEach(inputId => {
+            try {
+               const pond = instancesToClean[inputId];
+               if (pond) {
+                  // Remove arquivos primeiro (mais seguro que destroy)
+                  if (typeof pond.removeFiles === 'function') {
+                     try {
+                        pond.removeFiles();
+                     } catch (removeError) {
+                        console.log('⚠️ Erro ao remover arquivos, mas continuando:', removeError);
+                     }
+                  }
+                  // Tenta destruir apenas se não der erro
+                  if (typeof pond.destroy === 'function') {
+                     try {
+                        pond.destroy();
+                     } catch (destroyError) {
+                        console.log('⚠️ Erro ao destruir FilePond, mas continuando:', destroyError);
+                     }
+                  }
+               }
+            } catch (error) {
+               console.log('⚠️ Erro ao limpar FilePond:', error);
+            }
+         });
+
+         // Recria o input se necessário
+         let input = document.getElementById('user-avatar');
+         if (!input || !document.contains(input)) {
+            const container = document.querySelector('.user-avatar-section');
+            if (container) {
+               // Remove input antigo se existir mas não estiver no DOM
+               if (input && !document.contains(input)) {
+                  try {
+                     input.remove();
+                  } catch (error) {
+                     console.log('⚠️ Erro ao remover input antigo:', error);
+                  }
+               }
+
+               // Cria novo input
+               input = document.createElement('input');
+               input.type = 'file';
+               input.className = 'filepond';
+               input.id = 'user-avatar';
+               input.accept = 'image/*';
+               input.setAttribute('data-max-width', '512');
+               input.setAttribute('data-max-height', '512');
+               container.appendChild(input);
+            }
+         }
+
+         // Inicializa com pequeno delay para garantir estabilidade do DOM
+         setTimeout(() => {
+            initFilePond();
+         }, 10);
+      } catch (error) {
+         console.error('❌ Erro ao recriar FilePond:', error);
+      }
+   }
+
+   /**
+    * Verifica se o FilePond está funcionando
+    */
+   function ensureFilePondExists() {
+      const input = document.getElementById('user-avatar');
+
+      // Se o elemento não existe, recria
+      if (!input) {
+         recreateFilePondInputs();
+         return false;
+      }
+
+      // Se não existe instância, recria
+      if (!filePondInstances['user-avatar']) {
+         recreateFilePondInputs();
+         return false;
+      }
+
+      // Se existe instância mas o elemento não está no DOM, recria
+      if (!document.contains(input)) {
+         recreateFilePondInputs();
+         return false;
+      }
+
+      // Verifica se o elemento tem a classe filepond (está inicializado)
+      if (!input.classList.contains('filepond')) {
+         recreateFilePondInputs();
+         return false;
+      }
+
+      return true;
+   }
+
+                  /**
     * Carrega avatar existente do usuário
     */
    function loadUserAvatar(user) {
-      if (user.profile_picture_url) {
-         // Para avatar, podemos mostrar uma prévia simples
-         console.log('📷 Carregando avatar existente:', user.profile_picture_url);
+      if (!user.profile_picture_url) return;
+
+      // Aguarda um pequeno delay para garantir que o FilePond foi recriado
+      setTimeout(() => {
+         // Executa imediatamente de forma síncrona
+         const container = document.getElementById('user-avatar')?.parentElement;
+         if (!container) return;
+
+         // Remove previews existentes de forma síncrona
+         const existingPreviews = container.querySelectorAll('.existing-image-preview');
+         existingPreviews.forEach(preview => preview.remove());
+
+         // Cria e adiciona o preview imediatamente
+         showExistingImagePreview('user-avatar', user.profile_picture_url);
+      }, 50);
+   }
+
+      /**
+    * Mostra preview da imagem existente - versão ultra otimizada
+    */
+   function showExistingImagePreview(inputId, imageUrl) {
+      if (!imageUrl) return;
+
+      const container = document.getElementById(inputId)?.parentElement;
+      if (!container) return;
+
+      // Remove previews existentes de forma síncrona
+      container.querySelectorAll('.existing-image-preview').forEach(preview => preview.remove());
+
+      // Cria o preview de forma ultra rápida usando innerHTML
+      const flexContainer = document.createElement('div');
+      flexContainer.className = 'existing-image-preview';
+      flexContainer.innerHTML = `
+         <div class="card" style="cursor: pointer; flex-shrink: 0; width: 180px;" onclick="window.open('${imageUrl}', '_blank')" title="Clique para visualizar">
+            <img src="${imageUrl}" class="card-img-top" style="height: 90px; object-fit: cover;" alt="Imagem atual">
+            <div class="card-body">
+               <small class="text-muted">
+                  <i class="bi bi-eye me-1"></i>Imagem atual
+               </small>
+            </div>
+         </div>
+      `;
+
+      // Move o FilePond para dentro do container flex
+      const filePondElement = container.querySelector('.filepond--root');
+      if (filePondElement) {
+         filePondElement.remove();
+         flexContainer.appendChild(filePondElement);
       }
+
+      // Adiciona o container flex ao DOM
+      container.appendChild(flexContainer);
    }
 
    // Retorna métodos públicos
@@ -1552,7 +1760,10 @@ const FilePondManager = (function() {
       init: initFilePond,
       getFile: getFile,
       clearAllFiles: clearAllFiles,
-      loadUserAvatar: loadUserAvatar
+      loadUserAvatar: loadUserAvatar,
+      showExistingImagePreview: showExistingImagePreview,
+      recreateFilePondInputs: recreateFilePondInputs,
+      ensureFilePondExists: ensureFilePondExists
    };
 })();
 

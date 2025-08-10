@@ -2584,11 +2584,14 @@ const FilePondManager = (function() {
          'company-favicon': company.favicon_url
       };
 
-      Object.entries(imageFields).forEach(([inputId, imageUrl]) => {
-         if (imageUrl) {
-            showExistingImagePreview(inputId, imageUrl);
-         }
-      });
+      // Aguarda um pequeno delay para garantir que o FilePond foi recriado
+      setTimeout(() => {
+         Object.entries(imageFields).forEach(([inputId, imageUrl]) => {
+            if (imageUrl) {
+               showExistingImagePreview(inputId, imageUrl);
+            }
+         });
+      }, 50);
    }
 
    /**
@@ -2596,7 +2599,10 @@ const FilePondManager = (function() {
     */
    function loadUserAvatar(user) {
       if (user.profile_picture_url) {
-         showExistingImagePreview('user-avatar', user.profile_picture_url);
+         // Aguarda um pequeno delay para garantir que o FilePond foi recriado
+         setTimeout(() => {
+            showExistingImagePreview('user-avatar', user.profile_picture_url);
+         }, 50);
       }
    }
 
