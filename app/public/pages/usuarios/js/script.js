@@ -141,12 +141,11 @@ const UsersManager = (function() {
 
    /**
     * Popula select de empresas (apenas com a própria empresa)
+    * Função mantida para compatibilidade, mas não é mais utilizada
     */
    function populateCompanySelect() {
-      const companySelect = document.getElementById('user-company');
-      if (companySelect && ownCompany) {
-         companySelect.innerHTML = `<option value="${ownCompany.uuid}">${ownCompany.name}</option>`;
-      }
+      // Esta função não é mais necessária pois a seção de empresa foi removida
+      // O admin sempre trabalha com a própria empresa
    }
 
    /**
@@ -213,7 +212,7 @@ const UsersManager = (function() {
       if (filteredUsers.length === 0) {
          tbody.innerHTML = `
             <tr>
-               <td colspan="6" class="text-center text-muted py-4">
+               <td colspan="5" class="text-center text-muted py-4">
                   <i class="bi bi-people text-muted fs-1 d-block mb-2"></i>
                   <p class="mb-2">Nenhum usuário encontrado</p>
                   <small class="text-muted">Clique em "Novo Usuário" para cadastrar o primeiro usuário</small>
@@ -267,9 +266,6 @@ const UsersManager = (function() {
                <span class="badge ${CONFIG.TIPOS_USUARIO[user.user_type]?.badge || 'bg-secondary'}">
                   ${CONFIG.TIPOS_USUARIO[user.user_type]?.label || user.user_type}
                </span>
-            </td>
-            <td class="text-center">
-               ${user.company_name || '-'}
             </td>
             <td class="text-center">
                <span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}">
@@ -452,25 +448,19 @@ const UsersManager = (function() {
     */
    async function onUserTypeChange() {
       const userType = document.getElementById('user-type');
-      const companySection = document.getElementById('company-selection-section');
       const modulesSection = document.getElementById('modules-selection-section');
       const clientsSection = document.getElementById('clients-selection-section');
-      const companySelect = document.getElementById('user-company');
 
       if (!userType) return;
 
       const userTypeValue = userType.value;
 
       // Reset de seções
-      if (companySection) companySection.style.display = 'none';
       if (modulesSection) modulesSection.style.display = 'none';
       if (clientsSection) clientsSection.style.display = 'none';
 
       // Configura visibilidade baseada no tipo
       if (userTypeValue === 'admin' || userTypeValue === 'user') {
-         // Não mostra a seção de empresa - será sempre a empresa do usuário logado
-         if (companySection) companySection.style.display = 'none';
-
          // Sempre mostra a seção de módulos para admin e user
          if (modulesSection) modulesSection.style.display = 'block';
 
@@ -481,8 +471,7 @@ const UsersManager = (function() {
             console.log('🔍 Nenhuma empresa disponível ainda');
          }
       } else if (userTypeValue === 'client') {
-         // Para client, ainda mostra a seção de empresa pois pode precisar selecionar
-         if (companySection) companySection.style.display = 'block';
+         // Para client, mostra apenas a seção de clientes
          if (clientsSection) clientsSection.style.display = 'block';
 
          // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
@@ -495,21 +484,11 @@ const UsersManager = (function() {
 
    /**
     * Handler para mudança na empresa
+    * Função mantida para compatibilidade, mas não é mais utilizada
     */
    async function onCompanyChange() {
-      const userType = document.getElementById('user-type');
-      const companySelect = document.getElementById('user-company');
-
-      if (!userType || !companySelect) return;
-
-      const userTypeValue = userType.value;
-      const companyUuid = companySelect.value;
-
-      if ((userTypeValue === 'admin' || userTypeValue === 'user') && companyUuid) {
-         await loadUserModules(userTypeValue, companyUuid);
-      } else {
-         console.log('🔍 Não carregando módulos - tipo:', userTypeValue, 'empresa:', companyUuid);
-      }
+      // Esta função não é mais necessária pois a seção de empresa foi removida
+      // O admin sempre trabalha com a própria empresa
    }
 
    /**
@@ -648,17 +627,11 @@ const UsersManager = (function() {
 
          const userUuid = document.getElementById('user-uuid')?.value;
          const userType = document.getElementById('user-type')?.value;
-         const companyUuid = document.getElementById('user-company')?.value;
          const passwordField = document.getElementById('user-password');
 
          // Validações específicas
          if (!userType) {
             showErrorToast('Tipo de usuário é obrigatório');
-            return;
-         }
-
-         if (userType !== 'superuser' && !companyUuid) {
-            showErrorToast('Empresa é obrigatória para usuários admin, user e client');
             return;
          }
 
@@ -680,14 +653,8 @@ const UsersManager = (function() {
          // Adiciona dados específicos
          dados.user_type = userType;
 
-         // Para novos usuários, sempre usa a empresa do usuário logado
-         if (!userUuid) {
-            dados.company_id = ownCompany?.id;
-         } else if (companyUuid) {
-            // Para edição, usa a empresa selecionada se disponível
-            const company = ownCompany; // Usar ownCompany para a própria empresa
-            dados.company_id = company?.id;
-         }
+         // Sempre usa a empresa do usuário logado (admin)
+         dados.company_id = ownCompany?.id;
 
          // Coleta módulos selecionados (para admin e user)
          if (userType === 'admin' || userType === 'user') {
@@ -810,7 +777,6 @@ const UsersManager = (function() {
       const passwordLabel = document.querySelector('label[for="user-password"]');
       const typeField = document.getElementById('user-type');
       const statusField = document.getElementById('user-status');
-      const companySelect = document.getElementById('user-company');
       const statusSection = document.getElementById('user-status-section');
 
       // Preenche campos básicos
@@ -835,18 +801,8 @@ const UsersManager = (function() {
       // Mostra seção de status na edição
       if (statusSection) statusSection.style.display = 'block';
 
-      // Configura empresa - oculta o campo pois será sempre a empresa do usuário logado
-      if (companySelect) {
-         const company = ownCompany; // Usar ownCompany para a própria empresa
-         if (company) {
-            companySelect.value = company.uuid;
-            // Oculta a seção de seleção de empresa na edição
-            const companySection = document.getElementById('company-selection-section');
-            if (companySection) {
-               companySection.style.display = 'none';
-            }
-         }
-      }
+      // A empresa será sempre a empresa do usuário logado (admin)
+      // Não é mais necessário configurar o campo de empresa
 
       // Configura campos baseado no tipo de usuário
       await onUserTypeChange();
@@ -858,7 +814,7 @@ const UsersManager = (function() {
          if (clientsChoices && userClients.length > 0) {
             clientsChoices.setChoices(userClients, 'value', 'label', true);
          }
-      } else if ((user.user_type === 'admin' || user.user_type === 'user') && companySelect.value) {
+      } else if (user.user_type === 'admin' || user.user_type === 'user') {
          // Carrega módulos do usuário
          let selectedModules = [];
 
@@ -875,7 +831,7 @@ const UsersManager = (function() {
             }
          }
 
-         await loadUserModules(user.user_type, companySelect.value, selectedModules);
+         await loadUserModules(user.user_type, ownCompany.uuid, selectedModules);
       }
 
       // Abre modal
@@ -1101,7 +1057,6 @@ const UsersManager = (function() {
       const passwordField = document.getElementById('user-password');
       const passwordLabel = document.querySelector('label[for="user-password"]');
       const statusSection = document.getElementById('user-status-section');
-      const companySection = document.getElementById('company-selection-section');
       const modulesSection = document.getElementById('modules-selection-section');
       const clientsSection = document.getElementById('clients-selection-section');
 
@@ -1120,8 +1075,6 @@ const UsersManager = (function() {
 
       // Esconde seções específicas
       if (statusSection) statusSection.style.display = 'none';
-      // Não mostra a seção de empresa para novos usuários - será sempre a empresa do usuário logado
-      if (companySection) companySection.style.display = 'none';
       if (modulesSection) modulesSection.style.display = 'none';
       if (clientsSection) clientsSection.style.display = 'none';
 
@@ -1253,11 +1206,7 @@ const UsersManager = (function() {
             userType.addEventListener('change', onUserTypeChange);
          }
 
-         // Mudança na empresa
-         const companySelect = document.getElementById('user-company');
-         if (companySelect) {
-            companySelect.addEventListener('change', onCompanyChange);
-         }
+         // Mudança na empresa - removido pois a seção de empresa foi removida
 
          // Filtros da tabela
          const userTypeFilter = document.getElementById('filtroTipoUsuario');
