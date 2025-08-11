@@ -149,7 +149,6 @@ const CompaniesManager = (function() {
          // Tenta novamente após um delay
          setTimeout(() => {
             if (typeof Thefetch === 'function') {
-               console.log('✅ Função Thefetch encontrada. Inicializando...');
                bindEvents();
                loadInitialData();
             } else {
@@ -905,9 +904,12 @@ const CompaniesManager = (function() {
                            cgccli: client.customProperties?.cnpj || client.label.split(' - ')[1]
                         }));
 
+                        // Valida e limpa clientes removidos do Firebird
+                        const validatedClients = await validateAndCleanUserClients(targetUuid, clientsData);
+
                         const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
                            userUuid: targetUuid,
-                           clients: clientsData
+                           clients: validatedClients
                         });
 
                         if (clientsResponse && clientsResponse.success) {
@@ -916,6 +918,9 @@ const CompaniesManager = (function() {
                         } else {
                            console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsResponse?.message);
                         }
+                     } else {
+                        // Se não há clientes selecionados, desativa todos os clientes existentes
+                        await validateAndCleanUserClients(targetUuid, []);
                      }
                   }
                } catch (clientsError) {
@@ -1053,11 +1058,31 @@ const CompaniesManager = (function() {
             try {
                await initializeClientsSelect();
 
-               // Carrega clientes do usuário da lista atual
-               const userClients = await loadUserClients(user.uuid);
+               // Usa diretamente os clientes do usuário que já estão no array
+               if (user.clients && user.clients.length > 0 && window.clientsChoices) {
 
-               if (userClients.length > 0 && window.clientsChoices) {
+                  // Converte os clientes para o formato do Choices
+                  const userClients = user.clients.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
+
+                  // Adiciona as opções ao Choices
                   window.clientsChoices.setChoices(userClients, 'value', 'label', true);
+
+                  // Marca os clientes como selecionados
+                  setTimeout(() => {
+                     userClients.forEach(client => {
+                        window.clientsChoices.setChoiceByValue(client.value);
+                     });
+                  }, 50);
+               } else {
+                  console.log('🔍 Nenhum cliente encontrado para o usuário');
                }
             } catch (error) {
                console.error('❌ Erro ao inicializar Choices para client:', error);
@@ -1090,6 +1115,28 @@ const CompaniesManager = (function() {
                nameField.dispatchEvent(new Event('input', { bubbles: true }));
                nameField.dispatchEvent(new Event('change', { bubbles: true }));
             }
+
+            // Para usuários do tipo client, garante que os clientes sejam pré-selecionados
+            if (user.user_type === 'client' && user.clients && user.clients.length > 0 && window.clientsChoices) {
+               setTimeout(() => {
+                  // Converte os clientes para o formato do Choices
+                  const userClients = user.clients.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
+
+                  // Marca os clientes como selecionados
+                  userClients.forEach(client => {
+                     window.clientsChoices.setChoiceByValue(client.value);
+                  });
+               }, 300);
+            }
+
             // Remove o listener para evitar duplicação
             modalElement.removeEventListener('shown.bs.modal', onModalShown);
          }, { once: true });
@@ -1565,6 +1612,45 @@ const CompaniesManager = (function() {
                }
             }
 
+            // Se há clientes selecionados, salva os clientes vinculados
+            if (window.companyClientsChoices) {
+               try {
+                  const targetUuid = companyUuid || response.company?.uuid || response.data?.uuid;
+                  if (targetUuid) {
+                     const selectedClients = window.companyClientsChoices.getValue();
+
+                     if (selectedClients && selectedClients.length > 0) {
+                        const clientsData = selectedClients.map(client => ({
+                           nocli: client.value,
+                           nomcli: client.customProperties?.name || client.label.split(' - ')[0],
+                           cgccli: client.customProperties?.cnpj || client.label.split(' - ')[1]
+                        }));
+
+                        // Valida e limpa clientes removidos do Firebird
+                        const validatedClients = await validateAndCleanCompanyClients(targetUuid, clientsData);
+
+                        const clientsResponse = await Thefetch('/api/company/clients', 'POST', {
+                           companyUuid: targetUuid,
+                           clients: validatedClients
+                        });
+
+                        if (clientsResponse && clientsResponse.success) {
+                           // Atualiza a lista local com os clientes salvos
+                           await updateCompanyClientsInLocalList(targetUuid, clientsResponse.data.currentClients);
+                        } else {
+                           console.warn('⚠️ Erro ao salvar clientes da empresa:', clientsResponse?.message);
+                        }
+                     } else {
+                        // Se não há clientes selecionados, desativa todos os clientes existentes
+                        await validateAndCleanCompanyClients(targetUuid, []);
+                     }
+                  }
+               } catch (clientsError) {
+                  console.warn('⚠️ Erro ao salvar clientes da empresa:', clientsError);
+                  // Não falha o cadastro por causa dos clientes
+               }
+            }
+
             // Só fecha o modal se tudo estiver OK
             if (uploadSuccess) {
                showSuccessToast(
@@ -1608,7 +1694,7 @@ const CompaniesManager = (function() {
    /**
       * Edita empresa
    */
-   function editCompany(companyUuid) {
+   async function editCompany(companyUuid) {
       const company = companies.find(c => c.uuid === companyUuid);
       if (!company) {
          showErrorToast('Empresa não encontrada');
@@ -1643,6 +1729,38 @@ const CompaniesManager = (function() {
       if (firebirdDatabaseField) firebirdDatabaseField.value = company.firebird_database;
       if (firebirdUserField) firebirdUserField.value = company.firebird_user;
       if (firebirdPasswordField) firebirdPasswordField.value = company.firebird_password;
+
+      // Mostra a seção de clientes para admin/superuser
+      const clientsSection = document.getElementById('company-clients-selection-section');
+      if (clientsSection) {
+         clientsSection.style.display = 'block';
+      }
+
+      // Inicializa o Choices.js para clientes
+      setTimeout(async () => {
+         try {
+            await initializeCompanyClientsSelect();
+
+            // Carrega clientes da empresa
+            const companyClients = await loadCompanyClients(company.uuid);
+
+            if (companyClients.length > 0 && window.companyClientsChoices) {
+               console.log('🔍 Carregando clientes da empresa:', companyClients);
+               window.companyClientsChoices.setChoices(companyClients, 'value', 'label', true);
+
+               // Marca os clientes como selecionados
+               companyClients.forEach(client => {
+                  if (client.selected) {
+                     window.companyClientsChoices.setChoiceByValue(client.value);
+                  }
+               });
+            } else {
+               console.log('🔍 Nenhum cliente encontrado para a empresa');
+            }
+         } catch (error) {
+            console.error('❌ Erro ao inicializar Choices para clientes:', error);
+         }
+      }, 100);
 
       // Carrega imagens existentes no FilePond
       setTimeout(() => {
@@ -1697,6 +1815,18 @@ const CompaniesManager = (function() {
       // Limpa apenas o conteúdo dos FilePonds, mantendo os inputs
       if (window.FilePondManager) {
          FilePondManager.clearAllFiles();
+      }
+
+      // Limpa clientes
+      if (window.companyClientsChoices) {
+         window.companyClientsChoices.clearStore();
+         window.companyClientsChoices.clearChoices();
+      }
+
+      // Esconde seção de clientes
+      const clientsSection = document.getElementById('company-clients-selection-section');
+      if (clientsSection) {
+         clientsSection.style.display = 'none';
       }
 
       // Garante que o backdrop seja removido e o body seja resetado
@@ -2329,34 +2459,40 @@ const CompaniesManager = (function() {
 
    init();
 
-   // API pública
-   return {
-      // Propriedades de estado
-      companies: companies,
-      users: users,
-      modules: modules,
-      companySelected: companySelected,
-      userSelected: userSelected,
-      availableModules: availableModules,
-      clientsChoices: window.clientsChoices,
+         // API pública
+      return {
+         // Propriedades de estado
+         companies: companies,
+         users: users,
+         modules: modules,
+         companySelected: companySelected,
+         userSelected: userSelected,
+         availableModules: availableModules,
+         clientsChoices: window.clientsChoices,
+         companyClientsChoices: window.companyClientsChoices,
 
-      // Métodos
-      loadInitialData: loadInitialData,
-      editCompany: editCompany,
-      toggleStatusCompany: toggleStatusCompany,
-      viewCompanyModules: viewCompanyModules,
-      manageCompanyModules: manageCompanyModules,
-      editUser: editUser,
-      unlockUser: unlockUser,
-      toggleStatusUser: toggleStatusUser,
-      showErrorToast: showErrorToast,
-      showSuccessToast: showSuccessToast,
-      clearModalBackdrop: clearModalBackdrop,
-      searchClients: searchClients,
-      initializeClientsSelect: initializeClientsSelect,
-      loadUserClients: loadUserClients,
-      updateUserClientsInLocalList: updateUserClientsInLocalList,
-   };
+         // Métodos
+         loadInitialData: loadInitialData,
+         editCompany: editCompany,
+         toggleStatusCompany: toggleStatusCompany,
+         viewCompanyModules: viewCompanyModules,
+         manageCompanyModules: manageCompanyModules,
+         editUser: editUser,
+         unlockUser: unlockUser,
+         toggleStatusUser: toggleStatusUser,
+         showErrorToast: showErrorToast,
+         showSuccessToast: showSuccessToast,
+         clearModalBackdrop: clearModalBackdrop,
+         searchClients: searchClients,
+         initializeClientsSelect: initializeClientsSelect,
+         loadUserClients: loadUserClients,
+         updateUserClientsInLocalList: updateUserClientsInLocalList,
+         searchCompanyClients: searchCompanyClients,
+         initializeCompanyClientsSelect: initializeCompanyClientsSelect,
+         loadCompanyClients: loadCompanyClients,
+         updateCompanyClientsInLocalList: updateCompanyClientsInLocalList,
+         validateAndCleanCompanyClients: validateAndCleanCompanyClients,
+      };
 })();
 
 // Expõe globalmente
@@ -3033,9 +3169,12 @@ document.addEventListener('DOMContentLoaded', function() {
                            cgccli: client.customProperties?.cnpj || client.label.split(' - ')[1]
                         }));
 
+                        // Valida e limpa clientes removidos do Firebird
+                        const validatedClients = await validateAndCleanUserClients(targetUuid, clientsData);
+
                         const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
                            userUuid: targetUuid,
-                           clients: clientsData
+                           clients: validatedClients
                         });
 
                         if (clientsResponse && clientsResponse.success) {
@@ -3044,6 +3183,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         } else {
                            console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsResponse?.message);
                         }
+                     } else {
+                        // Se não há clientes selecionados, desativa todos os clientes existentes
+                        await validateAndCleanUserClients(targetUuid, []);
                      }
                   }
                } catch (clientsError) {
@@ -3137,6 +3279,23 @@ document.addEventListener('DOMContentLoaded', function() {
                   }
                };
             });
+
+            // Se estamos editando um usuário, adiciona os clientes já vinculados que não foram encontrados na busca
+            if (window.CompaniesManager.userSelected && window.CompaniesManager.userSelected.user_type === 'client') {
+               const userClients = await loadUserClients(window.CompaniesManager.userSelected.uuid);
+               const foundClientIds = clients.map(c => c.value);
+
+               // Adiciona clientes vinculados que não foram encontrados na busca atual
+               userClients.forEach(userClient => {
+                  if (!foundClientIds.includes(userClient.value)) {
+                     clients.push({
+                        ...userClient,
+                        selected: true // Marca como selecionado pois já está vinculado
+                     });
+                  }
+               });
+            }
+
             return clients;
          }
 
@@ -3204,11 +3363,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         const clients = await searchClients(searchTerm);
                         console.log('🔍 Clientes encontrados:', clients);
 
-                        // Limpa escolhas atuais
+                        // Limpa escolhas atuais mas preserva os selecionados
                         if (window.clientsChoices) {
+                           const selectedValues = window.clientsChoices.getValue(true).map(item => item.value);
                            window.clientsChoices.clearChoices();
+
                            // Adiciona novas escolhas
                            window.clientsChoices.setChoices(clients, 'value', 'label', true);
+
+                           // Re-aplica as seleções anteriores
+                           setTimeout(() => {
+                              selectedValues.forEach(value => {
+                                 window.clientsChoices.setChoiceByValue(value);
+                              });
+                           }, 50);
                         }
                      } catch (error) {
                         console.error('❌ Erro ao carregar clientes:', error);
@@ -3217,7 +3385,16 @@ document.addEventListener('DOMContentLoaded', function() {
                } else {
                   console.log('🔍 Termo muito curto, limpando escolhas');
                   if (window.clientsChoices) {
+                     // Preserva os selecionados ao limpar
+                     const selectedValues = window.clientsChoices.getValue(true).map(item => item.value);
                      window.clientsChoices.clearChoices();
+
+                     // Re-aplica as seleções
+                     setTimeout(() => {
+                        selectedValues.forEach(value => {
+                           window.clientsChoices.setChoiceByValue(value);
+                        });
+                     }, 50);
                   }
                }
             });
@@ -3244,35 +3421,40 @@ document.addEventListener('DOMContentLoaded', function() {
          if (user && user.user_type === 'client') {
             let userClients = [];
 
-            // Se o usuário já tem clientes na lista local, usa eles
-            if (user.clients && user.clients.length > 0) {
-               userClients = user.clients.map(client => ({
-                  value: client.client_id,
-                  label: `${client.client_name} - ${client.client_cnpj}`,
-                  selected: true,
-                  customProperties: {
-                     name: client.client_name,
-                     cnpj: client.client_cnpj
+            // Sempre busca no backend para garantir dados atualizados
+            try {
+               const response = await Thefetch(`/api/user/${userUuid}/clients`, 'GET');
+               if (response && response.success && response.data) {
+                  userClients = response.data.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
+
+                  // Atualiza a lista local com os dados mais recentes
+                  const userIndex = window.CompaniesManager.users.findIndex(u => u.uuid === userUuid);
+                  if (userIndex !== -1) {
+                     window.CompaniesManager.users[userIndex].clients = response.data;
                   }
-               }));
-            } else {
-               // Se não tem clientes na lista local, busca no backend
-               try {
-                  const response = await Thefetch(`/api/user/${userUuid}/clients`, 'GET');
-                  if (response && response.success && response.data) {
-                     userClients = response.data.map(client => ({
-                        value: client.client_id,
-                        label: `${client.client_name} - ${client.client_cnpj}`,
-                        selected: true,
-                        customProperties: {
-                           name: client.client_name,
-                           cnpj: client.client_cnpj
-                        }
-                     }));
-                  }
-               } catch (backendError) {
-                  console.warn('⚠️ Erro ao buscar clientes do backend:', backendError);
-                  // Retorna array vazio se não conseguir buscar do backend
+               }
+            } catch (backendError) {
+               console.warn('⚠️ Erro ao buscar clientes do backend:', backendError);
+
+               // Fallback: usa clientes da lista local se disponível
+               if (user.clients && user.clients.length > 0) {
+                  userClients = user.clients.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
                }
             }
 
@@ -3323,4 +3505,341 @@ document.addEventListener('DOMContentLoaded', function() {
 
          e.target.value = value;
       });
+   }
+
+
+   /**
+    * Verifica se os clientes ainda existem no Firebird e desativa os removidos
+    */
+   async function validateAndCleanUserClients(userUuid, selectedClients) {
+      try {
+         console.log('�� Validando clientes do usuário:', userUuid);
+
+         // Se não há clientes selecionados, desativa todos os clientes existentes
+         if (!selectedClients || selectedClients.length === 0) {
+            console.log('🔍 Nenhum cliente selecionado, desativando todos os clientes existentes');
+
+            const response = await Thefetch('/api/user/clients/deactivate-all', 'POST', {
+               userUuid: userUuid
+            });
+
+            if (response && response.success) {
+               console.log('✅ Todos os clientes foram desativados com sucesso');
+               return [];
+            } else {
+               console.warn('⚠️ Erro ao desativar todos os clientes:', response?.message);
+               return [];
+            }
+         }
+
+         // Busca todos os clientes vinculados ao usuário
+         const response = await Thefetch(`/api/user/${userUuid}/clients`, 'GET');
+         if (!response || !response.success || !response.data) {
+            console.warn('⚠️ Não foi possível buscar clientes do usuário para validação');
+            return selectedClients;
+         }
+
+         const currentUserClients = response.data;
+         const selectedClientIds = selectedClients.map(c => c.nocli);
+         const clientsToDeactivate = [];
+
+         // Identifica clientes que foram removidos da seleção
+         currentUserClients.forEach(userClient => {
+            if (!selectedClientIds.includes(userClient.client_id)) {
+               clientsToDeactivate.push({
+                  nocli: userClient.client_id,
+                  nomcli: userClient.client_name,
+                  cgccli: userClient.client_cnpj
+               });
+            }
+         });
+
+         // Se há clientes para desativar, faz a requisição para desativá-los
+         if (clientsToDeactivate.length > 0) {
+            console.log('�� Desativando clientes removidos:', clientsToDeactivate);
+
+            // Envia apenas os clientes selecionados (os que devem permanecer ativos)
+            const deactivateResponse = await Thefetch('/api/user/clients', 'POST', {
+               userUuid: userUuid,
+               clients: selectedClients
+            });
+
+            if (deactivateResponse && deactivateResponse.success) {
+               console.log('✅ Clientes desativados com sucesso');
+            } else {
+               console.warn('⚠️ Erro ao desativar clientes:', deactivateResponse?.message);
+            }
+         }
+
+         return selectedClients;
+      } catch (error) {
+         console.error('❌ Erro ao validar clientes do usuário:', error);
+         return selectedClients;
+      }
+   }
+
+   /**
+    * Busca clientes para empresas na API
+    */
+   async function searchCompanyClients(searchTerm) {
+      try {
+
+         if (!searchTerm || searchTerm.length < 3) {
+            return [];
+         }
+
+         // Obtém o UUID da empresa sendo editada
+         let companyUuid = null;
+
+         // Se estamos editando uma empresa, usa o UUID dela
+         if (window.CompaniesManager.companySelected) {
+            companyUuid = window.CompaniesManager.companySelected.uuid;
+         }
+
+         if (!companyUuid) {
+            console.warn('⚠️ Nenhuma empresa selecionada para busca de clientes');
+            return [];
+         }
+
+         const url = `/api/company/clients/search?search=${encodeURIComponent(searchTerm)}&companyUuid=${encodeURIComponent(companyUuid)}`;
+
+         const response = await Thefetch(url, 'GET');
+
+         if (response && response.success && response.data) {
+            const clients = response.data.map(client => {
+               return {
+                  value: client.id,
+                  label: `${client.name} - ${client.cnpj}`,
+                  customProperties: {
+                     name: client.name,
+                     cnpj: client.cnpj
+                  }
+               };
+            });
+
+            // Se estamos editando uma empresa, adiciona os clientes já vinculados
+            if (window.CompaniesManager.companySelected) {
+               const companyClients = await loadCompanyClients(window.CompaniesManager.companySelected.uuid);
+               const foundClientIds = clients.map(c => c.value);
+
+               // Adiciona clientes vinculados que não foram encontrados na busca atual
+               companyClients.forEach(companyClient => {
+                  if (!foundClientIds.includes(companyClient.value)) {
+                     clients.push({
+                        ...companyClient,
+                        selected: true // Marca como selecionado pois já está vinculado
+                     });
+                  }
+               });
+            }
+
+            return clients;
+         }
+
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao buscar clientes:', error);
+         return [];
+      }
+   }
+
+   /**
+    * Inicializa o Choices.js para seleção de clientes de empresas
+    */
+   async function initializeCompanyClientsSelect() {
+      const clientsSelect = document.getElementById('company-clients');
+      if (!clientsSelect) {
+         console.error('❌ Elemento company-clients não encontrado');
+         throw new Error('Elemento company-clients não encontrado');
+      }
+
+      // Verifica se Choices está disponível
+      if (typeof Choices === 'undefined') {
+         console.error('❌ Biblioteca Choices não está disponível');
+         throw new Error('Biblioteca Choices não está disponível');
+      }
+
+      // Destroi instância anterior se existir
+      if (window.companyClientsChoices) {
+         window.companyClientsChoices.destroy();
+         window.companyClientsChoices = null;
+      }
+
+      try {
+         window.companyClientsChoices = new Choices(clientsSelect, {
+            removeItemButton: true,
+            searchEnabled: true,
+            searchPlaceholderValue: 'Digite pelo menos 3 caracteres para buscar...',
+            noResultsText: 'Nenhum cliente encontrado',
+            noChoicesText: 'Digite pelo menos 3 caracteres para buscar',
+            itemSelectText: 'Clique para selecionar',
+            maxItemCount: -1,
+            placeholder: true,
+            placeholderValue: 'Selecione os clientes...',
+            searchResultLimit: 20,
+            renderChoiceLimit: 20,
+            shouldSort: false
+         });
+
+         // Adiciona listener para busca após a inicialização
+         const input = window.companyClientsChoices.input.element;
+         if (input) {
+            let searchTimeout;
+
+            input.addEventListener('input', async function(e) {
+               const searchTerm = e.target.value;
+
+               clearTimeout(searchTimeout);
+
+               if (searchTerm.length >= 3) {
+                  searchTimeout = setTimeout(async () => {
+                     try {
+                        const clients = await searchCompanyClients(searchTerm);
+
+                        // Limpa escolhas atuais
+                        if (window.companyClientsChoices) {
+                           window.companyClientsChoices.clearChoices();
+                           // Adiciona novas escolhas
+                           window.companyClientsChoices.setChoices(clients, 'value', 'label', true);
+                        }
+                     } catch (error) {
+                        console.error('❌ Erro ao carregar clientes:', error);
+                     }
+                  }, 300);
+               } else {
+                  if (window.companyClientsChoices) {
+                     window.companyClientsChoices.clearChoices();
+                  }
+               }
+            });
+         } else {
+            console.error('❌ Input do Choices não encontrado');
+         }
+
+         return window.companyClientsChoices;
+
+      } catch (error) {
+         console.error('❌ Erro ao inicializar Choices:', error);
+         throw error;
+      }
+   }
+
+   /**
+    * Carrega clientes da empresa para edição
+    */
+   async function loadCompanyClients(companyUuid) {
+      try {
+         // Primeiro, busca a empresa na lista atual
+         const company = window.CompaniesManager.companies.find(c => c.uuid === companyUuid);
+
+         if (company) {
+            let companyClients = [];
+
+            // Sempre busca no backend para garantir dados atualizados
+            try {
+               const response = await Thefetch(`/api/company/${companyUuid}/clients`, 'GET');
+               if (response && response.success && response.data) {
+                  companyClients = response.data.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
+
+                  // Atualiza a lista local com os dados mais recentes
+                  const companyIndex = window.CompaniesManager.companies.findIndex(c => c.uuid === companyUuid);
+                  if (companyIndex !== -1) {
+                     window.CompaniesManager.companies[companyIndex].clients = response.data;
+                  }
+               }
+            } catch (backendError) {
+               console.warn('⚠️ Erro ao buscar clientes do backend:', backendError);
+
+               // Fallback: usa clientes da lista local se disponível
+               if (company.clients && company.clients.length > 0) {
+                  companyClients = company.clients.map(client => ({
+                     value: client.client_id,
+                     label: `${client.client_name} - ${client.client_cnpj}`,
+                     selected: true,
+                     customProperties: {
+                        name: client.client_name,
+                        cnpj: client.client_cnpj
+                     }
+                  }));
+               }
+            }
+
+            return companyClients;
+         }
+
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao carregar clientes da empresa:', error);
+         return [];
+      }
+   }
+
+   /**
+    * Atualiza a lista local de empresas com os clientes atualizados
+    */
+   async function updateCompanyClientsInLocalList(companyUuid, currentClients) {
+      try {
+         // Encontra a empresa na lista local
+         const companyIndex = window.CompaniesManager.companies.findIndex(c => c.uuid === companyUuid);
+
+         if (companyIndex !== -1) {
+            // Atualiza os clientes da empresa
+            window.CompaniesManager.companies[companyIndex].clients = currentClients;
+
+            // Re-renderiza a tabela para mostrar as mudanças
+            renderTableCompanies();
+         }
+      } catch (error) {
+         console.error('❌ Erro ao atualizar lista local:', error);
+      }
+   }
+
+   /**
+    * Valida e limpa clientes da empresa
+    */
+   async function validateAndCleanCompanyClients(companyUuid, selectedClients) {
+      try {
+         // Busca todos os clientes vinculados à empresa
+         const response = await Thefetch(`/api/company/${companyUuid}/clients`, 'GET');
+         if (!response || !response.success || !response.data) {
+            console.warn('⚠️ Não foi possível buscar clientes da empresa para validação');
+            return selectedClients;
+         }
+
+         const currentCompanyClients = response.data;
+         const selectedClientIds = selectedClients.map(c => c.nocli);
+         const clientsToDeactivate = [];
+
+         // Identifica clientes que foram removidos do Firebird
+         currentCompanyClients.forEach(companyClient => {
+            if (!selectedClientIds.includes(companyClient.client_id)) {
+               clientsToDeactivate.push({
+                  nocli: companyClient.client_id,
+                  nomcli: companyClient.client_name,
+                  cgccli: companyClient.client_cnpj
+               });
+            }
+         });
+
+         // Remove clientes que não existem mais no Firebird
+         const validClients = selectedClients.filter(client => {
+            const existsInFirebird = currentCompanyClients.some(
+               cc => cc.client_id === client.nocli
+            );
+            return existsInFirebird;
+         });
+
+         return validClients;
+      } catch (error) {
+         console.error('❌ Erro ao validar clientes da empresa:', error);
+         return selectedClients;
+      }
    }
