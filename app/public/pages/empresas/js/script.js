@@ -544,6 +544,7 @@ const CompaniesManager = (function() {
    function renderUserModules(modules, selectedModules = []) {
       const modulesContainer = document.getElementById('user-modules-list');
       const modulesLoading = document.getElementById('user-modules-loading');
+      const modulesSection = document.getElementById('modules-selection-section');
 
       if (!modulesContainer) {
          console.error('❌ Container de módulos do usuário não encontrado');
@@ -556,6 +557,11 @@ const CompaniesManager = (function() {
       }
 
       if (!modules || modules.length === 0) {
+         // Esconde a seção de módulos se não há módulos
+         if (modulesSection) {
+            modulesSection.style.display = 'none';
+         }
+
          modulesContainer.innerHTML = `
             <div class="text-center text-muted py-3">
                <i class="bi bi-grid-3x3-gap fs-1 d-block mb-2"></i>
@@ -568,7 +574,6 @@ const CompaniesManager = (function() {
       }
 
       // Mostra o container de módulos
-      const modulesSection = document.getElementById('modules-selection-section');
       if (modulesSection) {
          modulesSection.style.display = 'block';
       }
@@ -640,6 +645,8 @@ const CompaniesManager = (function() {
       const modulesContainer = document.getElementById('user-modules-list');
       const companyGroup = document.getElementById('company-selection-section');
       const modulesLoading = document.getElementById('user-modules-loading');
+      const clientsSection = document.getElementById('clients-selection-section');
+      const modulesSection = document.getElementById('modules-selection-section');
 
       // Verifica se os elementos existem antes de usar
       if (!userType) return;
@@ -657,6 +664,10 @@ const CompaniesManager = (function() {
          modulesContainer.style.display = 'none';
       }
 
+      // Reset de seções
+      if (clientsSection) clientsSection.style.display = 'none';
+      if (modulesSection) modulesSection.style.display = 'none';
+
       // Configura visibilidade do campo empresa
       if (companyGroup && companySelect) {
          if (userTypeValue === 'superuser') {
@@ -671,6 +682,11 @@ const CompaniesManager = (function() {
       if (userTypeValue === 'superuser') {
          // Para superuser, carrega todos os módulos de superuser
          try {
+            // Mostra a seção de módulos
+            if (modulesSection) {
+               modulesSection.style.display = 'block';
+            }
+
             const allModules = await loadAllModules();
             const superuserModules = allModules.filter(module => module.module_type === 'superuser');
             renderUserModules(superuserModules);
@@ -686,6 +702,18 @@ const CompaniesManager = (function() {
                modulesContainer.style.display = 'block';
             }
          }
+      } else if (userTypeValue === 'client') {
+         // Para client, mostra apenas a seção de clientes
+         if (clientsSection) clientsSection.style.display = 'block';
+
+         // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
+         setTimeout(async () => {
+            try {
+               await initializeClientsSelect();
+            } catch (error) {
+               console.error('❌ Erro ao inicializar seletor de clientes:', error);
+            }
+         }, 100);
       } else if (userTypeValue && companySelect && companySelect.value) {
          // Para admin/user, carrega módulos da empresa selecionada
          await onCompanyChange();
@@ -863,6 +891,39 @@ const CompaniesManager = (function() {
                }
             }
 
+            // Se é usuário do tipo client, salva os clientes vinculados
+            if (userType === 'client') {
+               try {
+                  const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
+                  if (targetUuid && window.clientsChoices) {
+                     const selectedClients = window.clientsChoices.getValue();
+
+                     if (selectedClients && selectedClients.length > 0) {
+                        const clientsData = selectedClients.map(client => ({
+                           nocli: client.value,
+                           nomcli: client.customProperties?.name || client.label.split(' - ')[0],
+                           cgccli: client.customProperties?.cnpj || client.label.split(' - ')[1]
+                        }));
+
+                        const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
+                           userUuid: targetUuid,
+                           clients: clientsData
+                        });
+
+                        if (clientsResponse && clientsResponse.success) {
+                           // Atualiza a lista local com os clientes salvos
+                           await updateUserClientsInLocalList(targetUuid, clientsResponse.data.currentClients);
+                        } else {
+                           console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsResponse?.message);
+                        }
+                     }
+                  }
+               } catch (clientsError) {
+                  console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsError);
+                  // Não falha o cadastro por causa dos clientes
+               }
+            }
+
             showSuccessToast(
                userUuid ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!',
                'success'
@@ -979,8 +1040,33 @@ const CompaniesManager = (function() {
          modulesLoading.style.display = 'none';
       }
 
-      // Carrega módulos do usuário
-      await loadUserModules(user);
+      // Carrega dados específicos do tipo
+      if (user.user_type === 'client') {
+         // Mostra a seção de clientes
+         const clientsSection = document.getElementById('clients-selection-section');
+         if (clientsSection) {
+            clientsSection.style.display = 'block';
+         }
+
+         // Inicializa o Choices.js imediatamente
+         setTimeout(async () => {
+            try {
+               await initializeClientsSelect();
+
+               // Carrega clientes do usuário da lista atual
+               const userClients = await loadUserClients(user.uuid);
+
+               if (userClients.length > 0 && window.clientsChoices) {
+                  window.clientsChoices.setChoices(userClients, 'value', 'label', true);
+               }
+            } catch (error) {
+               console.error('❌ Erro ao inicializar Choices para client:', error);
+            }
+         }, 100);
+      } else {
+         // Para superuser, admin e user, carrega módulos
+         await loadUserModules(user);
+      }
 
       // Carrega avatar existente se houver
       if (window.FilePondManager && user.profile_picture_url) {
@@ -1209,52 +1295,73 @@ const CompaniesManager = (function() {
     * Reset do formulário de usuário
     */
    function resetFormUser() {
+      // Limpa campos do formulário
       const form = document.getElementById('form-new-user');
+      if (form) {
+         form.reset();
+      }
+
+      // Limpa campos específicos
       const userUuidField = document.getElementById('user-uuid');
       const titleField = document.getElementById('title-modal-new-user');
       const textField = document.getElementById('text-save-user');
-      const nameField = document.getElementById('user-name-input');
-      const emailField = document.getElementById('user-email');
       const passwordField = document.getElementById('user-password');
       const passwordLabel = document.querySelector('label[for="user-password"]');
-      const typeField = document.getElementById('user-type');
-      const statusField = document.getElementById('user-status');
-      const companySelect = document.getElementById('user-company');
-      const companyGroup = document.getElementById('company-selection-section');
-      const modulesContainer = document.getElementById('user-modules-list');
-      const modulesLoading = document.getElementById('user-modules-loading');
 
-      if (form) form.reset();
       if (userUuidField) userUuidField.value = '';
       if (titleField) titleField.textContent = 'Cadastrar Novo Usuário';
       if (textField) textField.textContent = 'Salvar Usuário';
-      if (nameField) nameField.value = '';
-      if (emailField) emailField.value = '';
+
+      // Configura senha para novo usuário
       if (passwordField) {
          passwordField.value = '';
          passwordField.setAttribute('required', 'required');
-         passwordField.placeholder = 'Digite a senha';
+         passwordField.placeholder = '•••••••••••••••••';
       }
+
+      // Adiciona asterisco no label da senha para novo usuário
       if (passwordLabel) {
          passwordLabel.textContent = 'Senha *';
       }
-      if (typeField) typeField.value = '';
-      if (statusField) statusField.value = 'active';
-      if (companySelect) companySelect.value = '';
-      if (companyGroup) companyGroup.style.display = 'block';
+
+      // Esconde seções específicas
+      const companyGroup = document.getElementById('company-selection-section');
+      const modulesSection = document.getElementById('modules-selection-section');
+      const clientsSection = document.getElementById('clients-selection-section');
+      const modulesContainer = document.getElementById('user-modules-list');
+      const modulesLoading = document.getElementById('user-modules-loading');
+      const userModulesControls = document.getElementById('user-modules-controls');
+
+      if (companyGroup) companyGroup.style.display = 'none';
+      if (modulesSection) modulesSection.style.display = 'none';
+      if (clientsSection) clientsSection.style.display = 'none';
       if (modulesContainer) {
          modulesContainer.innerHTML = '';
          modulesContainer.style.display = 'none';
       }
-      if (modulesLoading) {
-         modulesLoading.style.display = 'none';
+      if (modulesLoading) modulesLoading.style.display = 'none';
+      if (userModulesControls) userModulesControls.style.display = 'none';
+
+      // Limpa Choices.js se existir
+      if (window.clientsChoices) {
+         try {
+            window.clientsChoices.destroy();
+            window.clientsChoices = null;
+         } catch (error) {
+            console.warn('⚠️ Erro ao destruir Choices:', error);
+         }
       }
 
-      // Limpa avatar de forma simples
+      // Limpa FilePond se existir
       if (window.FilePondManager) {
-         FilePondManager.clearAllFiles();
+         try {
+            FilePondManager.clearAllFiles();
+         } catch (error) {
+            console.warn('⚠️ Erro ao limpar FilePond:', error);
+         }
       }
 
+      // Reseta variáveis globais
       userSelected = null;
    }
 
@@ -1580,7 +1687,7 @@ const CompaniesManager = (function() {
       const empresaUuidField = document.getElementById('company-uuid');
       const titleField = document.getElementById('title-modal-new-company');
       const textField = document.getElementById('text-save-company');
-      const companySelected = null;
+               // companySelected já está disponível no escopo
 
       // Remove classes de layout específicas
       document.querySelectorAll('.new-company-layout').forEach(el => {
@@ -2224,6 +2331,16 @@ const CompaniesManager = (function() {
 
    // API pública
    return {
+      // Propriedades de estado
+      companies: companies,
+      users: users,
+      modules: modules,
+      companySelected: companySelected,
+      userSelected: userSelected,
+      availableModules: availableModules,
+      clientsChoices: window.clientsChoices,
+
+      // Métodos
       loadInitialData: loadInitialData,
       editCompany: editCompany,
       toggleStatusCompany: toggleStatusCompany,
@@ -2235,6 +2352,10 @@ const CompaniesManager = (function() {
       showErrorToast: showErrorToast,
       showSuccessToast: showSuccessToast,
       clearModalBackdrop: clearModalBackdrop,
+      searchClients: searchClients,
+      initializeClientsSelect: initializeClientsSelect,
+      loadUserClients: loadUserClients,
+      updateUserClientsInLocalList: updateUserClientsInLocalList,
    };
 })();
 
@@ -2898,6 +3019,39 @@ document.addEventListener('DOMContentLoaded', function() {
                }
             }
 
+            // Se é usuário do tipo client, salva os clientes vinculados
+            if (userType === 'client') {
+               try {
+                  const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
+                  if (targetUuid && window.clientsChoices) {
+                     const selectedClients = window.clientsChoices.getValue();
+
+                     if (selectedClients && selectedClients.length > 0) {
+                        const clientsData = selectedClients.map(client => ({
+                           nocli: client.value,
+                           nomcli: client.customProperties?.name || client.label.split(' - ')[0],
+                           cgccli: client.customProperties?.cnpj || client.label.split(' - ')[1]
+                        }));
+
+                        const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
+                           userUuid: targetUuid,
+                           clients: clientsData
+                        });
+
+                        if (clientsResponse && clientsResponse.success) {
+                           // Atualiza a lista local com os clientes salvos
+                           await updateUserClientsInLocalList(targetUuid, clientsResponse.data.currentClients);
+                        } else {
+                           console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsResponse?.message);
+                        }
+                     }
+                  }
+               } catch (clientsError) {
+                  console.warn('⚠️ Erro ao salvar clientes do usuário:', clientsError);
+                  // Não falha o cadastro por causa dos clientes
+               }
+            }
+
             showSuccessToast(
                userUuid ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!',
                'success'
@@ -2921,4 +3075,252 @@ document.addEventListener('DOMContentLoaded', function() {
          console.error('❌ Erro ao salvar usuário:', error);
          showErrorToast('Erro ao salvar usuário: ' + error.message);
       }
+   }
+
+   /**
+    * Busca clientes na API
+    */
+   async function searchClients(searchTerm) {
+      try {
+         console.log('🔍 searchClients chamada com:', searchTerm);
+
+         if (!searchTerm || searchTerm.length < 3) {
+            console.log('🔍 Termo muito curto, retornando array vazio');
+            return [];
+         }
+
+         // Obtém o UUID da empresa selecionada ou da empresa do usuário sendo editado
+         let companyUuid = null;
+
+         // Se estamos editando um usuário, usa a empresa dele
+         if (window.CompaniesManager.userSelected && window.CompaniesManager.userSelected.user_type === 'client' && window.CompaniesManager.userSelected.company_name) {
+            console.log('🔍 Usando empresa do usuário sendo editado:', window.CompaniesManager.userSelected.company_name);
+            const company = window.CompaniesManager.companies.find(c => c.name === window.CompaniesManager.userSelected.company_name);
+            if (company) {
+               companyUuid = company.uuid;
+               console.log('🔍 UUID da empresa encontrado:', companyUuid);
+            }
+         }
+
+         // Se não encontrou a empresa do usuário, usa a empresa selecionada no formulário
+         if (!companyUuid) {
+            const companySelect = document.getElementById('user-company');
+            companyUuid = companySelect ? companySelect.value : null;
+            console.log('🔍 Usando empresa do select:', companyUuid);
+         }
+
+         if (!companyUuid) {
+            console.warn('⚠️ Nenhuma empresa selecionada para busca de clientes');
+            return [];
+         }
+
+         const url = `/api/clients/search?search=${encodeURIComponent(searchTerm)}&companyUuid=${encodeURIComponent(companyUuid)}`;
+         console.log('🔍 Fazendo requisição para:', url);
+
+         const response = await Thefetch(url, 'GET');
+         console.log('🔍 Resposta da API:', response);
+
+         if (response && response.success && response.data) {
+            const clients = response.data.map(client => {
+
+               // Verifica se os campos existem e usa fallbacks
+               const clientId = client.id || client.NOCLI || client.client_id;
+               const clientName = client.name || client.NOMCLI || client.client_name;
+               const clientCnpj = client.cnpj || client.CGCCLI || client.client_cnpj;
+
+               return {
+                  value: clientId,
+                  label: `${clientName} - ${clientCnpj}`,
+                  customProperties: {
+                     name: clientName,
+                     cnpj: clientCnpj
+                  }
+               };
+            });
+            return clients;
+         }
+
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao buscar clientes:', error);
+         return [];
+      }
+   }
+
+   /**
+    * Inicializa o Choices.js para seleção de clientes
+    */
+   async function initializeClientsSelect() {
+      const clientsSelect = document.getElementById('user-clients');
+      if (!clientsSelect) {
+         console.error('❌ Elemento user-clients não encontrado');
+         throw new Error('Elemento user-clients não encontrado');
+      }
+
+      // Verifica se Choices está disponível
+      if (typeof Choices === 'undefined') {
+         console.error('❌ Biblioteca Choices não está disponível');
+         throw new Error('Biblioteca Choices não está disponível');
+      }
+
+      // Destroi instância anterior se existir
+      if (window.clientsChoices) {
+         window.clientsChoices.destroy();
+         window.clientsChoices = null;
+      }
+
+      try {
+         window.clientsChoices = new Choices(clientsSelect, {
+            removeItemButton: true,
+            searchEnabled: true,
+            searchPlaceholderValue: 'Digite pelo menos 3 caracteres para buscar...',
+            noResultsText: 'Nenhum cliente encontrado',
+            noChoicesText: 'Digite pelo menos 3 caracteres para buscar',
+            itemSelectText: 'Clique para selecionar',
+            maxItemCount: -1,
+            placeholder: true,
+            placeholderValue: 'Selecione os clientes...',
+            searchResultLimit: 20,
+            renderChoiceLimit: 20,
+            shouldSort: false
+         });
+
+         // Adiciona listener para busca após a inicialização
+         const input = window.clientsChoices.input.element;
+         if (input) {
+            let searchTimeout;
+
+            input.addEventListener('input', async function(e) {
+               const searchTerm = e.target.value;
+               console.log('🔍 Digitação detectada:', searchTerm);
+
+               clearTimeout(searchTimeout);
+
+               if (searchTerm.length >= 3) {
+                  console.log('🔍 Buscando clientes para:', searchTerm);
+                  searchTimeout = setTimeout(async () => {
+                     try {
+                        console.log('🔍 Fazendo requisição para buscar clientes...');
+                        const clients = await searchClients(searchTerm);
+                        console.log('🔍 Clientes encontrados:', clients);
+
+                        // Limpa escolhas atuais
+                        if (window.clientsChoices) {
+                           window.clientsChoices.clearChoices();
+                           // Adiciona novas escolhas
+                           window.clientsChoices.setChoices(clients, 'value', 'label', true);
+                        }
+                     } catch (error) {
+                        console.error('❌ Erro ao carregar clientes:', error);
+                     }
+                  }, 300);
+               } else {
+                  console.log('🔍 Termo muito curto, limpando escolhas');
+                  if (window.clientsChoices) {
+                     window.clientsChoices.clearChoices();
+                  }
+               }
+            });
+         } else {
+            console.error('❌ Input do Choices não encontrado');
+         }
+
+         return window.clientsChoices;
+
+      } catch (error) {
+         console.error('❌ Erro ao inicializar Choices:', error);
+         throw error;
+      }
+   }
+
+   /**
+    * Carrega clientes do usuário para edição
+    */
+   async function loadUserClients(userUuid) {
+      try {
+         // Primeiro, busca o usuário na lista atual
+         const user = window.CompaniesManager.users.find(u => u.uuid === userUuid);
+
+         if (user && user.user_type === 'client') {
+            let userClients = [];
+
+            // Se o usuário já tem clientes na lista local, usa eles
+            if (user.clients && user.clients.length > 0) {
+               userClients = user.clients.map(client => ({
+                  value: client.client_id,
+                  label: `${client.client_name} - ${client.client_cnpj}`,
+                  selected: true,
+                  customProperties: {
+                     name: client.client_name,
+                     cnpj: client.client_cnpj
+                  }
+               }));
+            } else {
+               // Se não tem clientes na lista local, busca no backend
+               try {
+                  const response = await Thefetch(`/api/user/${userUuid}/clients`, 'GET');
+                  if (response && response.success && response.data) {
+                     userClients = response.data.map(client => ({
+                        value: client.client_id,
+                        label: `${client.client_name} - ${client.client_cnpj}`,
+                        selected: true,
+                        customProperties: {
+                           name: client.client_name,
+                           cnpj: client.client_cnpj
+                        }
+                     }));
+                  }
+               } catch (backendError) {
+                  console.warn('⚠️ Erro ao buscar clientes do backend:', backendError);
+                  // Retorna array vazio se não conseguir buscar do backend
+               }
+            }
+
+            return userClients;
+         }
+
+         return [];
+      } catch (error) {
+         console.error('❌ Erro ao carregar clientes do usuário:', error);
+         return [];
+      }
+   }
+
+   /**
+    * Atualiza a lista local de usuários com os clientes atualizados
+    */
+   async function updateUserClientsInLocalList(userUuid, currentClients) {
+      try {
+         // Encontra o usuário na lista local
+         const userIndex = window.CompaniesManager.users.findIndex(u => u.uuid === userUuid);
+
+         if (userIndex !== -1) {
+            // Atualiza os clientes do usuário
+            window.CompaniesManager.users[userIndex].clients = currentClients;
+
+            // Re-renderiza a tabela para mostrar as mudanças
+            renderTableUsers();
+
+         }
+      } catch (error) {
+         console.error('❌ Erro ao atualizar lista local:', error);
+      }
+   }
+
+   /**
+    * Máscara para CNPJ
+    */
+   function applyCnpjMask(input) {
+      input.addEventListener('input', function(e) {
+         let value = e.target.value.replace(/\D/g, '');
+
+         if (value.length <= 14) {
+            value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+            value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+            value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+            value = value.replace(/(\d{4})(\d)/, '$1-$2');
+         }
+
+         e.target.value = value;
+      });
    }

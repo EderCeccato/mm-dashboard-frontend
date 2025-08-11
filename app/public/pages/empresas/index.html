@@ -34,6 +34,9 @@
    <link rel="stylesheet" href="../../assets/libs/filepond/filepond.min.css">
    <link rel="stylesheet" href="../../assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.css">
 
+   <!-- Choices CSS -->
+   <link rel="stylesheet" href="../../assets/libs/choices.js/public/assets/styles/choices.min.css">
+
    <!-- Main JS -->
    <script src="../../assets/js/main.js"></script>
    <script src="../../assets/js/auth-manager.js"></script>
@@ -1146,6 +1149,24 @@
                      </div>
                   </div>
 
+                  <!-- Seleção de Clientes (apenas para tipo client) -->
+                  <div class="row mb-4" id="clients-selection-section" style="display: none;">
+                     <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                           <i class="bi bi-people me-2"></i>Clientes Vinculados
+                        </h6>
+                     </div>
+                     <div class="col-12">
+                        <div class="mb-3">
+                           <label for="user-clients" class="form-label">Clientes</label>
+                           <select class="form-select" id="user-clients" name="user-clients" multiple>
+                              <!-- Clientes serão carregados via JavaScript -->
+                           </select>
+                           <div class="form-text">Digite pelo menos 3 caracteres para buscar clientes</div>
+                        </div>
+                     </div>
+                  </div>
+
                   <!-- Status do Usuário (apenas na edição) -->
                   <div class="row mb-4" id="user-status-section" style="display: none;">
                      <div class="col-12">
@@ -1214,6 +1235,9 @@
    <script src="../../assets/libs/filepond-plugin-image-preview/filepond-plugin-image-preview.min.js"></script>
    <script src="../../assets/libs/filepond-plugin-image-resize/filepond-plugin-image-resize.min.js"></script>
    <script src="../../assets/libs/filepond/filepond.min.js"></script>
+
+   <!-- Choices JS -->
+   <script src="../../assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
 
    <!-- Script JS -->
    <script src="../../assets/js/show-password.js"></script>
@@ -1301,7 +1325,5 @@
    <script src="/pages/empresas/js/script.js"></script>
 
 </body>
-
-</html>
 
 </html>
