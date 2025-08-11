@@ -164,7 +164,7 @@
 #clients-selection-section .choices__item--selectable {
    border: 1px solid #dee2e6;
    background-color: #f8f9fa;
-   color: #495057;
+   /* color: #495057; */
 }
 
 #clients-selection-section .choices__item--selectable:hover {
@@ -174,14 +174,14 @@
 }
 
 #clients-selection-section .choices__button {
-   background-image: none;
+   /* background-image: none;
    background-color: transparent;
    border: none;
    color: #fff;
    font-size: 14px;
    font-weight: bold;
    padding: 0;
-   margin-left: 8px;
+   margin-left: 8px; */
 }
 
 #clients-selection-section .choices__button:hover {
@@ -518,7 +518,7 @@
 
 /* Estilos para listagem de clientes na tabela */
 .clients-list {
-   max-width: 200px;
+   /* max-width: 200px; */
    overflow: hidden;
 }
 

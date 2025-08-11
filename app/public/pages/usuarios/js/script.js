@@ -341,79 +341,85 @@ const UsersManager = (function() {
     * Inicializa o Choices.js para seleção de clientes
     */
    function initializeClientsSelect() {
-      const clientsSelect = document.getElementById('user-clients');
-      if (!clientsSelect) {
-         console.error('❌ Elemento user-clients não encontrado');
-         return;
-      }
+      return new Promise((resolve, reject) => {
+         const clientsSelect = document.getElementById('user-clients');
+         if (!clientsSelect) {
+            console.error('❌ Elemento user-clients não encontrado');
+            reject(new Error('Elemento user-clients não encontrado'));
+            return;
+         }
 
-      // Verifica se Choices está disponível
-      if (typeof Choices === 'undefined') {
-         console.error('❌ Biblioteca Choices não está disponível');
-         return;
-      }
+         // Verifica se Choices está disponível
+         if (typeof Choices === 'undefined') {
+            console.error('❌ Biblioteca Choices não está disponível');
+            reject(new Error('Biblioteca Choices não está disponível'));
+            return;
+         }
 
-      // Destroi instância anterior se existir
-      if (clientsChoices) {
-         clientsChoices.destroy();
-         clientsChoices = null;
-      }
+         // Destroi instância anterior se existir
+         if (clientsChoices) {
+            clientsChoices.destroy();
+            clientsChoices = null;
+         }
 
-      try {
-         clientsChoices = new Choices(clientsSelect, {
-            removeItemButton: true,
-            searchEnabled: true,
-            searchPlaceholderValue: 'Digite pelo menos 3 caracteres para buscar...',
-            noResultsText: 'Nenhum cliente encontrado',
-            noChoicesText: 'Digite pelo menos 3 caracteres para buscar',
-            itemSelectText: 'Clique para selecionar',
-            maxItemCount: -1,
-            placeholder: true,
-            placeholderValue: 'Selecione os clientes...',
-            searchResultLimit: 20,
-            renderChoiceLimit: 20,
-            shouldSort: false
-         });
+         try {
+            clientsChoices = new Choices(clientsSelect, {
+               removeItemButton: true,
+               searchEnabled: true,
+               searchPlaceholderValue: 'Digite pelo menos 3 caracteres para buscar...',
+               noResultsText: 'Nenhum cliente encontrado',
+               noChoicesText: 'Digite pelo menos 3 caracteres para buscar',
+               itemSelectText: 'Clique para selecionar',
+               maxItemCount: -1,
+               placeholder: true,
+               placeholderValue: 'Selecione os clientes...',
+               searchResultLimit: 20,
+               renderChoiceLimit: 20,
+               shouldSort: false
+            });
 
-         // Adiciona listener para busca após a inicialização
-         setTimeout(() => {
-            const input = clientsChoices.input.element;
-            if (input) {
-               let searchTimeout;
+            // Adiciona listener para busca após a inicialização
+            setTimeout(() => {
+               const input = clientsChoices.input.element;
+               if (input) {
+                  let searchTimeout;
 
-               input.addEventListener('input', async function(e) {
-                  const searchTerm = e.target.value;
+                  input.addEventListener('input', async function(e) {
+                     const searchTerm = e.target.value;
 
-                  clearTimeout(searchTimeout);
+                     clearTimeout(searchTimeout);
 
-                  if (searchTerm.length >= 3) {
-                     searchTimeout = setTimeout(async () => {
-                        try {
-                           const clients = await searchClients(searchTerm);
+                     if (searchTerm.length >= 3) {
+                        searchTimeout = setTimeout(async () => {
+                           try {
+                              const clients = await searchClients(searchTerm);
 
-                           // Limpa escolhas atuais
-                           clientsChoices.clearChoices();
+                              // Limpa escolhas atuais
+                              clientsChoices.clearChoices();
 
-                           // Adiciona novas escolhas
-                           clientsChoices.setChoices(clients, 'value', 'label', true);
-                        } catch (error) {
-                           console.error('❌ Erro ao carregar clientes:', error);
-                        }
-                     }, 300);
-                  } else {
-                     clientsChoices.clearChoices();
-                  }
-               });
-            } else {
-               console.error('❌ Input do Choices não encontrado');
-            }
-         }, 100);
+                              // Adiciona novas escolhas
+                              clientsChoices.setChoices(clients, 'value', 'label', true);
+                           } catch (error) {
+                              console.error('❌ Erro ao carregar clientes:', error);
+                           }
+                        }, 300);
+                     } else {
+                        clientsChoices.clearChoices();
+                     }
+                  });
+               } else {
+                  console.error('❌ Input do Choices não encontrado');
+               }
 
-         return clientsChoices;
-      } catch (error) {
-         console.error('❌ Erro ao inicializar Choices:', error);
-         return null;
-      }
+               // Resolve a Promise após a inicialização completa
+               resolve(clientsChoices);
+            }, 100);
+
+         } catch (error) {
+            console.error('❌ Erro ao inicializar Choices:', error);
+            reject(error);
+         }
+      });
    }
 
    /**
@@ -421,10 +427,12 @@ const UsersManager = (function() {
     */
    async function loadUserClients(userUuid) {
       try {
-         const response = await Thefetch(`/api/user/${userUuid}/clients`, 'GET');
+         // Primeiro, busca o usuário na lista atual
+         const user = users.find(u => u.uuid === userUuid);
 
-         if (response && response.success && response.data) {
-            return response.data.map(client => ({
+         if (user && user.user_type === 'client' && user.clients) {
+            // Converte os clientes para o formato do Choices.js
+            const userClients = user.clients.map(client => ({
                value: client.client_id,
                label: `${client.client_name} - ${client.client_cnpj}`,
                selected: true,
@@ -433,6 +441,8 @@ const UsersManager = (function() {
                   cnpj: client.client_cnpj
                }
             }));
+
+            return userClients;
          }
 
          return [];
@@ -474,8 +484,12 @@ const UsersManager = (function() {
          if (clientsSection) clientsSection.style.display = 'block';
 
          // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
-         setTimeout(() => {
-            initializeClientsSelect();
+         setTimeout(async () => {
+            try {
+               await initializeClientsSelect();
+            } catch (error) {
+               console.error('❌ Erro ao inicializar seletor de clientes:', error);
+            }
          }, 100);
       }
    }
@@ -857,10 +871,26 @@ const UsersManager = (function() {
 
       // Carrega dados específicos do tipo
       if (user.user_type === 'client') {
-         // Carrega clientes do usuário
+         // Carrega clientes do usuário da lista atual
          const userClients = await loadUserClients(user.uuid);
-         if (clientsChoices && userClients.length > 0) {
-            clientsChoices.setChoices(userClients, 'value', 'label', true);
+
+         // Aguarda a inicialização do Choices.js e então define os clientes
+         if (userClients.length > 0) {
+            // Aguarda a inicialização do Choices.js
+            setTimeout(async () => {
+               try {
+                  if (!clientsChoices) {
+                     // Se o Choices.js ainda não foi inicializado, inicializa agora
+                     await initializeClientsSelect();
+                  }
+
+                  if (clientsChoices) {
+                     clientsChoices.setChoices(userClients, 'value', 'label', true);
+                  }
+               } catch (error) {
+                  console.error('❌ Erro ao definir clientes no Choices:', error);
+               }
+            }, 300);
          }
       } else if (user.user_type === 'admin' || user.user_type === 'user') {
          // Carrega módulos do usuário
