@@ -467,7 +467,6 @@ const UsersManager = (function() {
             // Re-renderiza a tabela para mostrar as mudanças
             renderTableUsers();
 
-            console.log('✅ Lista local atualizada com sucesso');
          }
       } catch (error) {
          console.error('❌ Erro ao atualizar lista local:', error);
@@ -797,7 +796,7 @@ const UsersManager = (function() {
 
          // Coleta clientes selecionados (para client)
          if (userType === 'client' && clientsChoices) {
-            const selectedClients = clientsChoices.getValue(true);
+            const selectedClients = clientsChoices.getValue();
             dados.clientIds = selectedClients;
          }
 
@@ -824,12 +823,10 @@ const UsersManager = (function() {
 
             // NOVA FUNCIONALIDADE: Salvar clientes se for usuário tipo 'client'
             if (userType === 'client' && clientsChoices) {
-                           const selectedClients = clientsChoices.getValue();
-            console.log('🔍 Dados brutos do Choices.js:', selectedClients);
+               const selectedClients = clientsChoices.getValue();
 
                // Sempre enviar todos os clientes selecionados (mesmo array vazio)
                const clientsData = selectedClients.map(client => {
-                  console.log('🔍 Processando cliente:', client);
 
                   // Extrai dados do cliente com verificações de segurança
                   let nocli, nomcli, cgccli;
@@ -840,7 +837,6 @@ const UsersManager = (function() {
                         nocli = client.value;
                         nomcli = client.customProperties.name;
                         cgccli = client.customProperties.cnpj || '';
-                        console.log('✅ Método 1 - customProperties:', { nocli, nomcli, cgccli });
                      }
                      // Método 2: Se o choice tem value e label (formato "Nome - CNPJ")
                      else if (client.value && client.label) {
@@ -848,21 +844,18 @@ const UsersManager = (function() {
                         const parts = client.label.split(' - ');
                         nomcli = parts[0] || '';
                         cgccli = parts[1] || '';
-                        console.log('✅ Método 2 - label split:', { nocli, nomcli, cgccli });
                      }
                      // Método 3: Se o choice tem nocli, nomcli, cgccli diretamente
                      else if (client.nocli && client.nomcli) {
                         nocli = client.nocli;
                         nomcli = client.nomcli;
                         cgccli = client.cgccli || '';
-                        console.log('✅ Método 3 - campos diretos:', { nocli, nomcli, cgccli });
                      }
                      // Método 4: Fallback para qualquer estrutura
                      else {
                         nocli = client.value || client.nocli || '';
                         nomcli = client.label || client.nomcli || client.customProperties?.name || '';
                         cgccli = client.cgccli || client.customProperties?.cnpj || '';
-                        console.log('✅ Método 4 - fallback:', { nocli, nomcli, cgccli });
                      }
                   } else {
                      nocli = '';
@@ -872,17 +865,12 @@ const UsersManager = (function() {
                   }
 
                   const result = { nocli, nomcli, cgccli };
-                  console.log('📤 Dados extraídos:', result);
                   return result;
                });
 
                const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
                if (targetUuid) {
                   try {
-                     console.log('📤 Enviando dados para API:', {
-                        userUuid: targetUuid,
-                        clients: clientsData
-                     });
 
                      const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
                         userUuid: targetUuid,
@@ -890,8 +878,6 @@ const UsersManager = (function() {
                      });
 
                      if (clientsResponse.success) {
-                        console.log('✅ Clientes salvos com sucesso:', clientsResponse.data);
-
                         // ATUALIZAR LISTA LOCAL DE USUÁRIOS
                         await updateUserClientsInLocalList(targetUuid, clientsResponse.data.currentClients);
 
@@ -923,9 +909,35 @@ const UsersManager = (function() {
                modal.hide();
             }
 
-            // Recarrega dados apenas se não for usuário tipo 'client' (já atualizamos a lista local)
-            if (userType !== 'client') {
-               await loadUsers();
+            // Atualiza a lista de usuários
+            if (userUuid) {
+               // Se é edição, atualiza o usuário existente na lista
+               const userIndex = users.findIndex(u => u.uuid === userUuid);
+               if (userIndex !== -1) {
+                  // Atualiza os dados do usuário na lista local
+                  const userData = response.data || response.user;
+                  if (userData) {
+                     users[userIndex] = { ...users[userIndex], ...userData };
+                     renderTableUsers();
+                  } else {
+                     await loadUsers();
+                  }
+               } else {
+                  // Se não encontrou, recarrega a lista
+                  await loadUsers();
+               }
+            } else {
+               // Se é criação, adiciona o novo usuário à lista
+               const userData = response.data || response.user;
+               if (userData) {
+                  users.unshift(userData); // Adiciona no início da lista
+                  renderTableUsers();
+                  console.log('✅ Novo usuário adicionado à lista:', userData);
+               } else {
+                  // Se não tem dados, recarrega a lista
+                  console.log('⚠️ Nenhum dado de usuário na resposta, recarregando lista...');
+                  await loadUsers();
+               }
             }
 
          } else {
