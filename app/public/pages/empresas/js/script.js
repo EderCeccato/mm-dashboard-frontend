@@ -341,8 +341,8 @@ const CompaniesManager = (function() {
          const lockStatus = checkUserLockStatus(user);
 
          return `
-         <tr class="${lockStatus.isLocked ? 'table-warning' : ''}">
-            <td>
+         <tr>
+            <td class="${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <div class="d-flex align-items-center">
                   ${user.profile_picture_url
                      ? `<img src="${user.profile_picture_url}" alt="Avatar" class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
@@ -360,23 +360,23 @@ const CompaniesManager = (function() {
                   </div>
                </div>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <span class="badge ${CONFIG.TIPOS_USUARIO[user.user_type]?.badge || 'bg-secondary'}">
                   ${CONFIG.TIPOS_USUARIO[user.user_type]?.label || user.user_type}
                </span>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                ${user.company_name || '-'}
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}">
                   ${user.status === 'active' ? 'Ativo' : 'Inativo'}
                </span>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <small class="text-muted">${user.modules || '-'}</small>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <div class="btn-group" role="group">
                   <button type="button" class="btn btn-sm btn-outline-primary" onclick="CompaniesManager.editUser('${user.uuid}')" title="Editar">
                      <i class="bi bi-pencil"></i>

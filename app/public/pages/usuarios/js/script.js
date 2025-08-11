@@ -242,8 +242,8 @@ const UsersManager = (function() {
          }
 
          return `
-         <tr class="${lockStatus.isLocked ? 'table-warning' : ''}">
-            <td>
+         <tr>
+            <td class="${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <div class="d-flex align-items-center">
                   ${user.profile_picture_url
                      ? `<img src="${user.profile_picture_url}" alt="Avatar" class="user-avatar me-3" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
@@ -262,22 +262,22 @@ const UsersManager = (function() {
                   </div>
                </div>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <span class="badge ${CONFIG.TIPOS_USUARIO[user.user_type]?.badge || 'bg-secondary'}">
                   ${CONFIG.TIPOS_USUARIO[user.user_type]?.label || user.user_type}
                </span>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}">
                   ${user.status === 'active' ? 'Ativo' : 'Inativo'}
                </span>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <div class="clients-list">
                   ${clientsDisplay}
                </div>
             </td>
-            <td class="text-center">
+            <td class="text-center ${lockStatus.isLocked ? 'bg-warning-transparent' : ''}">
                <div class="btn-group" role="group">
                   <button type="button" class="btn btn-sm btn-outline-primary" onclick="UsersManager.editUser('${user.uuid}')" title="Editar">
                      <i class="bi bi-pencil"></i>
