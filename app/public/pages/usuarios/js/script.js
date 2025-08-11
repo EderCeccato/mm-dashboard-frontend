@@ -1204,96 +1204,9 @@ const UsersManager = (function() {
       }
    }
 
-   /**
-    * Abre modal para editar empresa atual
-    */
-   async function editCompany() {
-      if (!ownCompany) {
-         showErrorToast('Dados da empresa não disponíveis');
-         return;
-      }
 
-      // Preenche formulário com dados da empresa
-      const companyNameField = document.getElementById('company-name');
-      const companyCnpjField = document.getElementById('company-cnpj');
-      const companyUrlField = document.getElementById('company-url');
-      const companyStatusField = document.getElementById('company-status');
-      const companyColorField = document.getElementById('company-color');
-      const companyFirebirdHostField = document.getElementById('company-firebird-host');
-      const companyFirebirdPortField = document.getElementById('company-firebird-port');
-      const companyFirebirdDatabaseField = document.getElementById('company-firebird-database');
-      const companyFirebirdUserField = document.getElementById('company-firebird-user');
-      const companyFirebirdPasswordField = document.getElementById('company-firebird-password');
 
-      if (companyNameField) companyNameField.value = ownCompany.name || '';
-      if (companyCnpjField) companyCnpjField.value = ownCompany.cnpj || '';
-      if (companyUrlField) companyUrlField.value = ownCompany.url || '';
-      if (companyStatusField) companyStatusField.value = ownCompany.status || 'active';
-      if (companyColorField) companyColorField.value = ownCompany.color || '';
-      if (companyFirebirdHostField) companyFirebirdHostField.value = ownCompany.firebird_host || '';
-      if (companyFirebirdPortField) companyFirebirdPortField.value = ownCompany.firebird_port || '';
-      if (companyFirebirdDatabaseField) companyFirebirdDatabaseField.value = ownCompany.firebird_database || '';
-      if (companyFirebirdUserField) companyFirebirdUserField.value = ownCompany.firebird_user || '';
-      if (companyFirebirdPasswordField) companyFirebirdPasswordField.value = ownCompany.firebird_password || '';
 
-      // Abre modal
-      const modalElement = document.getElementById('modal-edit-company');
-      if (modalElement) {
-         const modal = new bootstrap.Modal(modalElement);
-         modal.show();
-      }
-   }
-
-   /**
-    * Salva dados da empresa
-    */
-   async function saveCompany() {
-      try {
-         const form = document.getElementById('form-edit-company');
-         if (!form) {
-            showErrorToast('Formulário de empresa não encontrado');
-            return;
-         }
-
-         if (!form.checkValidity()) {
-            form.reportValidity();
-            return;
-         }
-
-         const formData = new FormData(form);
-         const dados = {};
-
-         // Converte FormData para objeto
-         for (let [key, value] of formData.entries()) {
-            if (typeof value === 'string' && value.trim() !== '') {
-               dados[key] = value;
-            }
-         }
-
-         const response = await Thefetch('/api/company/own', 'PUT', dados);
-
-         if (response && response.success) {
-            showSuccessToast('Dados da empresa atualizados com sucesso!');
-
-            // Atualiza dados locais
-            await loadOwnCompany();
-
-            // Fecha modal
-            const modalElement = document.getElementById('modal-edit-company');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-               modal.hide();
-            }
-
-         } else {
-            throw new Error(response?.message || 'Erro ao atualizar empresa');
-         }
-
-      } catch (error) {
-         console.error('❌ Erro ao salvar empresa:', error);
-         showErrorToast('Erro ao salvar empresa: ' + error.message);
-      }
-   }
 
    /**
     * Reset do formulário de usuário
@@ -1403,17 +1316,7 @@ const UsersManager = (function() {
             btnSaveUser.addEventListener('click', saveUser);
          }
 
-         // Botão de editar empresa
-         const btnEditCompany = document.getElementById('btn-edit-company');
-         if (btnEditCompany) {
-            btnEditCompany.addEventListener('click', editCompany);
-         }
 
-         // Botão de salvar empresa
-         const btnSaveCompany = document.getElementById('btn-save-company');
-         if (btnSaveCompany) {
-            btnSaveCompany.addEventListener('click', saveCompany);
-         }
 
          // Botão de novo usuário
          const btnNewUser = document.getElementById('btn-new-user');
@@ -1542,6 +1445,30 @@ const UsersManager = (function() {
             });
          }
 
+
+
+                     // Adiciona listener para botões de fechar do modal
+         const closeButtons = modalNewUser.querySelectorAll('[data-bs-dismiss="modal"]');
+         closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+               // Força a limpeza do backdrop após fechar
+               setTimeout(() => {
+                  const backdrops = document.querySelectorAll('.modal-backdrop');
+                  backdrops.forEach(backdrop => {
+                     if (backdrop.parentNode) {
+                        backdrop.parentNode.removeChild(backdrop);
+                     }
+                  });
+
+                  document.body.classList.remove('modal-open');
+                  document.body.style.overflow = '';
+                  document.body.style.paddingRight = '';
+               }, 150);
+            });
+         });
+
+
+
       }, 1000);
    }
 
@@ -1620,8 +1547,6 @@ const UsersManager = (function() {
       editUser: editUser,
       unlockUser: unlockUser,
       toggleStatusUser: toggleStatusUser,
-      editCompany: editCompany,
-      saveCompany: saveCompany,
       showErrorToast: showErrorToast,
       showSuccessToast: showSuccessToast
    };
@@ -1650,7 +1575,7 @@ const FilePondManager = (function() {
 
       // Define configurações padrão
       FilePond.setOptions({
-         labelIdle: '<i class="bi bi-person-circle me-2"></i>Clique para selecionar avatar<br><small class="text-muted">Máx: 512px por 512px, 2MB</small>',
+         labelIdle: '<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar',
          labelFileWaitingForSize: 'Aguardando tamanho',
          labelFileSizeNotAvailable: 'Tamanho não disponível',
          labelFileLoading: 'Carregando',
@@ -1673,12 +1598,12 @@ const FilePondManager = (function() {
          labelButtonProcessItem: 'Enviar',
          allowMultiple: false,
          maxFiles: 1,
-         maxFileSize: '2MB',
+         maxFileSize: '5MB',
          acceptedFileTypes: ['image/*'],
          imagePreviewHeight: 120,
-         imageCropAspectRatio: 1,
-         imageResizeTargetWidth: 512,
-         imageResizeTargetHeight: 512,
+         imageCropAspectRatio: null,
+         imageResizeTargetWidth: null,
+         imageResizeTargetHeight: null,
          stylePanelLayout: 'compact',
          styleLoadIndicatorPosition: 'center bottom',
          styleProgressIndicatorPosition: 'right bottom',
@@ -1706,16 +1631,16 @@ const FilePondManager = (function() {
          // Cria instância do FilePond de forma otimizada
          const pond = FilePond.create(input, {
             // Configurações de validação
-            maxFileSize: config ? config.maxSize : '2MB',
+            maxFileSize: config ? config.maxSize : '5MB',
             acceptedFileTypes: ['image/*'],
 
             // Configurações de imagem
-            imageResizeTargetWidth: config ? config.maxWidth : 512,
-            imageResizeTargetHeight: config ? config.maxHeight : 512,
+            imageResizeTargetWidth: config ? config.maxWidth : null,
+            imageResizeTargetHeight: config ? config.maxHeight : null,
 
             // Label personalizado
             labelIdle: config ?
-               `<i class="bi bi-person-circle me-2"></i>Clique para selecionar avatar<br><small class="text-muted">Máx: ${config.maxWidth}x${config.maxHeight}px, ${Math.round(config.maxSize / 1024 / 1024)}MB</small>` :
+               `<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar<br><small class="text-muted">Máx: ${config.maxWidth}x${config.maxHeight}px, ${Math.round(config.maxSize / 1024 / 1024)}MB</small>` :
                '<i class="bi bi-cloud-upload me-2"></i>Arraste & solte ou clique para selecionar',
 
             // Configurações de servidor
@@ -1727,11 +1652,6 @@ const FilePondManager = (function() {
             labelFileProcessingError: config ? `${config.label}: Erro de validação` : 'Erro de validação',
             labelFileTypeNotAllowed: config ? `${config.label}: Tipo de arquivo não permitido` : 'Tipo de arquivo não permitido',
             labelFileSizeNotAllowed: config ? `${config.label}: Arquivo muito grande` : 'Arquivo muito grande',
-
-            // Configurações específicas para avatar
-            stylePanelLayout: 'compact',
-            imagePreviewHeight: 120,
-            imageCropAspectRatio: 1,
          });
 
          // Adiciona evento para validação de dimensões após o arquivo ser adicionado
@@ -1948,6 +1868,8 @@ const FilePondManager = (function() {
          showExistingImagePreview('user-avatar', user.profile_picture_url);
       }, 50);
    }
+
+
 
       /**
     * Mostra preview da imagem existente - versão ultra otimizada

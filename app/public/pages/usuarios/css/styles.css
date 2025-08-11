@@ -757,7 +757,7 @@
    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-/* Estilo para quando há arquivo selecionado - MUITO MELHORADO */
+/* Estilo para quando há arquivo selecionado */
 .filepond--item {
    border-radius: 12px;
    overflow: hidden;
@@ -890,4 +890,52 @@
 [data-theme-mode=dark] .filepond--file-info {
    background-color: #111827;
    border-color: #374151;
+}
+
+/* Layout para preview de imagens existentes */
+.existing-image-preview {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.existing-image-preview .card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.existing-image-preview .card:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.existing-image-preview .card-img-top {
+  height: 90px;
+  object-fit: cover;
+  background-color: #f9fafb;
+}
+
+.existing-image-preview .card-body {
+  padding: 8px 12px;
+  background-color: #ffffff;
+}
+
+.existing-image-preview .card-body small {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* Responsividade para o layout de preview */
+@media (max-width: 768px) {
+  .existing-image-preview {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .existing-image-preview .card {
+    width: 100% !important;
+  }
 }

@@ -605,10 +605,6 @@
                            <i class="bi bi-people me-2"></i>Lista de Usuários
                         </h5>
                         <div class="d-flex gap-2">
-                           <button class="btn btn-sm btn-outline-primary d-flex align-items-center" id="btn-edit-company">
-                              <i class="bx bx-buildings me-1"></i>
-                              Editar Empresa
-                           </button>
                            <button class="btn btn-sm btn-primary d-flex align-items-center" id="btn-new-user" data-bs-toggle="modal" data-bs-target="#modal-new-user">
                               <i class="bx bx-user-plus me-1"></i>
                               Novo Usuário
@@ -877,90 +873,108 @@
             </div>
             <div class="modal-body">
                <form id="form-edit-company">
-                  <!-- Informações Básicas da Empresa -->
+                  <!-- Upload de Imagens -->
                   <div class="row mb-4">
                      <div class="col-12">
                         <h6 class="text-primary border-bottom pb-2 mb-3">
-                           <i class="bi bi-info-circle me-2"></i>Informações Básicas
+                           <i class="bi bi-image me-2"></i>Imagens da Empresa (Opcional)
                         </h6>
                      </div>
-                     <div class="col-md-6">
-                        <div class="mb-3">
-                           <label for="company-name" class="form-label">Nome da Empresa *</label>
-                           <input type="text" class="form-control" id="company-name" name="name" placeholder="Nome da empresa" required>
-                        </div>
-                     </div>
-                     <div class="col-md-6">
-                        <div class="mb-3">
-                           <label for="company-cnpj" class="form-label">CNPJ *</label>
-                           <input type="text" class="form-control" id="company-cnpj" name="cnpj" placeholder="00.000.000/0000-00" required>
-                        </div>
-                     </div>
-                     <div class="col-md-6">
-                        <div class="mb-3">
-                           <label for="company-url" class="form-label">URL da Empresa</label>
-                           <input type="text" class="form-control" id="company-url" name="url" placeholder="empresa-url">
-                           <div class="form-text">Use apenas letras minúsculas, números e hífens</div>
-                        </div>
-                     </div>
-                     <div class="col-md-6">
-                        <div class="mb-3">
-                           <label for="company-status" class="form-label">Status</label>
-                           <select class="form-select" id="company-status" name="status">
-                              <option value="active">Ativo</option>
-                              <option value="inactive">Inativo</option>
-                           </select>
-                        </div>
-                     </div>
-                     <div class="col-md-6">
-                        <div class="mb-3">
-                           <label for="company-color" class="form-label">Cor da Empresa</label>
-                           <input type="color" class="form-control form-control-color" id="company-color" name="color" value="#0d6efd">
-                           <div class="form-text">Cor principal da empresa (formato hexadecimal)</div>
-                        </div>
-                     </div>
-                  </div>
 
-                  <!-- Configurações do Firebird -->
-                  <div class="row mb-4">
-                     <div class="col-12">
-                        <h6 class="text-primary border-bottom pb-2 mb-3">
-                           <i class="bi bi-database me-2"></i>Configurações do Firebird
-                        </h6>
-                     </div>
+                     <!-- Background -->
                      <div class="col-md-6">
                         <div class="mb-3">
-                           <label for="company-firebird-host" class="form-label">Host do Firebird</label>
-                           <input type="text" class="form-control" id="company-firebird-host" name="firebird_host" placeholder="localhost">
+                           <label for="company-background" class="form-label">
+                              <i class="bi bi-image me-1"></i>Background da Empresa
+                           </label>
+                           <input type="file" class="filepond" id="company-background" accept="image/*" data-max-width="700" data-max-height="1000">
                         </div>
                      </div>
+
+                     <!-- Logo Principal -->
                      <div class="col-md-6">
                         <div class="mb-3">
-                           <label for="company-firebird-port" class="form-label">Porta do Firebird</label>
-                           <input type="number" class="form-control" id="company-firebird-port" name="firebird_port" placeholder="3050">
+                           <label for="company-logo" class="form-label">
+                              <i class="bi bi-palette me-1"></i>Logo Principal
+                           </label>
+                           <input type="file" class="filepond" id="company-logo" accept="image/*" data-max-width="800" data-max-height="400">
                         </div>
                      </div>
+
+                     <!-- Logo Branca -->
                      <div class="col-md-6">
                         <div class="mb-3">
-                           <label for="company-firebird-database" class="form-label">Database do Firebird</label>
-                           <input type="text" class="form-control" id="company-firebird-database" name="firebird_database" placeholder="C:/path/to/database.fdb">
+                           <label for="company-logo-white" class="form-label">
+                              <i class="bi bi-circle me-1"></i>Logo Branca
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-white" accept="image/*" data-max-width="800" data-max-height="400">
                         </div>
                      </div>
+
+                     <!-- Logo Escura -->
                      <div class="col-md-6">
                         <div class="mb-3">
-                           <label for="company-firebird-user" class="form-label">Usuário do Firebird</label>
-                           <input type="text" class="form-control" id="company-firebird-user" name="firebird_user" placeholder="SYSDBA">
+                           <label for="company-logo-dark" class="form-label">
+                              <i class="bi bi-circle-fill me-1"></i>Logo Escura
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-dark" accept="image/*" data-max-width="800" data-max-height="400">
                         </div>
                      </div>
-                     <div class="col-md-12">
+
+                     <!-- Logo Quadrada -->
+                     <div class="col-md-6">
                         <div class="mb-3">
-                           <label for="company-firebird-password" class="form-label">Senha do Firebird</label>
-                           <div class="input-group">
-                              <input type="password" class="form-control" id="company-firebird-password" name="firebird_password" placeholder="•••••••••••••••••">
-                              <button class="btn btn-light" type="button" onclick="createpassword('company-firebird-password', this)">
-                                 <i class="ri-eye-off-line align-middle"></i>
+                           <label for="company-logo-square" class="form-label">
+                              <i class="bi bi-square me-1"></i>Logo Quadrada
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Logo Quadrada Branca -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-square-white" class="form-label">
+                              <i class="bi bi-square me-1"></i>Logo Quadrada Branca
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square-white" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Logo Quadrada Escura -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-logo-square-dark" class="form-label">
+                              <i class="bi bi-square-fill me-1"></i>Logo Quadrada Escura
+                           </label>
+                           <input type="file" class="filepond" id="company-logo-square-dark" accept="image/*" data-max-width="512" data-max-height="512">
+                        </div>
+                     </div>
+
+                     <!-- Favicon -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-favicon" class="form-label">
+                              <i class="bi bi-star me-1"></i>Favicon
+                           </label>
+                           <input type="file" class="filepond" id="company-favicon" accept="image/*" data-max-width="32" data-max-height="32">
+                        </div>
+                     </div>
+
+                     <!-- Cor da Empresa -->
+                     <div class="col-md-6">
+                        <div class="mb-3">
+                           <label for="company-color" class="form-label">
+                              <i class="bi bi-palette me-1"></i>Cor da Empresa
+                           </label>
+                           <div class="d-flex align-items-center gap-2">
+                              <input type="color" class="form-control form-control-color" id="company-color" name="company-color" value="#008100" style="width: 60px; height: 40px;">
+                              <input type="text" class="form-control" id="company-color-rgb" name="company-color-rgb" placeholder="0, 129, 0" readonly style="flex: 1;">
+                              <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-reset-color" title="Cor padrão">
+                                 <i class="bi bi-arrow-clockwise"></i>
                               </button>
                            </div>
+                           <div class="form-text">Esta cor será usada para personalizar o tema da empresa</div>
                         </div>
                      </div>
                   </div>
