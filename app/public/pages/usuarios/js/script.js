@@ -305,7 +305,6 @@ const UsersManager = (function() {
    async function searchClients(searchTerm) {
       try {
          if (!searchTerm || searchTerm.length < 3) {
-            console.log('🔍 Termo de busca muito curto:', searchTerm);
             return [];
          }
 
@@ -476,7 +475,6 @@ const UsersManager = (function() {
 
          // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
          setTimeout(() => {
-            console.log('🔍 Inicializando Choices para clientes...');
             initializeClientsSelect();
          }, 100);
       }
@@ -689,6 +687,56 @@ const UsersManager = (function() {
                      }
                   } catch (avatarError) {
                      console.warn('⚠️ Erro ao fazer upload do avatar:', avatarError);
+                  }
+               }
+            }
+
+            // NOVA FUNCIONALIDADE: Salvar clientes se for usuário tipo 'client'
+            if (userType === 'client' && clientsChoices) {
+               // Obtém os objetos completos dos clientes selecionados
+               const selectedClients = clientsChoices.getValue();
+
+               if (selectedClients.length > 0) {
+                  const targetUuid = userUuid || response.user?.uuid || response.data?.uuid;
+                  if (targetUuid) {
+                     try {
+                        const clientsData = selectedClients.map(client => {
+                           // Extrai dados do cliente baseado na estrutura do Choices.js
+                           let nocli, nomcli, cgccli;
+
+                           if (typeof client === 'string') {
+                              // Se client é uma string, tenta extrair do label
+                              const parts = client.split(' - ');
+                              nocli = parts[0] || '';
+                              nomcli = parts[0] || '';
+                              cgccli = parts[1] || '';
+                           } else if (client && typeof client === 'object') {
+                              // Se client é um objeto
+                              nocli = client.value || '';
+                              nomcli = client.customProperties?.name || client.label?.split(' - ')[0] || '';
+                              cgccli = client.customProperties?.cnpj || client.label?.split(' - ')[1] || '';
+                           } else {
+                              nocli = '';
+                              nomcli = '';
+                              cgccli = '';
+                           }
+
+                           return { nocli, nomcli, cgccli };
+                        });
+
+                        const clientsResponse = await Thefetch('/api/user/clients', 'POST', {
+                           userUuid: targetUuid,
+                           clients: clientsData
+                        });
+
+                        if (clientsResponse.success) {
+                           console.log('✅ Clientes salvos com sucesso:', clientsResponse.data);
+                        } else {
+                           console.warn('⚠️ Erro ao salvar clientes:', clientsResponse.message);
+                        }
+                     } catch (clientsError) {
+                        console.warn('⚠️ Erro ao salvar clientes:', clientsError);
+                     }
                   }
                }
             }
