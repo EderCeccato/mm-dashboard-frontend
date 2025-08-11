@@ -61,12 +61,14 @@ const CONFIG = {
    TIPOS_USUARIO: {
       'superuser': { label: 'Super Usuário', badge: 'bg-danger' },
       'admin': { label: 'Administrador', badge: 'bg-warning' },
-      'user': { label: 'Usuário', badge: 'bg-info' }
+      'user': { label: 'Usuário', badge: 'bg-info' },
+      'client': { label: 'Cliente', badge: 'bg-teal' }
    },
    TIPOS_MODULO: {
       'superuser': { label: 'Super Usuário', badge: 'bg-danger' },
       'admin': { label: 'Administrador', badge: 'bg-warning' },
-      'user': { label: 'Usuário', badge: 'bg-info' }
+      'user': { label: 'Usuário', badge: 'bg-info' },
+      'client': { label: 'Cliente', badge: 'bg-teal' }
    }
 };
 
