@@ -1081,8 +1081,6 @@ const CompaniesManager = (function() {
                         window.clientsChoices.setChoiceByValue(client.value);
                      });
                   }, 50);
-               } else {
-                  console.log('🔍 Nenhum cliente encontrado para o usuário');
                }
             } catch (error) {
                console.error('❌ Erro ao inicializar Choices para client:', error);
@@ -1745,7 +1743,6 @@ const CompaniesManager = (function() {
             const companyClients = await loadCompanyClients(company.uuid);
 
             if (companyClients.length > 0 && window.companyClientsChoices) {
-               console.log('🔍 Carregando clientes da empresa:', companyClients);
                window.companyClientsChoices.setChoices(companyClients, 'value', 'label', true);
 
                // Marca os clientes como selecionados
@@ -1754,8 +1751,6 @@ const CompaniesManager = (function() {
                      window.companyClientsChoices.setChoiceByValue(client.value);
                   }
                });
-            } else {
-               console.log('🔍 Nenhum cliente encontrado para a empresa');
             }
          } catch (error) {
             console.error('❌ Erro ao inicializar Choices para clientes:', error);
@@ -1899,6 +1894,9 @@ const CompaniesManager = (function() {
 
          if (response && response.success && response.data && response.data.modules) {
             return response.data.modules;
+         } else if (response && response.success && response.data) {
+            // Caso a estrutura seja diferente
+            return Array.isArray(response.data) ? response.data : [];
          }
 
          return [];
@@ -1935,9 +1933,19 @@ const CompaniesManager = (function() {
       noModules.style.display = 'none';
       modulesList.style.display = 'flex';
 
+      // Normaliza os módulos selecionados para garantir que sejam IDs
+      const normalizedSelectedModules = selectedModules.map(module => {
+         if (typeof module === 'object') {
+            // Tenta diferentes propriedades possíveis para o ID
+            const moduleId = module.id || module.uuid || module.module_id || module.moduleId;
+            return moduleId;
+         }
+         return module;
+      }).filter(id => id !== undefined && id !== null); // Remove IDs inválidos
+
       const modulesHtml = modules.map(module => {
-         const isSelected = selectedModules.includes(module.id || module.uuid);
          const moduleId = module.id || module.uuid;
+         const isSelected = normalizedSelectedModules.includes(moduleId);
 
          return `
             <div class="col-md-6 mb-3">
@@ -2492,6 +2500,8 @@ const CompaniesManager = (function() {
          loadCompanyClients: loadCompanyClients,
          updateCompanyClientsInLocalList: updateCompanyClientsInLocalList,
          validateAndCleanCompanyClients: validateAndCleanCompanyClients,
+         loadCompanyModules: loadCompanyModules,
+         renderModulesList: renderModulesList,
       };
 })();
 
@@ -3224,10 +3234,8 @@ document.addEventListener('DOMContentLoaded', function() {
     */
    async function searchClients(searchTerm) {
       try {
-         console.log('🔍 searchClients chamada com:', searchTerm);
 
          if (!searchTerm || searchTerm.length < 3) {
-            console.log('🔍 Termo muito curto, retornando array vazio');
             return [];
          }
 
@@ -3236,11 +3244,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
          // Se estamos editando um usuário, usa a empresa dele
          if (window.CompaniesManager.userSelected && window.CompaniesManager.userSelected.user_type === 'client' && window.CompaniesManager.userSelected.company_name) {
-            console.log('🔍 Usando empresa do usuário sendo editado:', window.CompaniesManager.userSelected.company_name);
             const company = window.CompaniesManager.companies.find(c => c.name === window.CompaniesManager.userSelected.company_name);
             if (company) {
                companyUuid = company.uuid;
-               console.log('🔍 UUID da empresa encontrado:', companyUuid);
             }
          }
 
@@ -3248,7 +3254,6 @@ document.addEventListener('DOMContentLoaded', function() {
          if (!companyUuid) {
             const companySelect = document.getElementById('user-company');
             companyUuid = companySelect ? companySelect.value : null;
-            console.log('🔍 Usando empresa do select:', companyUuid);
          }
 
          if (!companyUuid) {
@@ -3257,10 +3262,8 @@ document.addEventListener('DOMContentLoaded', function() {
          }
 
          const url = `/api/clients/search?search=${encodeURIComponent(searchTerm)}&companyUuid=${encodeURIComponent(companyUuid)}`;
-         console.log('🔍 Fazendo requisição para:', url);
 
          const response = await Thefetch(url, 'GET');
-         console.log('🔍 Resposta da API:', response);
 
          if (response && response.success && response.data) {
             const clients = response.data.map(client => {
@@ -3351,17 +3354,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             input.addEventListener('input', async function(e) {
                const searchTerm = e.target.value;
-               console.log('🔍 Digitação detectada:', searchTerm);
 
                clearTimeout(searchTimeout);
 
                if (searchTerm.length >= 3) {
-                  console.log('🔍 Buscando clientes para:', searchTerm);
                   searchTimeout = setTimeout(async () => {
                      try {
-                        console.log('🔍 Fazendo requisição para buscar clientes...');
                         const clients = await searchClients(searchTerm);
-                        console.log('🔍 Clientes encontrados:', clients);
 
                         // Limpa escolhas atuais mas preserva os selecionados
                         if (window.clientsChoices) {
@@ -3383,7 +3382,6 @@ document.addEventListener('DOMContentLoaded', function() {
                      }
                   }, 300);
                } else {
-                  console.log('🔍 Termo muito curto, limpando escolhas');
                   if (window.clientsChoices) {
                      // Preserva os selecionados ao limpar
                      const selectedValues = window.clientsChoices.getValue(true).map(item => item.value);
@@ -3513,11 +3511,8 @@ document.addEventListener('DOMContentLoaded', function() {
     */
    async function validateAndCleanUserClients(userUuid, selectedClients) {
       try {
-         console.log('�� Validando clientes do usuário:', userUuid);
-
          // Se não há clientes selecionados, desativa todos os clientes existentes
          if (!selectedClients || selectedClients.length === 0) {
-            console.log('🔍 Nenhum cliente selecionado, desativando todos os clientes existentes');
 
             const response = await Thefetch('/api/user/clients/deactivate-all', 'POST', {
                userUuid: userUuid
@@ -3556,8 +3551,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
          // Se há clientes para desativar, faz a requisição para desativá-los
          if (clientsToDeactivate.length > 0) {
-            console.log('�� Desativando clientes removidos:', clientsToDeactivate);
-
             // Envia apenas os clientes selecionados (os que devem permanecer ativos)
             const deactivateResponse = await Thefetch('/api/user/clients', 'POST', {
                userUuid: userUuid,
