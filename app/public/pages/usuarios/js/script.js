@@ -11,13 +11,14 @@ const FILE_VALIDATION_CONFIG = {
 // Configurações para tipos de usuário
 const CONFIG = {
    TIPOS_USUARIO: {
-      'admin': { label: 'Administrador', badge: 'bg-admin' },
-      'user': { label: 'Usuário', badge: 'bg-user' },
-      'client': { label: 'Cliente', badge: 'bg-client' }
+      'admin': { label: 'Administrador', badge: 'bg-warning' },
+      'user': { label: 'Usuário', badge: 'bg-info' },
+      'client': { label: 'Cliente', badge: 'bg-teal' }
    },
    TIPOS_MODULO: {
-      'admin': { label: 'Administrador', badge: 'bg-admin' },
-      'user': { label: 'Usuário', badge: 'bg-user' }
+      'admin': { label: 'Administrador', badge: 'bg-warning' },
+      'user': { label: 'Usuário', badge: 'bg-info' },
+      'client': { label: 'Cliente', badge: 'bg-teal' }
    }
 };
 

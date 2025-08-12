@@ -496,6 +496,8 @@ const CompaniesManager = (function() {
 
          if (response && response.success && response.data && response.data.modules) {
             return response.data.modules;
+         } else if (response && response.success && response.data) {
+            return Array.isArray(response.data) ? response.data : [];
          }
 
          return [];
@@ -523,7 +525,6 @@ const CompaniesManager = (function() {
             return response.data;
          }
 
-         console.log('⚠️ Nenhum módulo encontrado no sistema');
          return [];
       } catch (error) {
          console.error('❌ Erro ao carregar todos os módulos:', error);
@@ -541,6 +542,7 @@ const CompaniesManager = (function() {
     * Renderiza módulos disponíveis no modal de usuário
     */
    function renderUserModules(modules, selectedModules = []) {
+
       const modulesContainer = document.getElementById('user-modules-list');
       const modulesLoading = document.getElementById('user-modules-loading');
       const modulesSection = document.getElementById('modules-selection-section');
@@ -568,7 +570,6 @@ const CompaniesManager = (function() {
             </div>
          `;
          modulesContainer.style.display = 'block';
-         console.log('⚠️ Nenhum módulo disponível para renderizar');
          return;
       }
 
@@ -581,17 +582,20 @@ const CompaniesManager = (function() {
       modulesContainer.style.display = 'block';
 
       const modulesHtml = modules.map(module => {
-         const isSelected = selectedModules.includes(module.id);
+         // Normaliza o ID do módulo para comparação
+         const moduleId = module.id || module.uuid || module.module_id;
+         const isSelected = selectedModules.includes(moduleId) || selectedModules.includes(module.name);
+
          return `
             <div class="col-md-6 mb-3">
-               <div class="card module-card ${isSelected ? 'border-primary' : ''}" data-module-id="${module.id}">
+               <div class="card module-card ${isSelected ? 'border-primary' : ''}" data-module-id="${moduleId}">
                   <div class="card-body p-3">
                      <div class="form-check">
                         <input class="form-check-input module-checkbox" type="checkbox"
-                               id="user-module-${module.id}"
-                               value="${module.id}"
+                               id="user-module-${moduleId}"
+                               value="${moduleId}"
                                ${isSelected ? 'checked' : ''}>
-                        <label class="form-check-label w-100" for="user-module-${module.id}">
+                        <label class="form-check-label w-100" for="user-module-${moduleId}">
                            <div class="d-flex justify-content-between align-items-start">
                               <div>
                                  <h6 class="card-title mb-1">${module.name}</h6>
@@ -702,13 +706,30 @@ const CompaniesManager = (function() {
             }
          }
       } else if (userTypeValue === 'client') {
-         // Para client, mostra apenas a seção de clientes
+         // Para client, mostra a seção de clientes E módulos da empresa
          if (clientsSection) clientsSection.style.display = 'block';
+
+         // Mostra também a seção de módulos para clientes
+         if (modulesSection) {
+            modulesSection.style.display = 'block';
+         }
 
          // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
          setTimeout(async () => {
             try {
                await initializeClientsSelect();
+
+               // Carrega módulos da empresa se houver uma empresa selecionada
+               if (companySelect && companySelect.value) {
+                  await onCompanyChange();
+               } else if (userSelected && userSelected.company_name) {
+                  // Se estamos editando um usuário, usa a empresa dele
+                  const company = companies.find(c => c.name === userSelected.company_name);
+                  if (company) {
+                     companySelect.value = company.uuid;
+                     await onCompanyChange();
+                  }
+               }
             } catch (error) {
                console.error('❌ Erro ao inicializar seletor de clientes:', error);
             }
@@ -743,7 +764,10 @@ const CompaniesManager = (function() {
       const userTypeValue = userType.value;
       const companyUuid = companyUser.value;
 
-      if (!userTypeValue || !companyUuid) return;
+      if (!userTypeValue || !companyUuid) {
+         console.log('⚠️ Tipo de usuário ou empresa não selecionados');
+         return;
+      }
 
       try {
          const companyModules = await loadCompanyModules(companyUuid);
@@ -758,6 +782,11 @@ const CompaniesManager = (function() {
          } else if (userTypeValue === 'user') {
             availableModules = companyModules.filter(module =>
                module.module_type === 'user'
+            );
+         } else if (userTypeValue === 'client') {
+            // Para client, mostra apenas módulos do tipo client
+            availableModules = companyModules.filter(module =>
+               module.module_type === 'client'
             );
          }
 
@@ -1053,6 +1082,12 @@ const CompaniesManager = (function() {
             clientsSection.style.display = 'block';
          }
 
+         // Mostra também a seção de módulos para clientes
+         const modulesSection = document.getElementById('modules-selection-section');
+         if (modulesSection) {
+            modulesSection.style.display = 'block';
+         }
+
          // Inicializa o Choices.js imediatamente
          setTimeout(async () => {
             try {
@@ -1086,6 +1121,9 @@ const CompaniesManager = (function() {
                console.error('❌ Erro ao inicializar Choices para client:', error);
             }
          }, 100);
+
+         // Carrega módulos para clientes também
+         await loadUserModules(user);
       } else {
          // Para superuser, admin e user, carrega módulos
          await loadUserModules(user);
@@ -1148,17 +1186,14 @@ const CompaniesManager = (function() {
     */
    async function loadUserModules(user) {
       try {
-
          let availableModules = [];
          let selectedModules = [];
 
          // Extrai módulos já selecionados do usuário
          if (user.modules) {
-
             // Se modules é uma string (lista separada por vírgula), vamos extrair os nomes
             if (typeof user.modules === 'string') {
                const moduleNames = user.modules.split(',').map(name => name.trim());
-
                // Por enquanto, vamos marcar todos os módulos disponíveis como selecionados
                // Em uma implementação real, você precisaria fazer um mapeamento por nome
                selectedModules = moduleNames.map(name => {
@@ -1181,7 +1216,7 @@ const CompaniesManager = (function() {
                   .map(module => module.id);
             }
          } else if (user.company_name) {
-            // Para admin/user, carrega módulos da empresa
+            // Para admin/user/client, carrega módulos da empresa
             const company = companies.find(c => c.name === user.company_name);
             if (company) {
                const companyModules = await loadCompanyModules(company.uuid);
@@ -1194,6 +1229,11 @@ const CompaniesManager = (function() {
                   availableModules = companyModules.filter(module =>
                      module.module_type === 'user'
                   );
+               } else if (user.user_type === 'client') {
+                  // Para client, mostra apenas módulos do tipo client
+                  availableModules = companyModules.filter(module =>
+                     module.module_type === 'client'
+                  );
                }
 
                // Se o usuário tem módulos, vamos tentar mapear pelos nomes
@@ -1203,7 +1243,11 @@ const CompaniesManager = (function() {
                      .filter(module => moduleNames.includes(module.name))
                      .map(module => module.id);
                }
+            } else {
+               console.warn('⚠️ Empresa não encontrada para:', user.company_name);
             }
+         } else {
+            console.warn('⚠️ Usuário não tem empresa associada');
          }
 
          // Renderiza módulos com os selecionados
@@ -1625,22 +1669,12 @@ const CompaniesManager = (function() {
                         }));
 
                         // Valida e limpa clientes removidos do Firebird
-                        const validatedClients = await validateAndCleanCompanyClients(targetUuid, clientsData);
+                        // const validatedClients = await validateAndCleanCompanyClients(targetUuid, clientsData);
 
                         const clientsResponse = await Thefetch('/api/company/clients', 'POST', {
                            companyUuid: targetUuid,
                            clients: validatedClients
                         });
-
-                        if (clientsResponse && clientsResponse.success) {
-                           // Atualiza a lista local com os clientes salvos
-                           await updateCompanyClientsInLocalList(targetUuid, clientsResponse.data.currentClients);
-                        } else {
-                           console.warn('⚠️ Erro ao salvar clientes da empresa:', clientsResponse?.message);
-                        }
-                     } else {
-                        // Se não há clientes selecionados, desativa todos os clientes existentes
-                        await validateAndCleanCompanyClients(targetUuid, []);
                      }
                   }
                } catch (clientsError) {
@@ -1772,24 +1806,6 @@ const CompaniesManager = (function() {
    }
 
    /**
-      * Mapeia nomes de campos do banco para IDs dos inputs
-   */
-   function mapCompanyField(field) {
-      const map = {
-         'name': 'company-name',
-         'cnpj': 'company-cnpj',
-         'url': 'company-domain',
-         'status': 'company-status',
-         'firebird_host': 'company-firebird-host',
-         'firebird_port': 'company-firebird-port',
-         'firebird_database': 'company-firebird-database',
-         'firebird_user': 'company-firebird-user',
-         'firebird_password': 'company-firebird-password',
-      };
-      return map[field] || field;
-   }
-
-   /**
       * Reset do formulário de empresa
    */
    function resetFormCompany() {
@@ -1797,10 +1813,6 @@ const CompaniesManager = (function() {
       if (formCompany) {
          formCompany.reset();
       }
-      const empresaUuidField = document.getElementById('company-uuid');
-      const titleField = document.getElementById('title-modal-new-company');
-      const textField = document.getElementById('text-save-company');
-               // companySelected já está disponível no escopo
 
       // Remove classes de layout específicas
       document.querySelectorAll('.new-company-layout').forEach(el => {
@@ -2498,8 +2510,6 @@ const CompaniesManager = (function() {
          searchCompanyClients: searchCompanyClients,
          initializeCompanyClientsSelect: initializeCompanyClientsSelect,
          loadCompanyClients: loadCompanyClients,
-         updateCompanyClientsInLocalList: updateCompanyClientsInLocalList,
-         validateAndCleanCompanyClients: validateAndCleanCompanyClients,
          loadCompanyModules: loadCompanyModules,
          renderModulesList: renderModulesList,
       };
@@ -3772,67 +3782,5 @@ document.addEventListener('DOMContentLoaded', function() {
       } catch (error) {
          console.error('❌ Erro ao carregar clientes da empresa:', error);
          return [];
-      }
-   }
-
-   /**
-    * Atualiza a lista local de empresas com os clientes atualizados
-    */
-   async function updateCompanyClientsInLocalList(companyUuid, currentClients) {
-      try {
-         // Encontra a empresa na lista local
-         const companyIndex = window.CompaniesManager.companies.findIndex(c => c.uuid === companyUuid);
-
-         if (companyIndex !== -1) {
-            // Atualiza os clientes da empresa
-            window.CompaniesManager.companies[companyIndex].clients = currentClients;
-
-            // Re-renderiza a tabela para mostrar as mudanças
-            renderTableCompanies();
-         }
-      } catch (error) {
-         console.error('❌ Erro ao atualizar lista local:', error);
-      }
-   }
-
-   /**
-    * Valida e limpa clientes da empresa
-    */
-   async function validateAndCleanCompanyClients(companyUuid, selectedClients) {
-      try {
-         // Busca todos os clientes vinculados à empresa
-         const response = await Thefetch(`/api/company/${companyUuid}/clients`, 'GET');
-         if (!response || !response.success || !response.data) {
-            console.warn('⚠️ Não foi possível buscar clientes da empresa para validação');
-            return selectedClients;
-         }
-
-         const currentCompanyClients = response.data;
-         const selectedClientIds = selectedClients.map(c => c.nocli);
-         const clientsToDeactivate = [];
-
-         // Identifica clientes que foram removidos do Firebird
-         currentCompanyClients.forEach(companyClient => {
-            if (!selectedClientIds.includes(companyClient.client_id)) {
-               clientsToDeactivate.push({
-                  nocli: companyClient.client_id,
-                  nomcli: companyClient.client_name,
-                  cgccli: companyClient.client_cnpj
-               });
-            }
-         });
-
-         // Remove clientes que não existem mais no Firebird
-         const validClients = selectedClients.filter(client => {
-            const existsInFirebird = currentCompanyClients.some(
-               cc => cc.client_id === client.nocli
-            );
-            return existsInFirebird;
-         });
-
-         return validClients;
-      } catch (error) {
-         console.error('❌ Erro ao validar clientes da empresa:', error);
-         return selectedClients;
       }
    }
