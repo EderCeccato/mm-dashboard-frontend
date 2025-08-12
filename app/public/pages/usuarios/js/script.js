@@ -485,11 +485,7 @@ const UsersManager = (function() {
          }
 
          const selectedClients = clientsChoices.getValue();
-         console.log('🔍 Dados brutos do Choices.js (saveUserClientsOnly):', selectedClients);
-
          const clientsData = selectedClients.map(client => {
-            console.log('🔍 Processando cliente (saveUserClientsOnly):', client);
-
             // Extrai dados do cliente com verificações de segurança
             let nocli, nomcli, cgccli;
 
@@ -499,7 +495,6 @@ const UsersManager = (function() {
                   nocli = client.value;
                   nomcli = client.customProperties.name;
                   cgccli = client.customProperties.cnpj || '';
-                  console.log('✅ Método 1 - customProperties (saveUserClientsOnly):', { nocli, nomcli, cgccli });
                }
                // Método 2: Se o choice tem value e label (formato "Nome - CNPJ")
                else if (client.value && client.label) {
@@ -507,38 +502,29 @@ const UsersManager = (function() {
                   const parts = client.label.split(' - ');
                   nomcli = parts[0] || '';
                   cgccli = parts[1] || '';
-                  console.log('✅ Método 2 - label split (saveUserClientsOnly):', { nocli, nomcli, cgccli });
                }
                // Método 3: Se o choice tem nocli, nomcli, cgccli diretamente
                else if (client.nocli && client.nomcli) {
                   nocli = client.nocli;
                   nomcli = client.nomcli;
                   cgccli = client.cgccli || '';
-                  console.log('✅ Método 3 - campos diretos (saveUserClientsOnly):', { nocli, nomcli, cgccli });
                }
                // Método 4: Fallback para qualquer estrutura
                else {
                   nocli = client.value || client.nocli || '';
                   nomcli = client.label || client.nomcli || client.customProperties?.name || '';
                   cgccli = client.cgccli || client.customProperties?.cnpj || '';
-                  console.log('✅ Método 4 - fallback (saveUserClientsOnly):', { nocli, nomcli, cgccli });
                }
             } else {
                nocli = '';
                nomcli = '';
                cgccli = '';
-               console.log('❌ Cliente inválido (saveUserClientsOnly):', client);
             }
 
             const result = { nocli, nomcli, cgccli };
-            console.log('📤 Dados extraídos (saveUserClientsOnly):', result);
             return result;
          });
 
-         console.log('📤 Enviando dados para API (saveUserClientsOnly):', {
-            userUuid: userUuid,
-            clients: clientsData
-         });
 
          const response = await Thefetch('/api/user/clients', 'POST', {
             userUuid: userUuid,
@@ -590,20 +576,35 @@ const UsersManager = (function() {
          // Sempre mostra a seção de módulos para admin e user
          if (modulesSection) modulesSection.style.display = 'block';
 
-         // Carrega módulos da empresa do usuário logado
-         if (ownCompany && ownCompany.modules) {
-            await loadUserModules(userTypeValue, ownCompany.uuid);
-         } else {
-            console.log('🔍 Nenhuma empresa disponível ainda');
+         // Carrega módulos da empresa do usuário logado SOMENTE SE NÃO ESTIVER EM MODO DE EDIÇÃO
+         // (ou seja, se userSelected for null, indicando um novo usuário ou uma mudança manual de tipo)
+         if (!userSelected) {
+            if (ownCompany && ownCompany.modules) {
+               await loadUserModules(userTypeValue, ownCompany.uuid);
+            } else {
+               console.log('🔍 Nenhuma empresa disponível ainda');
+            }
          }
       } else if (userTypeValue === 'client') {
-         // Para client, mostra apenas a seção de clientes
+         // Para client, mostra a seção de clientes E módulos da empresa
          if (clientsSection) clientsSection.style.display = 'block';
+
+         // Mostra também a seção de módulos para clientes
+         if (modulesSection) {
+            modulesSection.style.display = 'block';
+         }
 
          // Inicializa seletor de clientes com delay para garantir que o DOM está pronto
          setTimeout(async () => {
             try {
                await initializeClientsSelect();
+
+               // Carrega módulos da empresa do usuário logado para clientes SOMENTE SE NÃO ESTIVER EM MODO DE EDIÇÃO
+               if (!userSelected) {
+                  if (ownCompany && ownCompany.modules) {
+                     await loadUserModules(userTypeValue, ownCompany.uuid);
+                  }
+               }
             } catch (error) {
                console.error('❌ Erro ao inicializar seletor de clientes:', error);
             }
@@ -639,6 +640,11 @@ const UsersManager = (function() {
             } else if (userType === 'user') {
                availableModules = companyModules.filter(module =>
                   module.module_type === 'user'
+               );
+            } else if (userType === 'client') {
+               // Para client, mostra apenas módulos do tipo client
+               availableModules = companyModules.filter(module =>
+                  module.module_type === 'client'
                );
             }
 
@@ -785,8 +791,8 @@ const UsersManager = (function() {
          // Sempre usa a empresa do usuário logado (admin)
          dados.company_id = ownCompany?.id;
 
-         // Coleta módulos selecionados (para admin e user)
-         if (userType === 'admin' || userType === 'user') {
+         // Coleta módulos selecionados (para admin, user e client)
+         if (userType === 'admin' || userType === 'user' || userType === 'client') {
             const selectedModules = [];
             const moduleCheckboxes = document.querySelectorAll('#user-modules-list .module-checkbox:checked');
             moduleCheckboxes.forEach(checkbox => {
@@ -862,7 +868,6 @@ const UsersManager = (function() {
                      nocli = '';
                      nomcli = '';
                      cgccli = '';
-                     console.log('❌ Cliente inválido:', client);
                   }
 
                   const result = { nocli, nomcli, cgccli };
@@ -1064,6 +1069,24 @@ const UsersManager = (function() {
                }
             }, 300);
          }
+
+         // Carrega módulos do usuário cliente
+         let selectedModules = [];
+
+         // Extrai módulos do usuário se disponível
+         if (user.modules) {
+            // Os módulos vêm como string separada por vírgula, ex: "Usuários,TMS"
+            const userModules = user.modules.split(',').map(module => module.trim());
+
+            // Busca os IDs dos módulos baseado nos nomes
+            if (ownCompany && ownCompany.modules) {
+               selectedModules = ownCompany.modules
+                  .filter(module => userModules.includes(module.name))
+                  .map(module => module.id);
+            }
+         }
+
+         await loadUserModules(user.user_type, ownCompany.uuid, selectedModules);
       } else if (user.user_type === 'admin' || user.user_type === 'user') {
          // Carrega módulos do usuário
          let selectedModules = [];
@@ -1254,7 +1277,7 @@ const UsersManager = (function() {
 
       userSelected = null;
 
-      // Carrega módulos da empresa do usuário logado
+      // Carrega módulos da empresa do usuário logado (padrão para admin)
       if (ownCompany && ownCompany.modules) {
          setTimeout(() => {
             loadUserModules('admin', ownCompany.uuid);
