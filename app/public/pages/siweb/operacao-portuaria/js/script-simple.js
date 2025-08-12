@@ -21,6 +21,7 @@ class OperacoesPortuariasSimple {
         this.loadSavedSettings();
         this.populateFilterOptions();
         this.initializeDateRangePicker();
+        this.applyInitialStatusFilter(); // Aplicar filtro inicial de status "Em operação"
         this.renderTable();
         this.bindEvents();
         this.bindSortEvents();
@@ -118,6 +119,31 @@ class OperacoesPortuariasSimple {
                 `<option value="${cliente}">${cliente}</option>`
             ).join('');
             clienteSelect.innerHTML = '<option value="">Todos os clientes</option>' + clienteOptions;
+        }
+    }
+
+    /**
+     * Aplica filtro inicial de status "Em operação"
+     */
+    applyInitialStatusFilter() {
+        // Definir o valor do select de status como "Em operação"
+        const statusSelect = document.getElementById('filter-status');
+        if (statusSelect) {
+            statusSelect.value = 'Em operação';
+        }
+
+        // Filtrar dados para mostrar apenas operações com status "Em operação"
+        this.filteredData = this.data.filter(item => item.status === 'Em operação');
+
+        // Resetar para primeira página
+        this.currentPage = 1;
+
+        // Mostrar mensagem informativa sobre o filtro inicial
+        const operacoesEmAndamento = this.filteredData.length;
+        if (operacoesEmAndamento > 0) {
+            this.showToast(`Filtro inicial aplicado: ${operacoesEmAndamento} operação(ões) em andamento carregada(s).`, 'info');
+        } else {
+            this.showToast('Filtro inicial aplicado: Nenhuma operação em andamento encontrada.', 'warning');
         }
     }
 
@@ -776,8 +802,8 @@ class OperacoesPortuariasSimple {
         const searchInput = document.getElementById('filter-search');
         if (searchInput) searchInput.value = '';
 
-        // Limpar todos os selects simples
-        const selects = ['filter-status', 'filter-tipo-frete', 'filter-tipo-carga', 'filter-empresa', 'filter-cliente'];
+        // Limpar todos os selects simples, exceto status que deve voltar para "Em operação"
+        const selects = ['filter-tipo-frete', 'filter-tipo-carga', 'filter-empresa', 'filter-cliente'];
         selects.forEach(id => {
             const select = document.getElementById(id);
             if (select) {
@@ -785,16 +811,22 @@ class OperacoesPortuariasSimple {
             }
         });
 
+        // Manter status como "Em operação"
+        const statusSelect = document.getElementById('filter-status');
+        if (statusSelect) {
+            statusSelect.value = 'Em operação';
+        }
+
         // Limpar date range picker (Flatpickr)
         if (this.dateRangePicker) {
             this.dateRangePicker.clear();
         }
 
-        // Resetar dados filtrados
-        this.filteredData = [...this.data];
+        // Resetar dados filtrados para mostrar apenas "Em operação"
+        this.filteredData = this.data.filter(item => item.status === 'Em operação');
         this.currentPage = 1;
         this.renderTable();
-        this.showToast('Filtros limpos com sucesso!', 'info');
+        this.showToast('Filtros limpos! Mostrando apenas operações em andamento.', 'info');
     }
 
     /**

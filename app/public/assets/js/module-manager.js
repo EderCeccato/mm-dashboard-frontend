@@ -11,6 +11,35 @@ const ModuleManager = (function() {
    'use strict';
 
    /**
+    * Normaliza um caminho/URL para comparação consistente
+    * - Remove domínio, query e hash
+    * - Remove "/index.html" e barra final
+    * - Garante que vazio vire "/"
+    */
+   function normalizePath(urlOrPath) {
+      try {
+         const url = new URL(urlOrPath, window.location.origin);
+         let path = url.pathname;
+         // Remove /index.html ou /index
+         path = path.replace(/\/index(?:\.html?)?$/i, '');
+         // Remove barra final (exceto se for raiz)
+         if (path.length > 1 && path.endsWith('/')) {
+            path = path.slice(0, -1);
+         }
+         return path || '/';
+      } catch (e) {
+         // Caso seja um caminho relativo sem URL válida
+         let path = urlOrPath || '';
+         path = path.replace(/[?#].*$/, '');
+         path = path.replace(/\/index(?:\.html?)?$/i, '');
+         if (path.length > 1 && path.endsWith('/')) {
+            path = path.slice(0, -1);
+         }
+         return path || '/';
+      }
+   }
+
+   /**
     * Renderiza o menu lateral com base nos módulos do usuário
     */
    function renderSidebarMenu() {
@@ -176,51 +205,56 @@ const ModuleManager = (function() {
     * Detecta a URL atual e marca o módulo correspondente como ativo
     */
    function setActiveModule() {
-      const currentPath = window.location.pathname;
+      const currentPath = normalizePath(window.location.href);
 
-      // Remove classes ativas existentes
+      // Limpa estados anteriores
       document.querySelectorAll('.slide').forEach(slide => {
          slide.classList.remove('active', 'open');
       });
-
       document.querySelectorAll('.side-menu__item').forEach(item => {
          item.classList.remove('active');
       });
 
-      // Verifica módulos standalone
-      const standaloneMatch = document.querySelector(`[data-module-url="${currentPath}"]`);
-      if (standaloneMatch) {
-         standaloneMatch.classList.add('active');
-         const link = standaloneMatch.querySelector('.side-menu__item');
-         if (link) link.classList.add('active');
-         return;
-      }
+      // Procura correspondência pelo href normalizado
+      const menuLinks = document.querySelectorAll('.main-menu .side-menu__item[href]');
+      let matchedLink = null;
 
-      // Verifica módulos filhos (dentro de dropdowns)
-      const allDropdowns = document.querySelectorAll('.slide.has-sub');
-      allDropdowns.forEach(dropdown => {
-         try {
-            const childUrls = JSON.parse(dropdown.getAttribute('data-child-urls') || '[]');
-
-               if (childUrls.includes(currentPath)) {
-               // Abre o dropdown com animação (se não estiver aberto)
-               const submenu = dropdown.querySelector('.slide-menu');
-               if (!dropdown.classList.contains('open')) {
-                  openDropdownWithAnimation(dropdown, submenu);
-               }
-
-               // Marca o filho específico como ativo
-               const activeChild = dropdown.querySelector(`[data-module-url="${currentPath}"]`);
-               if (activeChild) {
-                  activeChild.classList.add('active');
-                  const childLink = activeChild.querySelector('.side-menu__item');
-                  if (childLink) childLink.classList.add('active');
-               }
-            }
-         } catch (error) {
-            console.error('❌ Erro ao processar URLs dos filhos:', error);
+      menuLinks.forEach(link => {
+         const linkPath = normalizePath(link.getAttribute('href'));
+         if (linkPath === currentPath) {
+            matchedLink = link;
          }
       });
+
+      // Fallback: tenta casar por prefixo quando não houver correspondência exata
+      if (!matchedLink) {
+         menuLinks.forEach(link => {
+            if (matchedLink) return;
+            const linkPath = normalizePath(link.getAttribute('href'));
+            if (linkPath !== '/' && currentPath.startsWith(linkPath)) {
+               matchedLink = link;
+            }
+         });
+      }
+
+      if (!matchedLink) return;
+
+      // Marca o item e abre dropdowns ancestrais se necessário
+      matchedLink.classList.add('active');
+
+      const matchedLi = matchedLink.closest('li.slide');
+      if (matchedLi) matchedLi.classList.add('active');
+
+      const parentDropdown = matchedLink.closest('.slide.has-sub');
+      if (parentDropdown) {
+         const submenu = parentDropdown.querySelector('.slide-menu');
+         if (!parentDropdown.classList.contains('open')) {
+            openDropdownWithAnimation(parentDropdown, submenu);
+         }
+         parentDropdown.classList.add('active');
+         const parentToggle = parentDropdown.querySelector('> .side-menu__item');
+         if (parentToggle) parentToggle.classList.add('active');
+      }
    }
 
    /**
@@ -285,6 +319,12 @@ const ModuleManager = (function() {
       });
 
       observer.observe(document, { subtree: true, childList: true });
+
+      // Após todos os scripts (incluindo defaultmenu) executarem
+      window.addEventListener('load', () => {
+         // Pequeno atraso para garantir que setNavActive do tema já rodou
+         setTimeout(setActiveModule, 0);
+      });
    }
 
       /**

@@ -227,6 +227,9 @@ class OperacoesPortuarias {
 
         // Carregar opções dos filtros
         this.loadFilterOptions();
+
+        // Definir "Em operação" como filtro padrão
+        this.setDefaultFilters();
     }
 
     /**
@@ -244,6 +247,17 @@ class OperacoesPortuarias {
         const clientes = [...new Set(data.map(item => item.cliente))];
         const clienteChoices = clientes.map(cliente => ({ value: cliente, label: cliente }));
         this.filterChoices['filter-cliente'].setChoices(clienteChoices, 'value', 'label', true);
+    }
+
+    /**
+     * Define filtros padrão
+     */
+    setDefaultFilters() {
+        // Aguardar um pouco para garantir que o Choices.js foi inicializado
+        setTimeout(() => {
+            // Como o HTML já tem o valor selecionado, vamos apenas aplicar o filtro
+            this.applyFilters(false);
+        }, 500);
     }
 
     /**
@@ -447,7 +461,7 @@ class OperacoesPortuarias {
     /**
      * Aplica filtros à tabela
      */
-    applyFilters() {
+    applyFilters(showToast = true) {
         if (!this.table) return;
 
         // Pesquisa geral
@@ -456,42 +470,53 @@ class OperacoesPortuarias {
 
         // Filtros por coluna
         const filters = {
-            status: this.filterChoices['filter-status']?.getValue(true) || [],
+            status: this.filterChoices['filter-status']?.getValue(true) ||
+                   (document.getElementById('filter-status')?.value ? [document.getElementById('filter-status').value] : []),
             tipo_frete: this.filterChoices['filter-tipo-frete']?.getValue(true) || [],
             tipo_carga: this.filterChoices['filter-tipo-carga']?.getValue(true) || [],
             empresa: this.filterChoices['filter-empresa']?.getValue(true) || [],
             cliente: this.filterChoices['filter-cliente']?.getValue(true) || []
         };
 
+        // Limpar filtros anteriores
+        $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(fn => fn.name !== 'customFilter');
+
         // Aplicar filtros customizados
-        $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
+        const customFilter = function(settings, data, dataIndex) {
+            // Obter dados originais da linha
+            const rowData = settings.aoData[dataIndex]._aData;
+
             // Status
-            if (filters.status.length > 0 && !filters.status.includes(data[1])) {
+            if (filters.status.length > 0 && !filters.status.includes(rowData.status)) {
                 return false;
             }
 
             // Tipo de Frete
-            if (filters.tipo_frete.length > 0 && !filters.tipo_frete.includes(data[3])) {
+            if (filters.tipo_frete.length > 0 && !filters.tipo_frete.includes(rowData.tipo_frete)) {
                 return false;
             }
 
             // Tipo de Carga
-            if (filters.tipo_carga.length > 0 && !filters.tipo_carga.includes(data[4])) {
+            if (filters.tipo_carga.length > 0 && !filters.tipo_carga.includes(rowData.tipo_carga)) {
                 return false;
             }
 
             // Empresa
-            if (filters.empresa.length > 0 && !filters.empresa.includes(data[8])) {
+            if (filters.empresa.length > 0 && !filters.empresa.includes(rowData.empresa)) {
                 return false;
             }
 
             // Cliente
-            if (filters.cliente.length > 0 && !filters.cliente.includes(data[9])) {
+            if (filters.cliente.length > 0 && !filters.cliente.includes(rowData.cliente)) {
                 return false;
             }
 
             return true;
-        });
+        };
+
+        // Dar nome à função para poder removê-la depois
+        customFilter.name = 'customFilter';
+        $.fn.dataTable.ext.search.push(customFilter);
 
         this.table.draw();
 
@@ -502,8 +527,10 @@ class OperacoesPortuarias {
         // Salvar filtros
         this.saveFilters(filters);
 
-        // Toast de sucesso
-        this.showToast('Filtros aplicados com sucesso!', 'success');
+        // Toast de sucesso apenas se solicitado
+        if (showToast) {
+            this.showToast('Filtros aplicados com sucesso!', 'success');
+        }
     }
 
     /**
@@ -523,7 +550,7 @@ class OperacoesPortuarias {
         document.getElementById('filter-data-fim').value = '';
 
         // Remover filtros customizados
-        $.fn.dataTable.ext.search.pop();
+        $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(fn => fn.name !== 'customFilter');
 
         // Redesenhar tabela
         this.table.search('').draw();
