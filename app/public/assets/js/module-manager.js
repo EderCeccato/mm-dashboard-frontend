@@ -252,7 +252,7 @@ const ModuleManager = (function() {
             openDropdownWithAnimation(parentDropdown, submenu);
          }
          parentDropdown.classList.add('active');
-         const parentToggle = parentDropdown.querySelector('> .side-menu__item');
+         const parentToggle = parentDropdown.querySelector('.side-menu__item');
          if (parentToggle) parentToggle.classList.add('active');
       }
    }

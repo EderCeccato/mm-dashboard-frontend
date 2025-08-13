@@ -10137,19 +10137,19 @@ caption {
 
 [data-theme-mode=dark] .table>:not(caption)>*>* {
    background-color: var(--bs-table-bg);
-   color: #ffffff;
+   color: var(--default-text-color);
    border-bottom-color: var(--bs-table-border-color)
 }
 
-[data-theme-mode=dark] .table>thead>tr>th {
+[data-theme-mode=dark] .table>thead>tr>th, [data-theme-mode=light] .table>thead>tr>th {
    background-color: rgba(var(--primary-rgb), 0.8) !important;
-   color: #ffffff !important;
+   color: #FFFFFF !important;
    border-bottom-color: rgba(var(--primary-rgb), 1) !important
 }
 
 [data-theme-mode=dark] .table>tbody>tr>td {
    background-color: var(--bs-table-bg) !important;
-   color: #ffffff !important
+   color: var(--default-text-color) !important
 }
 
 [data-theme-mode=dark] .table-dark {
