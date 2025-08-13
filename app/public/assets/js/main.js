@@ -1,5 +1,5 @@
 // Defina a URL base do backend aqui
-const BASE_URL = 'http://localhost:3301'; // Troque para a URL de produção quando necessário
+const BASE_URL = 'https://mm-dashboard-backend.vercel.app'; // Troque para a URL de produção quando necessário
 
 /**
  * Sistema de Coleta de Erros para Debug
