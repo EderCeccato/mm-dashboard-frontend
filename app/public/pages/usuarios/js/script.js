@@ -22,7 +22,7 @@ const CONFIG = {
    }
 };
 
-const URL_BASE = 'http://localhost:3301';
+const URL_BASE = 'http://56.124.51.179:3301';
 
 const UsersManager = (function() {
    'use strict';

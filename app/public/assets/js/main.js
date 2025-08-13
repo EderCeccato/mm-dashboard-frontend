@@ -1,5 +1,5 @@
 // Defina a URL base do backend aqui
-const BASE_URL = 'http://localhost:3301'; // Troque para a URL de produção quando necessário
+const BASE_URL = 'http://56.124.51.179:3301'; // Troque para a URL de produção quando necessário
 
 /**
  * Sistema de Coleta de Erros para Debug
