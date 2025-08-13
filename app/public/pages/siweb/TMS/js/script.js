@@ -186,31 +186,32 @@ class TMSManager {
     * Configurações padrão das colunas
     */
    getDefaultColumnSettings() {
-      return [
-         { key: 'nomovtra', name: 'Pedido', visible: true, order: 0 },
-         { key: 'processo', name: 'Processo', visible: true, order: 1 },
-         { key: 'tipo_carga', name: 'Tipo de Carga', visible: true, order: 2 },
-         { key: 'container', name: 'Container', visible: true, order: 3 },
-         { key: 'rota', name: 'Rota', visible: true, order: 4 },
-         { key: 'destinatario', name: 'Destinatário', visible: true, order: 5 },
-         { key: 'numero_nfe', name: 'NF-e', visible: true, order: 6 },
-         { key: 'volume', name: 'Volume', visible: false, order: 7 },
-         { key: 'peso_nfe', name: 'Peso NF-e', visible: false, order: 8 },
-         { key: 'status', name: 'Status', visible: true, order: 9 },
-         { key: 'data_registro', name: 'Data Reg.', visible: true, order: 10 },
-         { key: 'previsao_entrega', name: 'Previsão Entrega', visible: true, order: 11 },
-         { key: 'entregue', name: 'Entregue', visible: false, order: 12 },
-         { key: 'motorista', name: 'Motorista', visible: true, order: 13 },
-         { key: 'tracao', name: 'Tração', visible: true, order: 14 },
-         { key: 'reboque', name: 'Reboque', visible: false, order: 15 },
-         { key: 'valor_frete', name: 'Valor Frete', visible: true, order: 16 },
-         { key: 'pedagio', name: 'Pedágio', visible: false, order: 17 },
-         { key: 'valor_gris', name: 'Valor GRIS', visible: false, order: 18 },
-         { key: 'seguro', name: 'Seguro', visible: false, order: 19 },
-         { key: 'icms', name: 'ICMS', visible: false, order: 20 },
-         { key: 'outros', name: 'Outros', visible: false, order: 21 },
-         { key: 'total', name: 'Total', visible: true, order: 22 }
-      ];
+		return [
+			{ key: 'acoes', name: 'Ações', visible: true, order: 0 },
+			{ key: 'nomovtra', name: 'Pedido', visible: true, order: 1 },
+			{ key: 'processo', name: 'Processo', visible: true, order: 2 },
+			{ key: 'tipo_carga', name: 'Tipo de Carga', visible: true, order: 3 },
+			{ key: 'container', name: 'Container', visible: true, order: 4 },
+			{ key: 'rota', name: 'Rota', visible: true, order: 5 },
+			{ key: 'destinatario', name: 'Destinatário', visible: true, order: 6 },
+			{ key: 'numero_nfe', name: 'NF-e', visible: true, order: 7 },
+			{ key: 'volume', name: 'Volume', visible: false, order: 8 },
+			{ key: 'peso_nfe', name: 'Peso NF-e', visible: false, order: 9 },
+			{ key: 'status', name: 'Status', visible: true, order: 10 },
+			{ key: 'data_registro', name: 'Data Reg.', visible: true, order: 11 },
+			{ key: 'previsao_entrega', name: 'Previsão Entrega', visible: true, order: 12 },
+			{ key: 'entregue', name: 'Entregue', visible: false, order: 13 },
+			{ key: 'motorista', name: 'Motorista', visible: true, order: 14 },
+			{ key: 'tracao', name: 'Tração', visible: true, order: 15 },
+			{ key: 'reboque', name: 'Reboque', visible: false, order: 16 },
+			{ key: 'valor_frete', name: 'Valor Frete', visible: true, order: 17 },
+			{ key: 'pedagio', name: 'Pedágio', visible: false, order: 18 },
+			{ key: 'valor_gris', name: 'Valor GRIS', visible: false, order: 19 },
+			{ key: 'seguro', name: 'Seguro', visible: false, order: 20 },
+			{ key: 'icms', name: 'ICMS', visible: false, order: 21 },
+			{ key: 'outros', name: 'Outros', visible: false, order: 22 },
+			{ key: 'total', name: 'Total', visible: true, order: 23 }
+		];
    }
 
    /**
@@ -223,73 +224,89 @@ class TMSManager {
          table.DataTable().destroy();
       }
 
-      // Definir colunas baseado nas configurações
-      const visibleColumns = this.columnSettings
+
+		// Garante que a coluna de ações fique sempre na primeira posição quando visível
+		const actionsColumn = this.columnSettings.find(c => c.key === 'acoes');
+		if (actionsColumn) {
+			// Recria a ordenação garantindo 'acoes' em 0
+			const others = this.columnSettings.filter(c => c.key !== 'acoes').sort((a, b) => a.order - b.order);
+			actionsColumn.order = 0;
+			others.forEach((c, idx) => { c.order = idx + 1; });
+		}
+
+		// Definir colunas baseado nas configurações
+		const visibleColumns = this.columnSettings
          .filter(col => col.visible)
          .sort((a, b) => a.order - b.order);
 
-      const columns = visibleColumns.map(col => {
-         return {
-               data: col.key,
-               title: col.name,
-               render: (data, type, row) => {
-                  if (col.key === 'status') {
-                     return this.getStatusBadge(data);
-                  } else if (col.key.includes('valor') || col.key === 'total' ||
-                     col.key === 'pedagio' || col.key === 'seguro' ||
-                     col.key === 'icms' || col.key === 'outros') {
-                     return data ? this.formatCurrency(data) : '-';
-                  } else if (col.key === 'container' && !data) {
-                     return '-';
-                  } else if (col.key === 'entregue' && !data) {
-                     return '-';
-                  }
-                  return data || '-';
-               }
-         };
-      });
+		const columns = visibleColumns.map(col => {
+			// Coluna de ações: sempre renderizada de forma personalizada
+			if (col.key === 'acoes') {
+				return {
+					data: null,
+					title: col.name,
+					orderable: false,
+					width: '200px',
+					className: 'text-center',
+					render: (data, type, row) => {
+						return `
+							<div class="btn-group btn-group-sm" role="group">
+								<button type="button" class="btn btn-outline-primary btn-action"
+										onclick="tmsManager.handleAction('comprovante', '${row.nomovtra}')"
+										title="Comprovante">
+									<i class="bi bi-file-earmark-check"></i>
+								</button>
+								<button type="button" class="btn btn-outline-warning btn-action"
+										onclick="tmsManager.handleAction('follow-up', '${row.nomovtra}')"
+										title="Follow Up">
+									<i class="bi bi-arrow-repeat"></i>
+								</button>
+								<button type="button" class="btn btn-outline-danger btn-action"
+										onclick="tmsManager.handleAction('ocorrencia', '${row.nomovtra}')"
+										title="Ocorrência">
+									<i class="bi bi-exclamation-triangle"></i>
+								</button>
+								<button type="button" class="btn btn-outline-info btn-action"
+										onclick="tmsManager.handleAction('documento', '${row.nomovtra}')"
+										title="Documento">
+									<i class="bi bi-file-earmark-text"></i>
+								</button>
+								<button type="button" class="btn btn-outline-success btn-action"
+										onclick="tmsManager.handleAction('mapa', '${row.nomovtra}')"
+										title="Localização">
+									<i class="bi bi-geo-alt"></i>
+								</button>
+							</div>
+						`;
+					}
+				};
+			}
 
-      // Adicionar coluna de ações
-      columns.push({
-         data: null,
-         title: 'Ações',
-         orderable: false,
-         width: '200px',
-         className: 'text-center',
-         render: (data, type, row) => {
-               return `
-                  <div class="btn-group btn-group-sm" role="group">
-                     <button type="button" class="btn btn-outline-primary btn-action"
-                              onclick="tmsManager.handleAction('comprovante', '${row.nomovtra}')"
-                              title="Comprovante">
-                           <i class="bi bi-file-earmark-check"></i>
-                     </button>
-                     <button type="button" class="btn btn-outline-warning btn-action"
-                              onclick="tmsManager.handleAction('follow-up', '${row.nomovtra}')"
-                              title="Follow Up">
-                           <i class="bi bi-arrow-repeat"></i>
-                     </button>
-                     <button type="button" class="btn btn-outline-danger btn-action"
-                              onclick="tmsManager.handleAction('ocorrencia', '${row.nomovtra}')"
-                              title="Ocorrência">
-                           <i class="bi bi-exclamation-triangle"></i>
-                     </button>
-                     <button type="button" class="btn btn-outline-info btn-action"
-                              onclick="tmsManager.handleAction('documento', '${row.nomovtra}')"
-                              title="Documento">
-                           <i class="bi bi-file-earmark-text"></i>
-                     </button>
-                     <button type="button" class="btn btn-outline-success btn-action"
-                              onclick="tmsManager.handleAction('mapa', '${row.nomovtra}')"
-                              title="Localização">
-                           <i class="bi bi-geo-alt"></i>
-                     </button>
-                  </div>
-               `;
-         }
-      });
+			// Demais colunas: renderização padrão
+			return {
+				data: col.key,
+				title: col.name,
+				render: (data, type, row) => {
+					if (col.key === 'status') {
+						return this.getStatusBadge(data);
+					} else if (col.key.includes('valor') || col.key === 'total' ||
+						col.key === 'pedagio' || col.key === 'seguro' ||
+						col.key === 'icms' || col.key === 'outros') {
+						return data ? this.formatCurrency(data) : '-';
+					} else if (col.key === 'container' && !data) {
+						return '-';
+					} else if (col.key === 'entregue' && !data) {
+						return '-';
+					}
+					return data || '-';
+				}
+			};
+		});
 
-      this.dataTable = table.DataTable({
+		// Determina a coluna padrão para ordenação (Pedido), já que 'Ações' é a primeira e não é ordenável
+		const defaultOrderIndex = visibleColumns.findIndex(col => col.key === 'nomovtra');
+
+		this.dataTable = table.DataTable({
          data: this.data,
          columns: columns,
          pageLength: 10,
@@ -303,8 +320,8 @@ class TMSManager {
          scrollCollapse: true,
          dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
                '<"row"<"col-sm-12"tr>>' +
-               '<"row"<"col-sm-5"i><"col-sm-7"p>>',
-         order: [[0, 'desc']]
+				'<"row"<"col-sm-5"i><"col-sm-7"p>>',
+			order: defaultOrderIndex !== -1 ? [[defaultOrderIndex, 'desc']] : []
       });
 
       // Evento de clique na linha para abrir modal
@@ -562,8 +579,16 @@ class TMSManager {
       document.getElementById('detail-total').textContent = this.formatCurrency(pedido.total);
 
       // Mostrar modal
-      const modal = new bootstrap.Modal(document.getElementById('modal-operation-details'));
+      const modalEl = document.getElementById('modal-operation-details');
+      const modal = new bootstrap.Modal(modalEl);
       modal.show();
+
+      // Assim que o modal ficar visível, abrir o mapa automaticamente
+      const shownHandler = () => {
+         this.showMap();
+         modalEl.removeEventListener('shown.bs.modal', shownHandler);
+      };
+      modalEl.addEventListener('shown.bs.modal', shownHandler);
    }
 
 
@@ -602,11 +627,18 @@ class TMSManager {
          });
       }
 
-      // Ícones de ação no modal
+		// Ícones de ação no modal
       this.bindActionButtons();
 
       // Exportar
       this.bindExportEvents();
+
+		// Torna a área de localização clicável para abrir o mapa
+		const locationInfo = document.getElementById('location-info');
+		if (locationInfo) {
+			locationInfo.style.cursor = 'pointer';
+			locationInfo.addEventListener('click', () => this.showMap());
+		}
    }
 
    /**
@@ -629,9 +661,10 @@ class TMSManager {
          this.showToast('Funcionalidade de documento será implementada', 'info');
       });
 
-      document.getElementById('btn-mapa')?.addEventListener('click', () => {
-         this.showMap();
-      });
+
+		// Botão "Ver no Mapa" também abre o mapa
+		document.getElementById('btn-mapa')?.addEventListener('click', () => this.showMap());
+		document.getElementById('btn-show-location')?.addEventListener('click', () => this.showMap());
    }
 
    /**
@@ -693,7 +726,7 @@ class TMSManager {
    applyFilters() {
       if (!this.dataTable) return;
 
-      const search = document.getElementById('filter-search')?.value || '';
+      // const search = document.getElementById('filter-search')?.value || '';
       const status = document.getElementById('filter-status')?.value || '';
       const tipoCarga = document.getElementById('filter-tipo-carga')?.value || '';
       const motorista = document.getElementById('filter-motorista')?.value || '';
@@ -706,9 +739,9 @@ class TMSManager {
       this.dataTable.search('').columns().search('').draw();
 
       // Aplicar filtros individuais
-      if (search) {
-         this.dataTable.search(search);
-      }
+      // if (search) {
+      //    this.dataTable.search(search);
+      // }
 
       // Aplicar filtros por coluna (pode precisar ajustar os índices)
       const columnMap = {
@@ -799,12 +832,12 @@ class TMSManager {
 
       const sortedColumns = [...this.columnSettings].sort((a, b) => a.order - b.order);
 
-      columnList.innerHTML = sortedColumns.map(column => `
+		columnList.innerHTML = sortedColumns.map(column => `
          <div class="list-group-item column-item d-flex align-items-center" data-column="${column.key}">
                <div class="form-check me-3">
                   <input class="form-check-input column-visibility-toggle"
                         type="checkbox"
-                        ${column.visible ? 'checked' : ''}
+						${column.visible ? 'checked' : ''}
                         data-column="${column.key}">
                </div>
                <div class="flex-grow-1">
@@ -813,9 +846,20 @@ class TMSManager {
                </div>
                <small class="text-muted">${column.key}</small>
          </div>
-      `).join('');
+		`).join('');
 
-      // Bind toggle events
+		// Desabilita edição para a coluna de ações
+		const actionItem = columnList.querySelector('[data-column="acoes"]');
+		if (actionItem) {
+			const checkbox = actionItem.querySelector('input[type="checkbox"]');
+			if (checkbox) {
+				checkbox.disabled = false; // pode ocultar/exibir se desejar
+			}
+			// Visualmente indica posição fixa
+			actionItem.classList.add('bg-light');
+		}
+
+		// Bind toggle events
       columnList.querySelectorAll('.column-visibility-toggle').forEach(checkbox => {
          checkbox.addEventListener('change', (e) => {
                const columnKey = e.target.getAttribute('data-column');
@@ -866,15 +910,22 @@ class TMSManager {
          animation: 150,
          ghostClass: 'sortable-ghost',
          chosenClass: 'sortable-chosen',
-         handle: '.bi-grip-vertical', // Apenas o ícone de grip pode arrastar
+			handle: '.bi-grip-vertical', // Apenas o ícone de grip pode arrastar
          onEnd: (evt) => {
                const movedItem = evt.item;
                const columnKey = movedItem.getAttribute('data-column');
                const newIndex = evt.newIndex;
                const oldIndex = evt.oldIndex;
 
-               // Reordenar as configurações de colunas
-               this.reorderColumns(columnKey, oldIndex, newIndex);
+            // Reordenar as configurações de colunas
+				// Impede mover a coluna de ações para fora do início
+				if (columnKey === 'acoes') {
+					// Força voltar para o índice 0 visualmente
+					columnList.insertBefore(movedItem, columnList.firstChild);
+					this.updateColumnOrderNumbers();
+					return;
+				}
+				this.reorderColumns(columnKey, oldIndex, newIndex);
 
                // Atualizar números de ordem visualmente
                this.updateColumnOrderNumbers();

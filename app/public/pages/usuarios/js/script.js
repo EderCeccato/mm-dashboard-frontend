@@ -22,7 +22,7 @@ const CONFIG = {
    }
 };
 
-const URL_BASE = 'http://localhost:3301';
+const BASE_URL = 'https://mm-dashboard-backend.vercel.app';
 
 const UsersManager = (function() {
    'use strict';
