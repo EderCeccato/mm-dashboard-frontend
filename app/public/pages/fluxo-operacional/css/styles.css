@@ -1,0 +1,587 @@
+/**
+ * Estilos personalizados para TMS - Gestão de Transporte
+ * MM Softwares
+ */
+
+/* ===== TABELA TMS ===== */
+#tms-table {
+    font-size: 0.875rem;
+}
+
+#tms-table th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#tms-table td {
+    vertical-align: middle;
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    border-right: 1px solid #e9ecef;
+}
+
+#tms-table td:last-child {
+    border-right: none;
+}
+
+/* ===== HOVER EFFECT FOR ROWS (igual operação portuária) ===== */
+#tms-table tbody tr {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+#tms-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.table-hover-effect {
+    background-color: rgba(13, 110, 253, 0.05) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+/* ===== DATATABLE STYLING ===== */
+.dataTables_wrapper {
+    padding: 0;
+}
+
+.dataTables_length,
+.dataTables_filter {
+    margin-bottom: 1rem;
+}
+
+.dataTables_info {
+    padding-top: 0.75rem;
+}
+
+.dataTables_paginate {
+    padding-top: 0.75rem;
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+.dataTables_scrollBody {
+    border-bottom: 2px solid #dee2e6;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar {
+    height: 8px;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.dataTables_scrollBody::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+table.dataTable thead>tr>th.sorting{
+    text-align: center !important;
+}
+
+/* ===== COLUNAS ESPECÍFICAS ===== */
+.col-nomovtra {
+    min-width: 120px;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.col-processo {
+    min-width: 140px;
+}
+
+.col-container {
+    min-width: 140px;
+    font-family: 'Courier New', monospace;
+}
+
+.col-rota {
+    min-width: 180px;
+    text-align: left !important;
+}
+
+.col-destinatario {
+    min-width: 200px;
+    text-align: left !important;
+}
+
+.col-nfe {
+    min-width: 120px;
+    font-family: 'Courier New', monospace;
+}
+
+.col-volume {
+    min-width: 80px;
+}
+
+.col-peso {
+    min-width: 100px;
+}
+
+.col-data {
+    min-width: 110px;
+}
+
+.col-motorista {
+    min-width: 150px;
+    text-align: left !important;
+}
+
+.col-veiculo {
+    min-width: 120px;
+    font-family: 'Courier New', monospace;
+}
+
+.col-valor {
+    min-width: 120px;
+    text-align: right !important;
+    font-weight: 600;
+}
+
+.col-total {
+    min-width: 140px;
+    text-align: right !important;
+    font-weight: 700;
+    color: #198754;
+}
+
+.col-acoes {
+    min-width: 120px;
+}
+
+/* ===== BADGES DE STATUS (usando padrão Bootstrap como operação portuária) ===== */
+.badge {
+    font-size: 0.65rem;
+    padding: 5px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== COLORAÇÃO POR PERÍODO DO FLUXO ===== */
+/* Linha normal: sem cor específica (no prazo - primeira metade) */
+/* Segunda metade do período */
+tr.flow-warning td {
+    background-color: rgba(255, 193, 7, 0.15) !important; /* amarelo/laranja suave */
+}
+
+/* Vencido */
+tr.flow-overdue td {
+    background-color: rgba(220, 53, 69, 0.15) !important; /* vermelho suave */
+}
+
+/* ===== BOTÕES DE AÇÃO ===== */
+.btn-action {
+    padding: 0.25rem 0.4rem;
+    margin: 0 0.1rem;
+    border-radius: 0.25rem;
+    border: 1px solid transparent;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    min-width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.btn-group .btn-action {
+    margin: 0;
+}
+
+.btn-group-sm .btn-action {
+    padding: 0.2rem 0.35rem;
+    font-size: 0.7rem;
+    min-width: 28px;
+    height: 28px;
+}
+
+/* ===== CORES DOS BOTÕES DE AÇÃO ===== */
+.btn-outline-primary.btn-action {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.btn-outline-primary.btn-action:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.btn-outline-warning.btn-action {
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.btn-outline-warning.btn-action:hover {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+}
+
+.btn-outline-danger.btn-action {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.btn-outline-danger.btn-action:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-outline-info.btn-action {
+    border-color: #0dcaf0;
+    color: #0dcaf0;
+}
+
+.btn-outline-info.btn-action:hover {
+    background-color: #0dcaf0;
+    border-color: #0dcaf0;
+    color: #000;
+}
+
+.btn-outline-success.btn-action {
+    border-color: #198754;
+    color: #198754;
+}
+
+.btn-outline-success.btn-action:hover {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+}
+
+/* ===== ÍCONES DE AÇÃO NO MODAL ===== */
+.modal-header .btn {
+    transition: all 0.2s ease;
+}
+
+.modal-header .btn:hover {
+    transform: scale(1.1);
+}
+
+#btn-comprovante {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+#btn-comprovante:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+#btn-follow-up {
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+#btn-follow-up:hover {
+    background-color: #ffc107;
+    color: #000;
+}
+
+#btn-ocorrencia {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+#btn-ocorrencia:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+#btn-documento {
+    border-color: #17a2b8;
+    color: #17a2b8;
+}
+
+#btn-documento:hover {
+    background-color: #17a2b8;
+    color: white;
+}
+
+#btn-mapa {
+    border-color: #198754;
+    color: #198754;
+}
+
+#btn-mapa:hover {
+    background-color: #198754;
+    color: white;
+}
+
+/* ===== CARDS NO MODAL ===== */
+.modal-body .row {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.modal-body .row .col-md-6 {
+    display: flex;
+}
+
+.modal-body .row .col-md-6 .card {
+    flex: 1;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    padding: 0.75rem 1rem;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+/* ===== VALORES FINANCEIROS ===== */
+.valor-positivo {
+    color: #198754;
+    font-weight: 600;
+}
+
+.valor-negativo {
+    color: #dc3545;
+    font-weight: 600;
+}
+
+.valor-neutro {
+    color: #6c757d;
+}
+
+/* ===== FILTROS ===== */
+.filters-sidebar .form-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.filters-sidebar .form-control,
+.filters-sidebar .form-select {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.filters-sidebar .form-control:focus,
+.filters-sidebar .form-select:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+    #tms-table {
+        font-size: 0.75rem;
+    }
+
+    #tms-table th,
+    #tms-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .col-rota,
+    .col-destinatario,
+    .col-motorista {
+        min-width: 150px;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .modal-header .d-flex.gap-2 {
+        flex-wrap: wrap;
+        gap: 0.25rem !important;
+    }
+
+    .modal-header .btn {
+        padding: 0.25rem 0.375rem;
+    }
+}
+
+/* ===== ANIMAÇÕES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== LOADING STATES ===== */
+.table-loading {
+    position: relative;
+}
+
+.table-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.loading-spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 0.25rem solid #f3f3f3;
+    border-top: 0.25rem solid #0d6efd;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== TOOLTIPS PERSONALIZADOS ===== */
+.custom-tooltip {
+    font-size: 0.875rem;
+    background-color: #212529;
+    color: white;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
+}
+
+/* ===== MAPA ===== */
+#operation-map {
+    border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+}
+
+/* ===== CONFIGURAÇÕES DE COLUNAS ===== */
+.column-item {
+    transition: background-color 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.column-item:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.column-item.sortable-ghost {
+    opacity: 0.4;
+    background-color: #e9ecef;
+}
+
+.column-item.sortable-chosen {
+    background-color: #e3f2fd;
+    border-color: #0d6efd;
+}
+
+.column-visibility-toggle {
+    cursor: pointer;
+}
+
+/* Grip para arrastar */
+.bi-grip-vertical {
+    cursor: grab;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.bi-grip-vertical:hover {
+    color: #0d6efd;
+}
+
+.bi-grip-vertical:active {
+    cursor: grabbing;
+}
+
+/* ===== EXPORTAÇÃO ===== */
+.export-options .dropdown-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.export-options .dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+/* ===== DARK MODE SUPPORT ===== */
+[data-theme-mode="dark"] #tms-table th {
+    background-color: #212529;
+    color: #ffffff;
+    border-bottom-color: #495057;
+}
+
+[data-theme-mode="dark"] #tms-table td {
+    border-right-color: #495057;
+}
+
+[data-theme-mode="dark"] .card {
+    background-color: #212529;
+    border-color: #495057;
+}
+
+[data-theme-mode="dark"] .card-header {
+    border-bottom-color: #495057;
+}
+
+[data-theme-mode="dark"] .filters-sidebar .form-control,
+[data-theme-mode="dark"] .filters-sidebar .form-select {
+    background-color: #212529;
+    border-color: #495057;
+    color: #ffffff;
+}
+
+[data-theme-mode="dark"] .custom-tooltip {
+    background-color: #495057;
+}
