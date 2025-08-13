@@ -8,11 +8,93 @@
 strong, span {
    color: var(--default-text-color);
 }
+
 /* Melhorar aparência da tabela */
 #operacoes-table {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 100% !important;
+}
+
+/* DataTables - Tabela ocupar toda largura */
+.dataTables_wrapper {
+    width: 100% !important;
+}
+
+.dataTables_wrapper .dataTable {
+    width: 100% !important;
+}
+
+/* Remover scroll horizontal desnecessário */
+.dataTables_wrapper .dataTables_scroll {
+    width: 100% !important;
+}
+
+/* CORREÇÃO CRÍTICA: Alinhamento consistente entre tabelas de cabeçalho e corpo */
+.dataTables_scrollHead .dataTable th,
+.dataTables_scrollBody .dataTable th,
+.dataTables_scrollBody .dataTable td {
+    vertical-align: middle;
+    padding: 12px 8px;
+    text-align: left; /* Alinhamento padrão à esquerda */
+}
+
+/* Alinhamento específico para colunas que devem ser centralizadas */
+.dataTables_scrollHead .dataTable th.text-center,
+.dataTables_scrollBody .dataTable th.text-center,
+.dataTables_scrollBody .dataTable td.text-center {
+    text-align: center !important;
+}
+
+/* Alinhamento específico para colunas que devem ser alinhadas à esquerda */
+.dataTables_scrollHead .dataTable th.text-start,
+.dataTables_scrollBody .dataTable th.text-start,
+.dataTables_scrollBody .dataTable td.text-start {
+    text-align: left !important;
+}
+
+/* Alinhamento consistente das colunas - Simplificado */
+#operacoes-table th,
+#operacoes-table td {
+    vertical-align: middle;
+    padding: 12px 8px;
+    text-align: left; /* Alinhamento padrão à esquerda */
+}
+
+/* Alinhamento específico para colunas que devem ser centralizadas */
+#operacoes-table th.text-center,
+#operacoes-table td.text-center {
+    text-align: center !important;
+}
+
+/* Alinhamento específico para colunas que devem ser alinhadas à esquerda */
+#operacoes-table th.text-start,
+#operacoes-table td.text-start {
+    text-align: left !important;
+}
+
+/* Garantir que DataTables não sobrescreva o alinhamento */
+.dataTables_wrapper .dataTable th,
+.dataTables_wrapper .dataTable td {
+    text-align: inherit !important;
+}
+
+/* Remover qualquer padding/margin extra que possa causar desalinhamento */
+#operacoes-table th,
+#operacoes-table td {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin: 0 !important;
+}
+
+/* CORREÇÃO: Padding consistente para tabelas de scroll */
+.dataTables_scrollHead .dataTable th,
+.dataTables_scrollBody .dataTable th,
+.dataTables_scrollBody .dataTable td {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    margin: 0 !important;
 }
 
 #operacoes-table thead th {
@@ -24,11 +106,31 @@ strong, span {
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    text-align: center;
+    text-align: left; /* Alinhamento padrão à esquerda */
+}
+
+/* CORREÇÃO: Cabeçalhos das tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 12px 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left; /* Alinhamento padrão à esquerda */
 }
 
 /* Cabeçalhos ordenáveis */
 #operacoes-table thead th.sortable {
+    user-select: none;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+/* CORREÇÃO: Cabeçalhos ordenáveis nas tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th.sortable {
     user-select: none;
     position: relative;
     transition: all 0.2s ease;
@@ -39,13 +141,32 @@ strong, span {
     transform: translateY(-1px);
 }
 
+/* CORREÇÃO: Hover nos cabeçalhos das tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th.sortable:hover {
+    background-color: var(--primary09);
+    transform: translateY(-1px);
+}
+
 #operacoes-table thead th.sortable .sort-icon {
     opacity: 0.6;
     transition: all 0.2s ease;
     font-size: 0.8rem;
 }
 
+/* CORREÇÃO: Ícones de ordenação nas tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th.sortable .sort-icon {
+    opacity: 0.6;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+}
+
 #operacoes-table thead th.sortable:hover .sort-icon {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* CORREÇÃO: Hover dos ícones nas tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th.sortable:hover .sort-icon {
     opacity: 1;
     transform: scale(1.1);
 }
@@ -57,7 +178,21 @@ strong, span {
     text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
 }
 
+/* CORREÇÃO: Ícones de ordenação ativos nas tabelas de scroll */
+.dataTables_scrollHead .dataTable thead th.sortable .bi-sort-up,
+.dataTables_scrollHead .dataTable thead th.sortable .bi-sort-down {
+    opacity: 1;
+    color: #ffd700;
+    text-shadow: 0 0 3px rgba(255, 215, 0, 0.5);
+}
+
 #operacoes-table tbody tr {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* CORREÇÃO: Linhas do corpo nas tabelas de scroll */
+.dataTables_scrollBody .dataTable tbody tr {
     transition: all 0.2s ease;
     cursor: pointer;
 }
@@ -68,11 +203,107 @@ strong, span {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+/* CORREÇÃO: Hover das linhas nas tabelas de scroll */
+.dataTables_scrollBody .dataTable tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 #operacoes-table tbody td {
    padding: 12px 8px;
    vertical-align: middle;
    border-bottom: 1px solid var(--bs-border-color);
    color: var(--default-text-color) !important;
+}
+
+/* CORREÇÃO: Células do corpo nas tabelas de scroll */
+.dataTables_scrollBody .dataTable tbody td {
+   padding: 12px 8px;
+   vertical-align: middle;
+   border-bottom: 1px solid var(--bs-border-color);
+   color: var(--default-text-color) !important;
+}
+
+/* Badges de status centralizados */
+#operacoes-table .badge {
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+}
+
+/* CORREÇÃO: Badges nas tabelas de scroll */
+.dataTables_scrollBody .dataTable .badge {
+    display: inline-block;
+    text-align: center;
+    min-width: 80px;
+}
+
+/* CORREÇÃO: Remover espaços extras nas classes das células */
+.dataTables_scrollBody .dataTable td[class*="  "] {
+    text-align: inherit !important;
+}
+
+/* CORREÇÃO: Garantir alinhamento correto para células com espaços nas classes */
+.dataTables_scrollBody .dataTable td.text-center,
+.dataTables_scrollBody .dataTable td[class*="text-center"] {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td.text-start,
+.dataTables_scrollBody .dataTable td[class*="text-start"] {
+    text-align: left !important;
+}
+
+/* CORREÇÃO: Alinhamento específico por posição da coluna para garantir consistência */
+.dataTables_scrollBody .dataTable td:nth-child(1), /* ID */
+.dataTables_scrollHead .dataTable th:nth-child(1) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(2), /* Status */
+.dataTables_scrollHead .dataTable th:nth-child(2) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(3), /* Navio */
+.dataTables_scrollHead .dataTable th:nth-child(3) {
+    text-align: left !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(4), /* Tipo de Frete */
+.dataTables_scrollHead .dataTable th:nth-child(4) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(5), /* Tipo de Carga */
+.dataTables_scrollHead .dataTable th:nth-child(5) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(6), /* Data Reg. */
+.dataTables_scrollHead .dataTable th:nth-child(6) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(7), /* Início Operação */
+.dataTables_scrollHead .dataTable th:nth-child(7) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(8), /* Fim Operação */
+.dataTables_scrollHead .dataTable th:nth-child(8) {
+    text-align: center !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(9), /* Empresa */
+.dataTables_scrollHead .dataTable th:nth-child(9) {
+    text-align: left !important;
+}
+
+.dataTables_scrollBody .dataTable td:nth-child(10), /* Cliente */
+.dataTables_scrollHead .dataTable th:nth-child(10) {
+    text-align: left !important;
 }
 
 /* Badges de status usando cores do tema */
@@ -133,6 +364,58 @@ td span.badge, div span.badge {
     background: var(--bs-card-cap-bg, #f8f9fa);
     border-bottom: 1px solid var(--bs-border-color);
     padding: 1.25rem;
+}
+
+/* Controls styling */
+.card-body .form-select,
+.card-body .form-control {
+    border: 1px solid #ced4da;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.card-body .input-group .form-control {
+    border-right: none;
+}
+
+.card-body .input-group-text {
+    border-left: none;
+    background-color: #e9ecef;
+    color: #6c757d;
+    border-color: #ced4da;
+}
+
+/* Items per page control */
+.form-select[id="items-per-page"] {
+    min-width: 70px;
+    text-align: center;
+}
+
+/* Global search field */
+#global-search {
+    font-size: 0.875rem;
+}
+
+#global-search:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem var(--primary025);
+}
+
+/* Responsive adjustments for controls */
+@media (max-width: 768px) {
+    .card-body .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .card-body .input-group {
+        width: 100% !important;
+    }
+
+    .card-body .d-flex.align-items-center {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
 }
 
 .card-header .card-title h5 {
@@ -367,6 +650,22 @@ td span.badge, div span.badge {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Estilo para colunas obrigatórias */
+#column-list .list-group-item .form-check-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#column-list .list-group-item .form-check-input:disabled + .form-check-label {
+    cursor: not-allowed;
+}
+
+/* Badge para colunas obrigatórias */
+#column-list .badge.bg-primary {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+}
+
 #column-list .drag-handle {
     font-size: 1.2rem;
     color: #9ca3af;
@@ -598,13 +897,13 @@ td span.badge, div span.badge {
     #operacoes-table thead th {
         font-size: 0.75rem;
         padding: 8px 4px;
-        text-align: center;
+        text-align: left; /* Manter alinhamento à esquerda */
     }
 
     #operacoes-table tbody td {
         padding: 8px 4px;
         font-size: 0.8rem;
-        text-align: center;
+        text-align: left; /* Manter alinhamento à esquerda */
     }
 
     .modal-xl {
@@ -661,6 +960,44 @@ td span.badge, div span.badge {
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px var(--primary-bg-subtle, rgba(var(--primary-rgb), 0.1));
     outline: none;
+}
+
+/* Garantir que DataTables não sobrescreva o alinhamento das colunas */
+.dataTables_wrapper .dataTable th,
+.dataTables_wrapper .dataTable td {
+    text-align: inherit !important;
+}
+
+.dataTables_wrapper .dataTable th.text-center,
+.dataTables_wrapper .dataTable td.text-center {
+    text-align: center !important;
+}
+
+.dataTables_wrapper .dataTable th.text-start,
+.dataTables_wrapper .dataTable td.text-start {
+    text-align: left !important;
+}
+
+/* CORREÇÃO: Garantir que as larguras das colunas sejam consistentes */
+.dataTables_scrollHead .dataTable th,
+.dataTables_scrollBody .dataTable th,
+.dataTables_scrollBody .dataTable td {
+    box-sizing: border-box !important;
+}
+
+/* CORREÇÃO: Sincronizar larguras entre cabeçalho e corpo */
+.dataTables_scrollHead .dataTable,
+.dataTables_scrollBody .dataTable {
+    table-layout: fixed !important;
+}
+
+/* CORREÇÃO: Garantir que o scroll funcione corretamente */
+.dataTables_scrollHead {
+    overflow: hidden !important;
+}
+
+.dataTables_scrollBody {
+    overflow: auto !important;
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button {
@@ -721,6 +1058,46 @@ td span.badge, div span.badge {
     background-color: var(--primary-bg-subtle, rgba(var(--primary-rgb), 0.1));
 }
 
+/* ===== CONFIGURAÇÕES DE COLUNAS (COPIADO EXATO DO TMS) ===== */
+.column-item {
+    transition: background-color 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.column-item:hover {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.column-item.sortable-ghost {
+    opacity: 0.4;
+    background-color: #e9ecef;
+}
+
+.column-item.sortable-chosen {
+    background-color: #e3f2fd;
+    border-color: #0d6efd;
+}
+
+.column-visibility-toggle {
+    cursor: pointer;
+}
+
+/* Grip para arrastar */
+.bi-grip-vertical {
+    cursor: grab;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.bi-grip-vertical:hover {
+    color: #0d6efd;
+}
+
+.bi-grip-vertical:active {
+    cursor: grabbing;
+}
+
 /* ===== PRINT STYLES ===== */
 
 @media print {
@@ -739,8 +1116,13 @@ td span.badge, div span.badge {
    #operacoes-table thead th {
       background: #f3f4f6 !important;
       color: var(--default-text-color) !important;
+      text-align: left !important; /* Manter alinhamento à esquerda */
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+   }
+
+   #operacoes-table tbody td {
+      text-align: left !important; /* Manter alinhamento à esquerda */
    }
 
    .badge {

@@ -1,17 +1,13 @@
 /**
- * Versão Simplificada - Operações Portuárias
- * Usando apenas HTML/CSS/JS vanilla para teste inicial
+ * Operações Portuárias - DataTables Implementation
+ * Usando DataTables igual ao TMS
  */
 
-class OperacoesPortuariasSimple {
+class OperacoesPortuarias {
     constructor() {
         this.data = this.getSampleData();
-        this.filteredData = [...this.data];
-        this.currentPage = 1;
-        this.itemsPerPage = 10;
+        this.dataTable = null;
         this.columnSettings = this.getDefaultColumnSettings();
-        this.sortColumn = null;
-        this.sortDirection = 'asc';
         this.currentOperation = null;
         this.map = null;
         this.init();
@@ -21,295 +17,15 @@ class OperacoesPortuariasSimple {
         this.loadSavedSettings();
         this.populateFilterOptions();
         this.initializeDateRangePicker();
-        this.applyInitialStatusFilter(); // Aplicar filtro inicial de status "Em operação"
-        this.renderTable();
+        this.initializeDataTable();
         this.bindEvents();
-        this.bindSortEvents();
         this.initializeColumnSettings();
-        this.applyColumnSettings();
-        this.showToast('Sistema carregado com sucesso!', 'success');
+        this.showToast('Sistema de Operações Portuárias carregado com sucesso!', 'success');
     }
 
     /**
-     * Inicializa o date range picker usando Flatpickr
+     * Dados de exemplo para Operações Portuárias
      */
-    initializeDateRangePicker() {
-        const dateRangeInput = document.getElementById('filter-date-range');
-        if (!dateRangeInput) return;
-
-        // Verificar se Flatpickr está disponível
-        if (typeof flatpickr !== 'undefined') {
-            // Configuração do Range Calendar seguindo a documentação oficial
-            this.dateRangePicker = flatpickr(dateRangeInput, {
-                mode: "range",
-                dateFormat: "d/m/Y",
-                locale: "pt", // Usar localização portuguesa carregada
-                minDate: "2020-01-01",
-                maxDate: "today",
-                allowInput: false,
-                clickOpens: true,
-                // Configurações para funcionar dentro de sidebar
-                appendTo: document.body, // Anexar ao body em vez do container pai
-                static: false,
-                position: "auto",
-                // Callbacks para debug
-                onOpen: function() {
-                    console.log('Flatpickr aberto');
-                },
-                onClose: function() {
-                    console.log('Flatpickr fechado');
-                }
-            });
-
-            // Adicionar evento de clique no ícone do calendário
-            const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
-            if (iconElement) {
-                iconElement.style.cursor = 'pointer';
-                iconElement.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Ícone clicado, tentando abrir Flatpickr');
-                    if (this.dateRangePicker) {
-                        this.dateRangePicker.open();
-                    }
-                });
-            }
-
-            // Adicionar evento de clique no próprio input também
-            dateRangeInput.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Input clicado, tentando abrir Flatpickr');
-                if (this.dateRangePicker) {
-                    this.dateRangePicker.open();
-                }
-            });
-        } else {
-            console.warn('Flatpickr não está disponível. Tentando carregar...');
-            // Tentar novamente após um delay
-            setTimeout(() => {
-                this.initializeDateRangePicker();
-            }, 1000);
-        }
-    }
-
-
-
-    /**
-     * Popula opções dos filtros
-     */
-    populateFilterOptions() {
-        // Obter valores únicos dos dados
-        const empresas = [...new Set(this.data.map(item => item.empresa))].sort();
-        const clientes = [...new Set(this.data.map(item => item.cliente))].sort();
-
-                // Popular select de empresas
-        const empresaSelect = document.getElementById('filter-empresa');
-        if (empresaSelect) {
-            const empresaOptions = empresas.map(empresa =>
-                `<option value="${empresa}">${empresa}</option>`
-            ).join('');
-            empresaSelect.innerHTML = '<option value="">Todas as empresas</option>' + empresaOptions;
-        }
-
-        // Popular select de clientes
-        const clienteSelect = document.getElementById('filter-cliente');
-        if (clienteSelect) {
-            const clienteOptions = clientes.map(cliente =>
-                `<option value="${cliente}">${cliente}</option>`
-            ).join('');
-            clienteSelect.innerHTML = '<option value="">Todos os clientes</option>' + clienteOptions;
-        }
-    }
-
-    /**
-     * Aplica filtro inicial de status "Em operação"
-     */
-    applyInitialStatusFilter() {
-        // Definir o valor do select de status como "Em operação"
-        const statusSelect = document.getElementById('filter-status');
-        if (statusSelect) {
-            statusSelect.value = 'Em operação';
-        }
-
-        // Filtrar dados para mostrar apenas operações com status "Em operação"
-        this.filteredData = this.data.filter(item => item.status === 'Em operação');
-
-        // Resetar para primeira página
-        this.currentPage = 1;
-
-        // Mostrar mensagem informativa sobre o filtro inicial
-        const operacoesEmAndamento = this.filteredData.length;
-        if (operacoesEmAndamento > 0) {
-            this.showToast(`Filtro inicial aplicado: ${operacoesEmAndamento} operação(ões) em andamento carregada(s).`, 'info');
-        } else {
-            this.showToast('Filtro inicial aplicado: Nenhuma operação em andamento encontrada.', 'warning');
-        }
-    }
-
-    /**
-     * Carrega configurações salvas
-     */
-    loadSavedSettings() {
-        // Carregar configurações de colunas
-        const savedColumns = localStorage.getItem('operacoes-column-settings');
-        if (savedColumns) {
-            try {
-                this.columnSettings = JSON.parse(savedColumns);
-            } catch (e) {
-                console.error('Erro ao carregar configurações de colunas:', e);
-            }
-        }
-    }
-
-    /**
-     * Configurações padrão das colunas
-     */
-    getDefaultColumnSettings() {
-        return [
-            { key: 'id', name: 'ID', visible: true, order: 0 },
-            { key: 'status', name: 'Status', visible: true, order: 1 },
-            { key: 'navio', name: 'Navio', visible: true, order: 2 },
-            { key: 'tipo_frete', name: 'Tipo de Frete', visible: true, order: 3 },
-            { key: 'tipo_carga', name: 'Tipo de Carga', visible: true, order: 4 },
-            { key: 'data_registro', name: 'Data Reg.', visible: true, order: 5 },
-            { key: 'inicio_operacao', name: 'Início Operação', visible: true, order: 6 },
-            { key: 'fim_operacao', name: 'Fim Operação', visible: true, order: 7 },
-            { key: 'empresa', name: 'Empresa', visible: true, order: 8 },
-            { key: 'cliente', name: 'Cliente', visible: false, order: 9 }
-        ];
-    }
-
-    /**
-     * Inicializa configuração de colunas
-     */
-    initializeColumnSettings() {
-        this.renderColumnList();
-        this.initializeSortable();
-    }
-
-    /**
-     * Renderiza a lista de colunas no modal
-     */
-    renderColumnList() {
-        const columnList = document.getElementById('column-list');
-        if (!columnList) return;
-
-        // Ordenar colunas pela ordem atual
-        const sortedColumns = [...this.columnSettings].sort((a, b) => a.order - b.order);
-
-        columnList.innerHTML = sortedColumns.map(column => `
-            <div class="list-group-item d-flex justify-content-between align-items-center" data-column="${column.key}">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-grip-vertical me-3 text-muted drag-handle" style="cursor: move;"></i>
-                    <div class="form-check">
-                        <input class="form-check-input column-toggle" type="checkbox"
-                               id="col-${column.key}" ${column.visible ? 'checked' : ''}>
-                        <label class="form-check-label" for="col-${column.key}">
-                            ${column.name}
-                        </label>
-                    </div>
-                </div>
-                <span class="badge bg-secondary">${column.order + 1}</span>
-            </div>
-        `).join('');
-    }
-
-    /**
-     * Inicializa o Sortable para arrastar colunas (versão simples)
-     */
-    initializeSortable() {
-        const columnList = document.getElementById('column-list');
-        if (!columnList) return;
-
-        // Implementação simples de drag & drop
-        let draggedElement = null;
-
-        columnList.addEventListener('dragstart', (e) => {
-            if (e.target.closest('.drag-handle')) {
-                draggedElement = e.target.closest('.list-group-item');
-                draggedElement.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-            }
-        });
-
-        columnList.addEventListener('dragend', (e) => {
-            if (draggedElement) {
-                draggedElement.classList.remove('dragging');
-                // Remover classes de todos os elementos
-                columnList.querySelectorAll('.list-group-item').forEach(item => {
-                    item.classList.remove('drag-over');
-                });
-                draggedElement = null;
-            }
-        });
-
-        columnList.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-
-            const targetElement = e.target.closest('.list-group-item');
-            if (targetElement && targetElement !== draggedElement) {
-                // Remover classe de todos os elementos
-                columnList.querySelectorAll('.list-group-item').forEach(item => {
-                    item.classList.remove('drag-over');
-                });
-                // Adicionar classe ao elemento atual
-                targetElement.classList.add('drag-over');
-            }
-        });
-
-        columnList.addEventListener('dragleave', (e) => {
-            const targetElement = e.target.closest('.list-group-item');
-            if (targetElement) {
-                targetElement.classList.remove('drag-over');
-            }
-        });
-
-        columnList.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const targetElement = e.target.closest('.list-group-item');
-
-            if (draggedElement && targetElement && draggedElement !== targetElement) {
-                const rect = targetElement.getBoundingClientRect();
-                const midpoint = rect.top + rect.height / 2;
-
-                if (e.clientY < midpoint) {
-                    columnList.insertBefore(draggedElement, targetElement);
-                } else {
-                    columnList.insertBefore(draggedElement, targetElement.nextSibling);
-                }
-
-                this.updateColumnOrder();
-            }
-        });
-
-        // Tornar elementos arrastáveis
-        columnList.querySelectorAll('.list-group-item').forEach(item => {
-            item.draggable = true;
-        });
-    }
-
-    /**
-     * Atualiza a ordem das colunas após arrastar
-     */
-    updateColumnOrder() {
-        const columnList = document.getElementById('column-list');
-        const items = columnList.querySelectorAll('.list-group-item');
-
-        items.forEach((item, index) => {
-            const columnKey = item.dataset.column;
-            const column = this.columnSettings.find(col => col.key === columnKey);
-            if (column) {
-                column.order = index;
-            }
-
-            // Atualizar badge de ordem
-            const badge = item.querySelector('.badge');
-            badge.textContent = index + 1;
-        });
-    }
-
     getSampleData() {
         return [
             {
@@ -385,108 +101,207 @@ class OperacoesPortuariasSimple {
         ];
     }
 
-    renderTable() {
-        const tbody = document.querySelector('#operacoes-table tbody');
-        if (!tbody) return;
-
-        const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-        const endIndex = startIndex + this.itemsPerPage;
-        const pageData = this.filteredData.slice(startIndex, endIndex);
-
-        tbody.innerHTML = pageData.map(item => `
-            <tr data-id="${item.id}" class="table-row">
-                <td class="text-center">${item.id}</td>
-                <td class="text-center">${this.getStatusBadge(item.status)}</td>
-                <td>${item.navio}</td>
-                <td class="text-center">${item.tipo_frete}</td>
-                <td class="text-center">${item.tipo_carga}</td>
-                <td class="text-center">${item.data_registro}</td>
-                <td class="text-center">${item.inicio_operacao}</td>
-                <td class="text-center">${item.fim_operacao}</td>
-                <td>${item.empresa}</td>
-                <td>${item.cliente}</td>
-            </tr>
-        `).join('');
-
-        this.renderPagination();
-        this.bindTableEvents();
-        this.bindSortEvents();
+    /**
+     * Configurações padrão das colunas
+     */
+    getDefaultColumnSettings() {
+        return [
+            { key: 'id', name: 'Pedido', visible: true, order: 0, required: true },
+            { key: 'status', name: 'Status', visible: true, order: 1, required: true },
+            { key: 'navio', name: 'Navio', visible: true, order: 2, required: true },
+            { key: 'tipo_frete', name: 'Tipo de Frete', visible: true, order: 3, required: true },
+            { key: 'tipo_carga', name: 'Tipo de Carga', visible: true, order: 4, required: true },
+            { key: 'data_registro', name: 'Data Reg.', visible: true, order: 5, required: true },
+            { key: 'inicio_operacao', name: 'Início Operação', visible: true, order: 6, required: true },
+            { key: 'fim_operacao', name: 'Fim Operação', visible: true, order: 7, required: true },
+            { key: 'empresa', name: 'Empresa', visible: true, order: 8, required: true },
+            { key: 'cliente', name: 'Cliente', visible: true, order: 9, required: true }
+        ];
     }
 
-    getStatusBadge(status) {
-        const badges = {
-            'Em operação': 'bg-primary',
-            'Concluída': 'bg-success',
-            'Pendente': 'bg-warning text-dark',
-            'Cancelada': 'bg-danger'
-        };
-        return `<span class="badge ${badges[status] || 'bg-secondary'}">${status}</span>`;
-    }
-
-    renderPagination() {
-        const totalPages = Math.ceil(this.filteredData.length / this.itemsPerPage);
-        const paginationContainer = document.querySelector('.pagination-container');
-
-        if (!paginationContainer) {
-            // Criar container de paginação se não existir
-            const cardBody = document.querySelector('#operacoes-table').closest('.card-body');
-            const paginationDiv = document.createElement('div');
-            paginationDiv.className = 'pagination-container d-flex justify-content-between align-items-center mt-3';
-            paginationDiv.innerHTML = `
-                <div class="pagination-info">
-                    Mostrando <span id="showing-start">0</span> até <span id="showing-end">0</span> de <span id="total-records">0</span> registros
-                </div>
-                <nav>
-                    <ul class="pagination pagination-sm mb-0" id="pagination-list">
-                    </ul>
-                </nav>
-            `;
-            cardBody.appendChild(paginationDiv);
-        }
-
-        // Atualizar informações
-        const startRecord = (this.currentPage - 1) * this.itemsPerPage + 1;
-        const endRecord = Math.min(this.currentPage * this.itemsPerPage, this.filteredData.length);
-
-        document.getElementById('showing-start').textContent = this.filteredData.length > 0 ? startRecord : 0;
-        document.getElementById('showing-end').textContent = endRecord;
-        document.getElementById('total-records').textContent = this.filteredData.length;
-
-        // Gerar paginação
-        const paginationList = document.getElementById('pagination-list');
-        let paginationHTML = '';
-
-        // Botão Anterior
-        paginationHTML += `
-            <li class="page-item ${this.currentPage === 1 ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${this.currentPage - 1}">Anterior</a>
-            </li>
-        `;
-
-        // Números das páginas
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= this.currentPage - 2 && i <= this.currentPage + 2)) {
-                paginationHTML += `
-                    <li class="page-item ${i === this.currentPage ? 'active' : ''}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
-                    </li>
-                `;
-            } else if (i === this.currentPage - 3 || i === this.currentPage + 3) {
-                paginationHTML += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+    /**
+     * Carrega configurações salvas
+     */
+    loadSavedSettings() {
+        const savedColumns = localStorage.getItem('operacoes-column-settings');
+        if (savedColumns) {
+            try {
+                this.columnSettings = JSON.parse(savedColumns);
+                // Garantir que colunas obrigatórias estejam sempre visíveis
+                this.columnSettings.forEach(col => {
+                    if (col.required) {
+                        col.visible = true;
+                    }
+                });
+            } catch (e) {
+                console.error('Erro ao carregar configurações de colunas:', e);
+                this.columnSettings = this.getDefaultColumnSettings();
             }
         }
-
-        // Botão Próximo
-        paginationHTML += `
-            <li class="page-item ${this.currentPage === totalPages ? 'disabled' : ''}">
-                <a class="page-link" href="#" data-page="${this.currentPage + 1}">Próximo</a>
-            </li>
-        `;
-
-        paginationList.innerHTML = paginationHTML;
-        this.bindPaginationEvents();
     }
 
+    /**
+     * Inicializa DataTables
+     */
+    initializeDataTable() {
+        const table = $('#operacoes-table');
+
+        if ($.fn.DataTable.isDataTable(table)) {
+            table.DataTable().destroy();
+        }
+
+        // Garantir que colunas obrigatórias estejam sempre visíveis
+        this.columnSettings.forEach(col => {
+            if (col.required) {
+                col.visible = true;
+            }
+        });
+
+        // Definir colunas baseado nas configurações
+        const visibleColumns = this.columnSettings
+            .filter(col => col.visible)
+            .sort((a, b) => a.order - b.order);
+
+        const columns = visibleColumns.map(col => {
+            return {
+                data: col.key,
+                title: col.name,
+                className: this.getColumnClass(col.key),
+                render: (data, type, row) => {
+                    if (col.key === 'status') {
+                        return this.getStatusBadge(data);
+                    }
+                    return data || '-';
+                }
+            };
+        });
+
+
+
+        this.dataTable = table.DataTable({
+            data: this.data,
+            columns: columns,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+            },
+            responsive: true,
+            scrollX: true,
+            scrollY: '400px',
+            scrollCollapse: true,
+            dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+            order: [[0, 'desc']]
+        });
+
+        // Evento de clique na linha para abrir modal
+        table.find('tbody').on('click', 'tr', function(e) {
+            // Não abrir modal se clicou em um botão
+            if ($(e.target).closest('button').length > 0) {
+                return;
+            }
+
+            const data = operacoesPortuarias.dataTable.row(this).data();
+            if (data) {
+                operacoesPortuarias.showDetails(data.id);
+            }
+        });
+
+        // Estilo para hover da linha
+        table.find('tbody').on('mouseenter', 'tr', function() {
+            $(this).addClass('table-hover-effect');
+        }).on('mouseleave', 'tr', function() {
+            $(this).removeClass('table-hover-effect');
+        });
+    }
+
+    /**
+     * Inicializa o date range picker
+     */
+    initializeDateRangePicker() {
+        const dateRangeInput = document.getElementById('filter-date-range');
+        if (!dateRangeInput) return;
+
+        if (typeof flatpickr !== 'undefined') {
+            this.dateRangePicker = flatpickr(dateRangeInput, {
+                mode: "range",
+                dateFormat: "d/m/Y",
+                locale: "pt",
+                minDate: "2020-01-01",
+                maxDate: "today",
+                allowInput: false,
+                clickOpens: true,
+                appendTo: document.body,
+                static: false,
+                position: "auto"
+            });
+
+            const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
+            if (iconElement) {
+                iconElement.style.cursor = 'pointer';
+                iconElement.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (this.dateRangePicker) {
+                        this.dateRangePicker.open();
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Popula opções dos filtros
+     */
+    populateFilterOptions() {
+        // Extrair valores únicos dos dados
+        const status = [...new Set(this.data.map(item => item.status))].filter(Boolean).sort();
+        const tiposFrete = [...new Set(this.data.map(item => item.tipo_frete))].filter(Boolean).sort();
+        const tiposCarga = [...new Set(this.data.map(item => item.tipo_carga))].filter(Boolean).sort();
+        const empresas = [...new Set(this.data.map(item => item.empresa))].filter(Boolean).sort();
+        const clientes = [...new Set(this.data.map(item => item.cliente))].filter(Boolean).sort();
+
+        // Popular select de status
+        const statusSelect = document.getElementById('filter-status');
+        if (statusSelect) {
+            const statusOptions = status.map(s => `<option value="${s}">${s}</option>`).join('');
+            statusSelect.innerHTML = '<option value="">Todos os status</option>' + statusOptions;
+        }
+
+        // Popular select de tipos de frete
+        const tipoFreteSelect = document.getElementById('filter-tipo-frete');
+        if (tipoFreteSelect) {
+            const tipoFreteOptions = tiposFrete.map(t => `<option value="${t}">${t}</option>`).join('');
+            tipoFreteSelect.innerHTML = '<option value="">Todos os tipos</option>' + tipoFreteOptions;
+        }
+
+        // Popular select de tipos de carga
+        const tipoCargaSelect = document.getElementById('filter-tipo-carga');
+        if (tipoCargaSelect) {
+            const tipoCargaOptions = tiposCarga.map(t => `<option value="${t}">${t}</option>`).join('');
+            tipoCargaSelect.innerHTML = '<option value="">Todos os tipos</option>' + tipoCargaOptions;
+        }
+
+        // Popular select de empresas
+        const empresaSelect = document.getElementById('filter-empresa');
+        if (empresaSelect) {
+            const empresaOptions = empresas.map(e => `<option value="${e}">${e}</option>`).join('');
+            empresaSelect.innerHTML = '<option value="">Todas as empresas</option>' + empresaOptions;
+        }
+
+        // Popular select de clientes
+        const clienteSelect = document.getElementById('filter-cliente');
+        if (clienteSelect) {
+            const clienteOptions = clientes.map(c => `<option value="${c}">${c}</option>`).join('');
+            clienteSelect.innerHTML = '<option value="">Todos os clientes</option>' + clienteOptions;
+        }
+    }
+
+    /**
+     * Vincula eventos
+     */
     bindEvents() {
         // Botão filtros
         document.getElementById('btn-toggle-filters')?.addEventListener('click', () => {
@@ -510,27 +325,6 @@ class OperacoesPortuariasSimple {
             this.clearFilters();
         });
 
-        // Salvar configuração de colunas
-        document.getElementById('btn-save-columns')?.addEventListener('click', () => {
-            this.saveColumnSettings();
-        });
-
-        // Resetar colunas
-        document.getElementById('btn-reset-columns')?.addEventListener('click', () => {
-            this.resetColumnSettings();
-        });
-
-        // Toggle de colunas
-        document.addEventListener('change', (e) => {
-            if (e.target.classList.contains('column-toggle')) {
-                const columnKey = e.target.id.replace('col-', '');
-                const column = this.columnSettings.find(col => col.key === columnKey);
-                if (column) {
-                    column.visible = e.target.checked;
-                }
-            }
-        });
-
         // Exportações
         document.getElementById('export-excel')?.addEventListener('click', (e) => {
             e.preventDefault();
@@ -552,287 +346,236 @@ class OperacoesPortuariasSimple {
     }
 
     /**
-     * Vincula eventos de ordenação nos cabeçalhos da tabela
+     * Aplica filtros
      */
-    bindSortEvents() {
-        document.querySelectorAll('.sortable').forEach(header => {
-            header.addEventListener('click', () => {
-                const column = header.dataset.column;
-                this.sortTable(column);
-            });
-        });
-    }
-
-    /**
-     * Ordena a tabela por coluna
-     */
-    sortTable(column) {
-        // Se é a mesma coluna, inverte a direção
-        if (this.sortColumn === column) {
-            this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            this.sortColumn = column;
-            this.sortDirection = 'asc';
-        }
-
-        // Ordenar dados
-        this.filteredData.sort((a, b) => {
-            let valueA = a[column];
-            let valueB = b[column];
-
-            // Tratamento especial para datas
-            if (column.includes('data') || column.includes('operacao')) {
-                valueA = this.parseDateTime(valueA);
-                valueB = this.parseDateTime(valueB);
-            }
-            // Tratamento especial para números
-            else if (column === 'id') {
-                valueA = parseInt(valueA);
-                valueB = parseInt(valueB);
-            }
-            // Tratamento para strings (ordenação alfabética)
-            else {
-                valueA = (valueA || '').toString().toLowerCase();
-                valueB = (valueB || '').toString().toLowerCase();
-            }
-
-            let comparison = 0;
-            if (valueA > valueB) {
-                comparison = 1;
-            } else if (valueA < valueB) {
-                comparison = -1;
-            }
-
-            return this.sortDirection === 'desc' ? comparison * -1 : comparison;
-        });
-
-        // Atualizar indicadores visuais
-        this.updateSortIndicators();
-
-        // Re-renderizar tabela
-        this.currentPage = 1;
-        this.renderTable();
-    }
-
-    /**
-     * Atualiza os indicadores visuais de ordenação
-     */
-    updateSortIndicators() {
-        // Resetar todos os indicadores
-        document.querySelectorAll('.sort-icon').forEach(icon => {
-            icon.className = 'bi bi-arrow-down-up ms-1 sort-icon';
-        });
-
-        // Aplicar indicador da coluna atual
-        if (this.sortColumn) {
-            const header = document.querySelector(`[data-column="${this.sortColumn}"] .sort-icon`);
-            if (header) {
-                const iconClass = this.sortDirection === 'asc' ? 'bi-sort-up' : 'bi-sort-down';
-                header.className = `bi ${iconClass} ms-1 sort-icon`;
-            }
-        }
-    }
-
-    /**
-     * Parse de data e hora no formato brasileiro
-     */
-    parseDateTime(dateTimeStr) {
-        if (!dateTimeStr) return new Date(0);
-
-        // Se contém hora (formato: dd/mm/yyyy hh:mm)
-        if (dateTimeStr.includes(' ')) {
-            const [datePart, timePart] = dateTimeStr.split(' ');
-            const [day, month, year] = datePart.split('/');
-            const [hours, minutes] = timePart.split(':');
-            return new Date(year, month - 1, day, hours, minutes);
-        }
-        // Apenas data (formato: dd/mm/yyyy)
-        else {
-            const [day, month, year] = dateTimeStr.split('/');
-            return new Date(year, month - 1, day);
-        }
-    }
-
-    bindTableEvents() {
-        // Clique nas linhas
-        document.querySelectorAll('.table-row').forEach(row => {
-            row.addEventListener('click', (e) => {
-                if (!e.target.closest('button')) {
-                    const id = parseInt(row.dataset.id);
-                    this.showOperationDetails(id);
-                }
-            });
-        });
-
-        // Botões de ação
-        document.querySelectorAll('.view-details').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(e.currentTarget.dataset.id);
-                this.showOperationDetails(id);
-            });
-        });
-
-        document.querySelectorAll('.edit-operation').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(e.currentTarget.dataset.id);
-                this.showToast(`Edição da operação #${id} em desenvolvimento`, 'info');
-            });
-        });
-
-        document.querySelectorAll('.delete-operation').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = parseInt(e.currentTarget.dataset.id);
-                if (confirm(`Deseja realmente excluir a operação #${id}?`)) {
-                    this.showToast(`Operação #${id} excluída com sucesso!`, 'success');
-                }
-            });
-        });
-    }
-
-    bindPaginationEvents() {
-        document.querySelectorAll('#pagination-list .page-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const page = parseInt(e.target.dataset.page);
-                if (page && page !== this.currentPage) {
-                    this.currentPage = page;
-                    this.renderTable();
-                }
-            });
-        });
-    }
-
-        applyFilters() {
+    applyFilters() {
         const searchTerm = document.getElementById('filter-search')?.value.toLowerCase() || '';
-
-        // Obter valores dos selects simples
         const statusFilter = document.getElementById('filter-status')?.value || '';
         const tipoFreteFilter = document.getElementById('filter-tipo-frete')?.value || '';
         const tipoCargoFilter = document.getElementById('filter-tipo-carga')?.value || '';
         const empresaFilter = document.getElementById('filter-empresa')?.value || '';
         const clienteFilter = document.getElementById('filter-cliente')?.value || '';
 
-        // Obter período de datas do Flatpickr
-        let dateRangeFilter = null;
-        if (this.dateRangePicker && this.dateRangePicker.selectedDates.length === 2) {
-            dateRangeFilter = {
-                start: this.dateRangePicker.selectedDates[0],
-                end: this.dateRangePicker.selectedDates[1]
-            };
-        }
+        // Aplicar filtros no DataTable
+        this.dataTable.draw();
 
-        this.filteredData = this.data.filter(item => {
+        // Filtro customizado
+        $.fn.dataTable.ext.search.push((settings, data, dataIndex) => {
+            const row = this.data[dataIndex];
+
             // Filtro de busca geral
-            if (searchTerm && !this.searchInItem(item, searchTerm)) {
-                return false;
+            if (searchTerm) {
+                const searchableText = `${row.navio} ${row.tipo_frete} ${row.tipo_carga} ${row.empresa} ${row.cliente} ${row.status}`.toLowerCase();
+                if (!searchableText.includes(searchTerm)) {
+                    return false;
+                }
             }
 
             // Filtro de status
-            if (statusFilter && item.status !== statusFilter) {
+            if (statusFilter && row.status !== statusFilter) {
                 return false;
             }
 
             // Filtro de tipo de frete
-            if (tipoFreteFilter && item.tipo_frete !== tipoFreteFilter) {
+            if (tipoFreteFilter && row.tipo_frete !== tipoFreteFilter) {
                 return false;
             }
 
             // Filtro de tipo de carga
-            if (tipoCargoFilter && item.tipo_carga !== tipoCargoFilter) {
+            if (tipoCargoFilter && row.tipo_carga !== tipoCargoFilter) {
                 return false;
             }
 
             // Filtro de empresa
-            if (empresaFilter && item.empresa !== empresaFilter) {
+            if (empresaFilter && row.empresa !== empresaFilter) {
                 return false;
             }
 
             // Filtro de cliente
-            if (clienteFilter && item.cliente !== clienteFilter) {
+            if (clienteFilter && row.cliente !== clienteFilter) {
                 return false;
-            }
-
-            // Filtro de período de datas (se implementado)
-            if (dateRangeFilter) {
-                const itemDate = this.parseDate(item.data_registro);
-                if (itemDate && (itemDate < dateRangeFilter.start || itemDate > dateRangeFilter.end)) {
-                    return false;
-                }
             }
 
             return true;
         });
 
-        // Aplicar ordenação se existir
-        if (this.sortColumn) {
-            this.sortTable(this.sortColumn);
-        } else {
-        this.currentPage = 1;
-        this.renderTable();
-        }
+        this.dataTable.draw();
 
         const sidebar = bootstrap.Offcanvas.getInstance(document.getElementById('filters-sidebar'));
         if (sidebar) sidebar.hide();
 
-        this.showToast(`Filtros aplicados! ${this.filteredData.length} registro(s) encontrado(s).`, 'success');
+        this.showToast('Filtros aplicados!', 'success');
     }
 
     /**
-     * Parse de data no formato brasileiro
+     * Limpa filtros
      */
-    parseDate(dateStr) {
-        if (!dateStr) return null;
-        const parts = dateStr.split('/');
-        if (parts.length !== 3) return null;
-        return new Date(parts[2], parts[1] - 1, parts[0]);
-    }
-
-    searchInItem(item, searchTerm) {
-        const searchableFields = ['navio', 'tipo_frete', 'tipo_carga', 'empresa', 'cliente', 'status'];
-        return searchableFields.some(field =>
-            item[field]?.toString().toLowerCase().includes(searchTerm)
-        );
-    }
-
     clearFilters() {
-        // Limpar campo de busca
-        const searchInput = document.getElementById('filter-search');
-        if (searchInput) searchInput.value = '';
+        // Limpar campos
+        document.getElementById('filter-search').value = '';
+        document.getElementById('filter-status').value = '';
+        document.getElementById('filter-tipo-frete').value = '';
+        document.getElementById('filter-tipo-carga').value = '';
+        document.getElementById('filter-empresa').value = '';
+        document.getElementById('filter-cliente').value = '';
 
-        // Limpar todos os selects simples, exceto status que deve voltar para "Em operação"
-        const selects = ['filter-tipo-frete', 'filter-tipo-carga', 'filter-empresa', 'filter-cliente'];
-        selects.forEach(id => {
-            const select = document.getElementById(id);
-            if (select) {
-                select.value = '';
-            }
-        });
-
-        // Manter status como "Em operação"
-        const statusSelect = document.getElementById('filter-status');
-        if (statusSelect) {
-            statusSelect.value = 'Em operação';
-        }
-
-        // Limpar date range picker (Flatpickr)
+        // Limpar date range picker
         if (this.dateRangePicker) {
             this.dateRangePicker.clear();
         }
 
-        // Resetar dados filtrados para mostrar apenas "Em operação"
-        this.filteredData = this.data.filter(item => item.status === 'Em operação');
-        this.currentPage = 1;
-        this.renderTable();
-        this.showToast('Filtros limpos! Mostrando apenas operações em andamento.', 'info');
+        // Remover filtros customizados
+        $.fn.dataTable.ext.search.pop();
+
+        // Redesenhar tabela
+        this.dataTable.draw();
+
+        this.showToast('Filtros limpos!', 'info');
+    }
+
+    /**
+     * Inicializa configuração de colunas
+     */
+    initializeColumnSettings() {
+        this.renderColumnList();
+        this.initializeSortable();
+    }
+
+    /**
+     * Renderiza a lista de colunas no modal
+     */
+    renderColumnList() {
+        const columnList = document.getElementById('column-list');
+        if (!columnList) return;
+
+        const sortedColumns = [...this.columnSettings].sort((a, b) => a.order - b.order);
+
+        columnList.innerHTML = sortedColumns.map(column => `
+            <div class="list-group-item column-item d-flex align-items-center" data-column="${column.key}">
+                <div class="form-check me-3">
+                    <input class="form-check-input column-visibility-toggle"
+                           type="checkbox"
+                           ${column.visible ? 'checked' : ''}
+                           ${column.required ? 'disabled' : ''}
+                           data-column="${column.key}">
+                </div>
+                <div class="flex-grow-1">
+                    <i class="bi bi-grip-vertical me-2 text-muted"></i>
+                    ${column.name}
+                </div>
+                <small class="text-muted">${column.key}</small>
+            </div>
+        `).join('');
+
+        // Bind toggle events
+        columnList.querySelectorAll('.column-visibility-toggle').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const columnKey = e.target.getAttribute('data-column');
+                const column = this.columnSettings.find(col => col.key === columnKey);
+                if (column && !column.required) {
+                    column.visible = e.target.checked;
+                }
+            });
+        });
+
+        // Bind save button
+        const saveButton = document.getElementById('btn-save-columns');
+        if (saveButton) {
+            saveButton.replaceWith(saveButton.cloneNode(true));
+            const newSaveButton = document.getElementById('btn-save-columns');
+
+            newSaveButton.addEventListener('click', () => {
+                this.saveColumnSettings();
+                this.applyColumnSettings();
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modal-column-settings'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                this.showToast('Configurações de colunas salvas!', 'success');
+            });
+        }
+
+        // Bind reset button
+        const resetButton = document.getElementById('btn-reset-columns');
+        if (resetButton) {
+            resetButton.replaceWith(resetButton.cloneNode(true));
+            const newResetButton = document.getElementById('btn-reset-columns');
+
+            newResetButton.addEventListener('click', () => {
+                this.resetColumnSettings();
+                this.applyColumnSettings();
+                this.showToast('Configurações restauradas para o padrão', 'info');
+            });
+        }
+    }
+
+    /**
+     * Inicializa sortable para colunas
+     */
+    initializeSortable() {
+        const columnList = document.getElementById('column-list');
+        if (!columnList || typeof Sortable === 'undefined') return;
+
+        new Sortable(columnList, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            handle: '.bi-grip-vertical',
+            onEnd: (evt) => {
+                const movedItem = evt.item;
+                const columnKey = movedItem.getAttribute('data-column');
+                const newIndex = evt.newIndex;
+                const oldIndex = evt.oldIndex;
+
+                this.reorderColumns(columnKey, oldIndex, newIndex);
+                this.updateColumnOrderNumbers();
+            }
+        });
+    }
+
+    /**
+     * Reordena as colunas baseado no movimento
+     */
+    reorderColumns(movedColumnKey, oldIndex, newIndex) {
+        const sortedColumns = [...this.columnSettings].sort((a, b) => a.order - b.order);
+        const movedColumn = sortedColumns.splice(oldIndex, 1)[0];
+        sortedColumns.splice(newIndex, 0, movedColumn);
+
+        sortedColumns.forEach((col, index) => {
+            col.order = index;
+        });
+    }
+
+    /**
+     * Atualiza os números de ordem nas colunas
+     */
+    updateColumnOrderNumbers() {
+        const columnList = document.getElementById('column-list');
+        if (!columnList) return;
+
+        const items = columnList.querySelectorAll('.column-item');
+        items.forEach((item, index) => {
+            const columnKey = item.getAttribute('data-column');
+            const column = this.columnSettings.find(col => col.key === columnKey);
+            if (column) {
+                column.order = index;
+            }
+        });
     }
 
     /**
      * Salva configurações das colunas
      */
     saveColumnSettings() {
+        // Garantir que colunas obrigatórias estejam sempre visíveis antes de salvar
+        this.columnSettings.forEach(col => {
+            if (col.required) {
+                col.visible = true;
+            }
+        });
+
         localStorage.setItem('operacoes-column-settings', JSON.stringify(this.columnSettings));
         this.applyColumnSettings();
 
@@ -849,56 +592,96 @@ class OperacoesPortuariasSimple {
         this.columnSettings = this.getDefaultColumnSettings();
         this.renderColumnList();
         this.initializeSortable();
-        this.showToast('Configurações resetadas para o padrão!', 'info');
+        localStorage.removeItem('operacoes-column-settings');
+        this.showToast('Configurações restauradas para o padrão', 'info');
     }
 
     /**
      * Aplica configurações de colunas à tabela
      */
     applyColumnSettings() {
-        // Reordenar cabeçalhos da tabela
-        const thead = document.querySelector('#operacoes-table thead tr');
-        if (!thead) return;
-
-        // Obter configurações ordenadas
-        const sortedColumns = [...this.columnSettings].sort((a, b) => a.order - b.order);
-
-        // Mostrar/ocultar colunas
-        sortedColumns.forEach((column, index) => {
-            const th = thead.children[index];
-            if (th) {
-                th.style.display = column.visible ? '' : 'none';
-            }
-
-            // Aplicar também às células do corpo da tabela
-            document.querySelectorAll(`#operacoes-table tbody tr`).forEach(row => {
-                const td = row.children[index];
-                if (td) {
-                    td.style.display = column.visible ? '' : 'none';
-                }
-            });
-        });
+        this.initializeDataTable();
     }
 
     /**
-     * Exporta tabela (versão simplificada)
+     * Retorna classe de alinhamento para a coluna
      */
-    exportTable(format) {
-        this.showToast(`Exportação ${format.toUpperCase()} em desenvolvimento`, 'info');
+    getColumnClass(columnKey) {
+        const alignments = {
+            'id': 'text-center', // ID centralizado
+            'status': 'text-center', // Status centralizado
+            'navio': 'text-start', // Navio alinhado à esquerda
+            'tipo_frete': 'text-center', // Tipo de frete centralizado
+            'tipo_carga': 'text-center', // Tipo de carga centralizado
+            'data_registro': 'text-center', // Data centralizada
+            'inicio_operacao': 'text-center', // Início centralizado
+            'fim_operacao': 'text-center', // Fim centralizado
+            'empresa': 'text-start', // Empresa alinhada à esquerda
+            'cliente': 'text-start' // Cliente alinhado à esquerda
+        };
+        return alignments[columnKey] || 'text-start';
     }
 
     /**
-     * Mostra localização no mapa usando Google Maps
+     * Retorna badge de status
      */
-    showLocationOnMap() {
-        if (!this.currentOperation) {
+    getStatusBadge(status) {
+        const badges = {
+            'Em operação': 'bg-primary',
+            'Concluída': 'bg-success',
+            'Pendente': 'bg-warning text-dark',
+            'Cancelada': 'bg-danger'
+        };
+        return `<span class="badge ${badges[status] || 'bg-secondary'}">${status}</span>`;
+    }
+
+
+
+    /**
+     * Mostra detalhes da operação
+     */
+    showDetails(id) {
+        const operation = this.data.find(op => op.id === id);
+        if (!operation) return;
+
+        this.currentOperation = operation;
+
+        // Resetar estado do mapa
+        document.getElementById('location-info').style.display = 'block';
+        document.getElementById('operation-map').style.display = 'none';
+        const spinner = document.querySelector('#location-info .spinner-border');
+        if (spinner) {
+            spinner.style.display = 'none';
+        }
+
+        // Preencher modal
+        document.getElementById('detail-id').textContent = operation.id;
+        document.getElementById('detail-status').textContent = operation.status;
+        document.getElementById('detail-status').className = `badge ${this.getStatusBadgeClass(operation.status)}`;
+        document.getElementById('detail-navio').textContent = operation.navio;
+        document.getElementById('detail-tipo-frete').textContent = operation.tipo_frete;
+        document.getElementById('detail-tipo-carga').textContent = operation.tipo_carga;
+        document.getElementById('detail-data-registro').textContent = operation.data_registro;
+        document.getElementById('detail-inicio-operacao').textContent = operation.inicio_operacao;
+        document.getElementById('detail-fim-operacao').textContent = operation.fim_operacao;
+        document.getElementById('detail-empresa').textContent = operation.empresa;
+        document.getElementById('detail-cliente').textContent = operation.cliente;
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('modal-operation-details'));
+        modal.show();
+    }
+
+    /**
+     * Mostra localização no mapa
+     */
+    showLocationOnMap(id) {
+        const operation = id ? this.data.find(op => op.id === id) : this.currentOperation;
+        if (!operation) {
             this.showToast('Nenhuma operação selecionada!', 'error');
             return;
         }
 
-        const operation = this.currentOperation;
-
-        // Verificar se tem coordenadas
         if (!operation.latitude || !operation.longitude) {
             this.showToast('Coordenadas não disponíveis para esta operação!', 'warning');
             return;
@@ -917,14 +700,13 @@ class OperacoesPortuariasSimple {
         }
 
         // Inicializar mapa
-        this.initializeGoogleMap(operation);
+        this.initializeMap(operation);
     }
 
-        /**
-     * Inicializa o mapa usando Leaflet (OpenStreetMap)
+    /**
+     * Inicializa o mapa usando Leaflet
      */
-    initializeGoogleMap(operation) {
-        // Verificar se Leaflet está disponível
+    initializeMap(operation) {
         if (typeof L === 'undefined') {
             this.showToast('Sistema de mapas não está disponível. Verifique sua conexão.', 'error');
             document.getElementById('location-info').style.display = 'block';
@@ -1042,9 +824,6 @@ class OperacoesPortuariasSimple {
                 spinner.style.display = 'none';
             }
 
-            // Adicionar controles extras
-            this.addMapControls();
-
             this.showToast('Localização carregada no mapa!', 'success');
 
         } catch (error) {
@@ -1058,85 +837,8 @@ class OperacoesPortuariasSimple {
     }
 
     /**
-     * Adiciona controles extras ao mapa
+     * Retorna classe do badge de status
      */
-    addMapControls() {
-        // Controle de escala
-        L.control.scale({
-            position: 'bottomleft',
-            metric: true,
-            imperial: false
-        }).addTo(this.map);
-
-        // Botão de localização atual (simulado)
-        const self = this; // Capturar contexto
-        const locationControl = L.control({ position: 'topright' });
-        locationControl.onAdd = function() {
-            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-custom');
-            div.innerHTML = `
-                <a href="#" title="Centralizar no marcador" style="
-                    background: white;
-                    width: 30px;
-                    height: 30px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    text-decoration: none;
-                    color: #333;
-                    border-radius: 2px;
-                ">
-                    <i class="bi bi-geo-alt-fill" style="font-size: 16px;"></i>
-                </a>
-            `;
-
-            div.onclick = (e) => {
-                e.preventDefault();
-                if (self.map && self.currentOperation) {
-                    const lat = parseFloat(self.currentOperation.latitude);
-                    const lng = parseFloat(self.currentOperation.longitude);
-                    self.map.setView([lat, lng], 15);
-                    self.showToast('Mapa centralizado na operação!', 'info');
-                }
-            };
-
-            return div;
-        };
-        locationControl.addTo(this.map);
-    }
-
-    showOperationDetails(id) {
-        const operation = this.data.find(op => op.id === id);
-        if (!operation) return;
-
-        // Armazenar operação atual
-        this.currentOperation = operation;
-
-        // Resetar estado do mapa
-        document.getElementById('location-info').style.display = 'block';
-        document.getElementById('operation-map').style.display = 'none';
-        const spinner = document.querySelector('#location-info .spinner-border');
-        if (spinner) {
-            spinner.style.display = 'none';
-        }
-
-        // Preencher modal
-        document.getElementById('detail-id').textContent = operation.id;
-        document.getElementById('detail-status').textContent = operation.status;
-        document.getElementById('detail-status').className = `badge ${this.getStatusBadgeClass(operation.status)}`;
-        document.getElementById('detail-navio').textContent = operation.navio;
-        document.getElementById('detail-tipo-frete').textContent = operation.tipo_frete;
-        document.getElementById('detail-tipo-carga').textContent = operation.tipo_carga;
-        document.getElementById('detail-data-registro').textContent = operation.data_registro;
-        document.getElementById('detail-inicio-operacao').textContent = operation.inicio_operacao;
-        document.getElementById('detail-fim-operacao').textContent = operation.fim_operacao;
-        document.getElementById('detail-empresa').textContent = operation.empresa;
-        document.getElementById('detail-cliente').textContent = operation.cliente;
-
-        // Mostrar modal
-        const modal = new bootstrap.Modal(document.getElementById('modal-operation-details'));
-        modal.show();
-    }
-
     getStatusBadgeClass(status) {
         const classes = {
             'Em operação': 'bg-primary',
@@ -1147,6 +849,16 @@ class OperacoesPortuariasSimple {
         return classes[status] || 'bg-secondary';
     }
 
+    /**
+     * Exporta tabela
+     */
+    exportTable(format) {
+        this.showToast(`Exportação ${format.toUpperCase()} em desenvolvimento`, 'info');
+    }
+
+    /**
+     * Mostra toast
+     */
     showToast(message, type = 'info') {
         const toastContainer = document.querySelector('.toast-container');
         const toastId = 'toast-' + Date.now();
@@ -1191,10 +903,10 @@ class OperacoesPortuariasSimple {
     }
 }
 
-// Instância global para facilitar debugging
-let operacoesPortuariasInstance = null;
+// Instância global
+let operacoesPortuarias = null;
 
-// Inicializar versão simples
+// Inicializar
 document.addEventListener('DOMContentLoaded', () => {
-    operacoesPortuariasInstance = new OperacoesPortuariasSimple();
+    operacoesPortuarias = new OperacoesPortuarias();
 });

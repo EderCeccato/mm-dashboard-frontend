@@ -646,36 +646,7 @@
                            <table class="table table-bordered table-striped" id="operacoes-table">
                               <thead>
                                  <tr>
-                                    <th data-column="id" class="sortable" style="cursor: pointer;">
-                                       ID <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="status" class="sortable" style="cursor: pointer;">
-                                       Status <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="navio" class="sortable" style="cursor: pointer;">
-                                       Navio <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="tipo_frete" class="sortable" style="cursor: pointer;">
-                                       Tipo de Frete <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="tipo_carga" class="sortable" style="cursor: pointer;">
-                                       Tipo de Carga <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="data_registro" class="sortable" style="cursor: pointer;">
-                                       Data Reg. <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="inicio_operacao" class="sortable" style="cursor: pointer;">
-                                       Início Operação <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="fim_operacao" class="sortable" style="cursor: pointer;">
-                                       Fim Operação <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="empresa" class="sortable" style="cursor: pointer;">
-                                       Empresa <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
-                                    <th data-column="cliente" class="sortable" style="cursor: pointer;">
-                                       Cliente <i class="bi bi-arrow-down-up ms-1 sort-icon"></i>
-                                    </th>
+                                    <!-- Cabeçalhos serão criados dinamicamente pelo DataTables -->
                                  </tr>
                               </thead>
                               <tbody>
@@ -742,7 +713,7 @@
                </label>
                <select class="form-select" id="filter-status">
                   <option value="">Todos os status</option>
-                  <option value="Em operação" selected>Em operação</option>
+                  <option value="Em operação">Em operação</option>
                   <option value="Concluída">Concluída</option>
                   <option value="Pendente">Pendente</option>
                   <option value="Cancelada">Cancelada</option>
