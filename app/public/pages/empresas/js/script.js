@@ -72,7 +72,7 @@ const CONFIG = {
    }
 };
 
-const BASE_URL = 'https://mm-dashboard-backend.vercel.app';
+const URL_BASE = 'http://localhost:3301';
 
 const CompaniesManager = (function() {
    'use strict';
@@ -1568,7 +1568,7 @@ const CompaniesManager = (function() {
          });
 
          // Para upload de arquivos, precisamos usar fetch diretamente com FormData
-         const uploadResponse = await fetch(`${BASE_URL}/api/company/${companyUuid}/upload-images`, {
+         const uploadResponse = await fetch(`${URL_BASE}/api/company/${companyUuid}/upload-images`, {
             method: 'POST',
             body: formData,
             credentials: 'include'
@@ -3068,7 +3068,7 @@ document.addEventListener('DOMContentLoaded', function() {
          formData.append('avatar', avatarFile);
 
          // Para upload de arquivos, precisamos usar fetch diretamente com FormData
-         const uploadResponse = await fetch(`${BASE_URL}/api/user/${userUuid}/upload-avatar`, {
+         const uploadResponse = await fetch(`${URL_BASE}/api/user/${userUuid}/upload-avatar`, {
             method: 'POST',
             body: formData,
             credentials: 'include'

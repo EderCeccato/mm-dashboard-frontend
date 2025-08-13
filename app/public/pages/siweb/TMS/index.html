@@ -634,12 +634,13 @@
                               </button>
                               <ul class="dropdown-menu">
                                  <li><a class="dropdown-item" href="#" id="export-excel"><i class="bi bi-file-earmark-excel me-2"></i>Excel</a></li>
+                                 <li><a class="dropdown-item" href="#" id="export-csv"><i class="bi bi-file-earmark-text me-2"></i>CSV</a></li>
                                  <li><a class="dropdown-item" href="#" id="export-pdf"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</a></li>
                               </ul>
                            </div>
                         </div>
                      </div>
-                         <div class="card-body">
+                     <div class="card-body">
                         <!-- Tabela de TMS -->
                         <div class="table-responsive">
                            <table class="table table-bordered table-striped" id="tms-table">
@@ -697,6 +698,14 @@
       </div>
       <div class="offcanvas-body">
          <form id="filters-form">
+            <!-- Pesquisa Geral -->
+            <div class="mb-3">
+               <label for="filter-search" class="form-label">
+                  <i class="bi bi-search me-1"></i>Pesquisa Geral
+               </label>
+               <input type="text" class="form-control" id="filter-search" placeholder="Buscar em todos os campos...">
+            </div>
+
             <!-- Status -->
             <div class="mb-3">
                <label for="filter-status" class="form-label">
@@ -1034,8 +1043,8 @@
                                  <p class="mt-2 text-muted">Clique em "Ver no Mapa" para visualizar a localização da operação</p>
                               </div>
                            </div>
-                            <!-- Mapa será inserido aqui -->
-                            <div id="operation-map" style="height: 450px; display: none;"></div>
+                           <!-- Mapa será inserido aqui -->
+                           <div id="operation-map" style="height: 300px; display: none;"></div>
                         </div>
                      </div>
                   </div>
