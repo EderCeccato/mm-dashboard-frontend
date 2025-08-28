@@ -1,5 +1,5 @@
-// Defina a URL base do backend aqui
-const BASE_URL = 'http://localhost:3301'; // Troque para a URL de produção quando necessário
+// ⚠️ IMPORTANTE: Não precisamos mais da BASE_URL externa!
+// O proxy do servidor cuida de rotear /api/* para o backend automaticamente
 
 /**
  * Sistema de Coleta de Erros para Debug
@@ -86,13 +86,16 @@ window.ErrorCollector = (function() {
    };
 })();
 
-// Função utilitária para requisições autenticadas usando cookies
+// 🚀 Função utilitária para requisições - AGORA USA O PROXY LOCAL!
 async function Thefetch(path, method = 'GET', body = null) {
-   const url = BASE_URL + path;
+   // ✅ Agora a URL será sempre relativa ao próprio site
+   // O proxy do servidor redireciona /api/* para o backend automaticamente
+   const url = path; // path já deve começar com /api/
+
    const options = {
       method,
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include' // Fundamental para enviar cookies entre domínios
+      credentials: 'include' // Mantém cookies para autenticação
    };
 
    if (body) {
@@ -101,7 +104,8 @@ async function Thefetch(path, method = 'GET', body = null) {
 
    try {
       const response = await fetch(url, options);
-      // Tenta extrair JSON (pode falhar se ser HTML puro)
+
+      // Tenta extrair JSON (pode falhar se for HTML puro)
       const payload = await response.json().catch(() => ({}));
 
       if (payload.success === false) {
@@ -113,7 +117,7 @@ async function Thefetch(path, method = 'GET', body = null) {
             method: method,
             statusCode: response.status,
             timestamp: new Date().toISOString(),
-            url: url,
+            url: url, // Agora mostra apenas a rota relativa
             body: body,
             context: `Falha na requisição ${method} ${path}`
          };
@@ -133,12 +137,11 @@ async function Thefetch(path, method = 'GET', body = null) {
          // Se veio erro e indicou redirectTo, redireciona e interrompe
          if (!response.ok && payload.redirectTo) {
             window.location.href = payload.redirectTo;
-            // interrompe a execução desta função
             return;
          }
       }
 
-      // Se veio erro sem redirectTo, lança para o catch lá embaixo
+      // Se veio erro sem redirectTo, lança para o catch
       if (!response.ok) {
          const err = new Error(payload.message || 'Erro desconhecido');
          err.payload = payload;
@@ -185,52 +188,37 @@ async function Thefetch(path, method = 'GET', body = null) {
          });
       }
 
-      // aqui você pode mostrar um toast/modal ou re-lançar o erro pro chamador
       throw error;
    }
 }
 
-
-
 // Configura o botão de logout para chamar AuthManager.logout()
 function setupLogoutButton() {
-   // Procura pelo botão de logout usando o ID ou a classe
    const logoutButton = document.getElementById('logout-link');
 
    if (logoutButton) {
-      // Adiciona o evento de clique
       logoutButton.addEventListener('click', function() {
-         // Verifica se o AuthManager está disponível
          if (typeof AuthManager !== 'undefined' && AuthManager.logout) {
-            // Chama a função de logout do AuthManager
             AuthManager.logout();
          } else {
             console.error('AuthManager não está disponível. Redirecionando manualmente.');
-            // Fallback: redireciona para a página de login
             window.location.href = '/login';
          }
       });
 
-      // Adiciona cursor pointer para indicar que é clicável
       logoutButton.style.cursor = 'pointer';
    }
-};
+}
 
-// A função getUserData foi movida para o AuthManager.renderUserInfo()
-// que agora cuida de todos os dados do usuário automaticamente
-
-// Inicializa o sistema de personalização de marca em todas as páginas
+// Inicializa o sistema quando a página carrega
 document.addEventListener('DOMContentLoaded', function() {
    // Verifica se o sistema de personalização está disponível
    if (typeof CompanyBranding !== 'undefined') {
-      // Se o loader não estiver sendo usado, inicializa diretamente
       if (!document.documentElement.hasAttribute('loader')) {
          CompanyBranding.init()
       }
-      // Caso contrário, o loader.js já vai cuidar da inicialização
    }
 
    // Configurar o botão de logout
    setupLogoutButton();
-   // Os dados do usuário são carregados automaticamente pelo AuthManager.renderUserInfo()
 });

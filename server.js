@@ -1,17 +1,131 @@
+require('dotenv').config(); // Carrega variáveis de ambiente
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Configuração do backend baseada no ambiente
+const ENVIRONMENT = process.env.NODE_ENV || 'development';
+const BACKEND_URL = ENVIRONMENT === 'development'
+  ? process.env.BACKEND_URL_DEV || 'http://localhost:3301'
+  : process.env.BACKEND_URL_PROD || process.env.BACKEND_URL || 'https://sua-api-producao.com';
+
+console.log(`🚀 Ambiente: ${ENVIRONMENT}`);
 
 // Caminho para os arquivos estáticos
 const PUBLIC_DIR = path.join(__dirname, 'app', 'public');
 const PAGES_DIR = path.join(PUBLIC_DIR, 'pages');
 
-// Middleware para cookies e JSON
+// Middleware para cookies e JSON - configurações aprimoradas
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({
+  limit: '50mb',
+  strict: false
+}));
+app.use(express.urlencoded({
+  extended: true,
+  limit: '50mb'
+}));
+
+// Configuração do proxy para as rotas da API
+app.use('/api', createProxyMiddleware({
+  target: BACKEND_URL,
+  changeOrigin: true,
+  secure: ENVIRONMENT === 'production',
+  logLevel: ENVIRONMENT === 'development' ? 'debug' : 'warn',
+
+  // Configurações de timeout mais robustas
+  timeout: 60000, // 60 segundos
+  proxyTimeout: 60000,
+
+  // Mantém os cookies e headers necessários
+  onProxyReq: (proxyReq, req, res) => {
+    // Garante que os cookies sejam enviados
+    if (req.headers.cookie) {
+      proxyReq.setHeader('Cookie', req.headers.cookie);
+    }
+
+    // Para requisições POST/PUT, reescreve o body se necessário
+    if (req.body && (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH')) {
+      const bodyData = JSON.stringify(req.body);
+      proxyReq.setHeader('Content-Type', 'application/json');
+      proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+      proxyReq.write(bodyData);
+    }
+
+    // Log apenas em desenvolvimento
+    if (ENVIRONMENT === 'development') {
+      if (req.body && Object.keys(req.body).length > 0) {
+      }
+    }
+  },
+
+  // Manipula resposta do backend
+  onProxyRes: (proxyRes, req, res) => {
+    if (ENVIRONMENT === 'development') {
+      // console.log(`✅ Resposta: ${proxyRes.statusCode} para ${req.method} ${req.path}`);
+    }
+  },
+
+  // Manipula erros de proxy
+  onError: (err, req, res) => {
+    console.error('❌ Erro no proxy:', err.message);
+    console.error('🔍 Detalhes do erro:', {
+      code: err.code,
+      target: BACKEND_URL,
+      path: req.path,
+      method: req.method,
+      headers: req.headers['content-type']
+    });
+
+    // Verifica se a resposta já foi enviada
+    if (!res.headersSent) {
+      let errorMessage = 'Erro de comunicação com o servidor';
+      let errorCode = 'PROXY_ERROR';
+
+      switch (err.code) {
+        case 'ECONNREFUSED':
+          errorMessage = 'Backend não está rodando ou não está acessível';
+          errorCode = 'BACKEND_OFFLINE';
+          break;
+        case 'ECONNRESET':
+        case 'ECONNABORTED':
+          errorMessage = 'Conexão com o backend foi interrompida';
+          errorCode = 'CONNECTION_INTERRUPTED';
+          break;
+        case 'ETIMEDOUT':
+          errorMessage = 'Timeout na comunicação com o backend';
+          errorCode = 'BACKEND_TIMEOUT';
+          break;
+      }
+
+      res.status(503).json({
+        success: false,
+        code: errorCode,
+        message: errorMessage,
+        details: ENVIRONMENT === 'development' ? {
+          target: BACKEND_URL,
+          error: err.code,
+          originalError: err.message
+        } : undefined
+      });
+    }
+  },
+
+  // Headers customizados
+  headers: {
+    'X-Forwarded-Host': process.env.FRONTEND_HOST || 'localhost:3000',
+    'X-Forwarded-Proto': 'http'
+  },
+
+  // Configurações adicionais para evitar problemas
+  followRedirects: false,
+  selfHandleResponse: false,
+  ignorePath: false
+}));
 
 // Redireciona '/' para '/login'
 app.get('/', (req, res) => {
@@ -30,7 +144,8 @@ app.use((req, res, next) => {
     req.path.startsWith('/js') ||
     req.path.startsWith('/libs') ||
     req.path.startsWith('/images') ||
-    req.path.startsWith('/icon-fonts')
+    req.path.startsWith('/icon-fonts') ||
+    req.path.startsWith('/api') // API já é tratada pelo proxy
   ) {
     return next();
   }
@@ -108,6 +223,21 @@ app.use((req, res) => {
   });
 });
 
+// Middleware de tratamento global de erros
+app.use((error, req, res, next) => {
+  console.error('💥 Erro interno do servidor:', error);
+
+  if (!res.headersSent) {
+    res.status(500).json({
+      success: false,
+      code: 'INTERNAL_SERVER_ERROR',
+      message: ENVIRONMENT === 'development' ? error.message : 'Erro interno do servidor'
+    });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+  console.log(`🌐 Servidor frontend rodando em http://localhost:${PORT}`);
+  // console.log(`🔄 Proxy configurado: /api/* -> ${BACKEND_URL}/api/*`);
+  // console.log('✅ Sistema pronto para uso!');
 });
