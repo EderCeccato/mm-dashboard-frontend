@@ -5700,7 +5700,7 @@
    position: absolute;
    height: 1rem;
    width: .2rem;
-   /* inset-block-start: .15rem; */
+   inset-block-start: .15rem;
    inset-inline-start: -.65rem;
    background: linear-gradient(to bottom, var(--primary05) 50%, rgba(var(--secondary-rgb), .5) 50%);
    border-radius: .5rem
