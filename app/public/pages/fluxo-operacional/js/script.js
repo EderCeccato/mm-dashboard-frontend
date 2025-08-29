@@ -227,7 +227,13 @@ class ColumnManager {
    }
 
    resetToDefault() {
-      this.columns = [...this.defaultColumns];
+      // Faz uma cópia profunda das configurações padrão originais
+      this.columns = this.defaultColumns.map(col => ({
+         key: col.key,
+         name: col.name,
+         visible: col.visible, // Mantém a visibilidade padrão original
+         order: col.order
+      }));
    }
 
    updateColumnVisibility(key, visible) {
@@ -1512,10 +1518,16 @@ class FluxoOperacionalManager {
    }
 
    resetColumnSettings() {
+      // Limpa TODAS as configurações salvas no localStorage
+      localStorage.removeItem('fluxo-operacional-columns');
+      localStorage.removeItem('fluxo-column-settings');
+
+      // Restaura para o padrão original (sem configurações salvas)
       this.columnManager.resetToDefault();
       this.columnManager.renderColumnList();
       this.updateTable();
-      NotificationManager.showToast('Configurações restauradas para o padrão', 'info');
+
+      NotificationManager.showToast('Configurações restauradas para o padrão original', 'success');
    }
 
    updateTable() {
@@ -1562,8 +1574,6 @@ class FluxoOperacionalManager {
 
 // ===== INICIALIZAÇÃO DO SISTEMA =====
 document.addEventListener('DOMContentLoaded', () => {
-   console.log('🚀 Iniciando Fluxo Operacional...');
-   console.log('🔍 Verificando Thefetch:', typeof Thefetch);
 
    window.fluxoManager = new FluxoOperacionalManager();
    fluxoManager.init();
