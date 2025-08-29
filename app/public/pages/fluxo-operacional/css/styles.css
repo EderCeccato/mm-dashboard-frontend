@@ -5,7 +5,7 @@
 
 /* ===== TABELA TMS ===== */
 #tms-table {
-    font-size: 0.875rem;
+    font-size: 0.7rem;
 }
 
 #tms-table th {
@@ -96,76 +96,6 @@ table.dataTable thead>tr>th.sorting{
     text-align: center !important;
 }
 
-/* ===== COLUNAS ESPECÍFICAS ===== */
-.col-nomovtra {
-    min-width: 120px;
-    font-weight: 600;
-    color: #0d6efd;
-}
-
-.col-processo {
-    min-width: 140px;
-}
-
-.col-container {
-    min-width: 140px;
-    font-family: 'Courier New', monospace;
-}
-
-.col-rota {
-    min-width: 180px;
-    text-align: left !important;
-}
-
-.col-destinatario {
-    min-width: 200px;
-    text-align: left !important;
-}
-
-.col-nfe {
-    min-width: 120px;
-    font-family: 'Courier New', monospace;
-}
-
-.col-volume {
-    min-width: 80px;
-}
-
-.col-peso {
-    min-width: 100px;
-}
-
-.col-data {
-    min-width: 110px;
-}
-
-.col-motorista {
-    min-width: 150px;
-    text-align: left !important;
-}
-
-.col-veiculo {
-    min-width: 120px;
-    font-family: 'Courier New', monospace;
-}
-
-.col-valor {
-    min-width: 120px;
-    text-align: right !important;
-    font-weight: 600;
-}
-
-.col-total {
-    min-width: 140px;
-    text-align: right !important;
-    font-weight: 700;
-    color: #198754;
-}
-
-.col-acoes {
-    min-width: 120px;
-}
-
 /* ===== BADGES DE STATUS (usando padrão Bootstrap como operação portuária) ===== */
 .badge {
     font-size: 0.65rem;
@@ -229,9 +159,8 @@ table.dataTable thead>tr>th.sorting{
 }
 
 /* Garante que a tabela ocupe toda largura */
-.table {
-    width: 100% !important;
-    margin: 0;
+ .table {
+    min-width: 100% !important;
 }
 
 .table-responsive {
@@ -480,7 +409,7 @@ table.dataTable thead>tr>th.sorting{
 /* ===== RESPONSIVIDADE ===== */
 @media (max-width: 768px) {
     #tms-table {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
     }
 
     #tms-table th,

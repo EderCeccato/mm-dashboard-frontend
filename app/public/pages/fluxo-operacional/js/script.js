@@ -10,29 +10,11 @@
  */
 class ApiUtils {
    /**
-    * Faz requisições HTTP usando Thefetch
-    * @param {string} url - URL da API
-    * @param {string} method - Método HTTP (GET, POST, etc.)
-    * @param {Object} body - Corpo da requisição (opcional)
-    * @returns {Promise} Resposta da API
-    */
-   static async request(url, method = 'GET', body = null) {
-      try {
-         const response = await Thefetch(url, method, body);
-         return response;
-      } catch (error) {
-         console.error('Erro na requisição API:', error);
-         throw error;
-      }
-   }
-
-         /**
     * Busca dados do fluxo operacional
     * @returns {Promise<Array>} Lista de fluxos operacionais
     */
    static async getFluxoOperacional() {
-      const url = `/api/fluxo-operacional`;
-      const response = await this.request(url, 'GET');
+      const response = await Thefetch('/api/fluxo-operacional', 'GET');
       return response.data || [];
    }
 
@@ -43,68 +25,8 @@ class ApiUtils {
     * @returns {Promise<Object>} Detalhes do fluxo
     */
    static async getFluxoDetails(nomovtra, nofluxoop) {
-      const response = await this.request(`/api/fluxo-operacional/${nomovtra}/${nofluxoop}/details`, 'GET');
+      const response = await Thefetch(`/api/fluxo-operacional/${nomovtra}/${nofluxoop}/details`, 'GET');
       return response.data || {};
-   }
-
-   /**
-    * Exporta dados para Excel
-    * @param {Object} filters - Filtros ativos
-    * @returns {Promise<Blob>} Arquivo Excel
-    */
-   static async exportToExcel(filters = {}) {
-      const params = new URLSearchParams();
-      Object.keys(filters).forEach(key => {
-         if (filters[key] && filters[key] !== '') {
-            params.append(key, filters[key]);
-         }
-      });
-
-      const queryString = params.toString();
-      const url = `/api/fluxo-operacional/export/excel${queryString ? `?${queryString}` : ''}`;
-
-      const response = await fetch(url, {
-         method: 'GET',
-         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-         }
-      });
-
-      if (!response.ok) {
-         throw new Error('Erro ao exportar para Excel');
-      }
-
-      return await response.blob();
-   }
-
-   /**
-    * Exporta dados para PDF
-    * @param {Object} filters - Filtros ativos
-    * @returns {Promise<Blob>} Arquivo PDF
-    */
-   static async exportToPDF(filters = {}) {
-      const params = new URLSearchParams();
-      Object.keys(filters).forEach(key => {
-         if (filters[key] && filters[key] !== '') {
-            params.append(key, filters[key]);
-         }
-      });
-
-      const queryString = params.toString();
-      const url = `/api/fluxo-operacional/export/pdf${queryString ? `?${queryString}` : ''}`;
-
-      const response = await fetch(url, {
-         method: 'GET',
-         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-         }
-      });
-
-      if (!response.ok) {
-         throw new Error('Erro ao exportar para PDF');
-      }
-
-      return await response.blob();
    }
 
    /**
@@ -181,7 +103,7 @@ class ColumnManager {
       // Configuração das colunas baseada nos dados reais do Firebird
       this.defaultColumns = [
          { key: 'situacao', name: 'Situação', visible: true, order: 0 },
-         { key: 'nomovtra', name: 'Movimento', visible: true, order: 1 },
+         { key: 'nomovtra', name: 'Pedido', visible: true, order: 1 },
          { key: 'cliente', name: 'Cliente', visible: true, order: 2 },
          { key: 'descricaofluxo', name: 'Descrição Fluxo', visible: true, order: 3 },
          { key: 'posicao_fluxo', name: 'Posição', visible: true, order: 4 },
@@ -734,26 +656,21 @@ class ExportManager {
             Exportando...
          `;
 
-         // Busca dados completos com modal de progresso
-         const completeData = await this.getCompleteDataForExport();
+         // Obtém dados filtrados da tabela (sem buscar tarefas filhas)
+         const filteredData = this.getFilteredTableData();
 
-         // Atualiza progresso para geração do arquivo
-         this.updateProgress(completeData.length, completeData.length, 'Gerando arquivo Excel...');
+         if (filteredData.length === 0) {
+            NotificationManager.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
 
-         // Pequeno delay para mostrar a mensagem
-         await new Promise(resolve => setTimeout(resolve, 500));
+         // Gera Excel no frontend com dados filtrados
+         this.generateExcelFile(filteredData);
 
-         // Gera Excel no frontend
-         this.generateExcelFile(completeData);
-
-         // Fecha modal de progresso
-         this.closeProgressModal();
-
-         NotificationManager.showToast('Excel gerado com sucesso!', 'success');
+         NotificationManager.showToast(`Excel gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
 
       } catch (error) {
          console.error('Erro ao gerar Excel:', error);
-         this.closeProgressModal();
          NotificationManager.showToast('Erro ao gerar Excel. Tente novamente.', 'error');
       } finally {
          // Restaura botão
@@ -777,26 +694,21 @@ class ExportManager {
             Exportando...
          `;
 
-         // Busca dados completos com modal de progresso
-         const completeData = await this.getCompleteDataForExport();
+         // Obtém dados filtrados da tabela (sem buscar tarefas filhas)
+         const filteredData = this.getFilteredTableData();
 
-         // Atualiza progresso para geração do arquivo
-         this.updateProgress(completeData.length, completeData.length, 'Gerando arquivo PDF...');
+         if (filteredData.length === 0) {
+            NotificationManager.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
 
-         // Pequeno delay para mostrar a mensagem
-         await new Promise(resolve => setTimeout(resolve, 500));
+         // Gera PDF no frontend com dados filtrados
+         this.generatePDFFile(filteredData);
 
-         // Gera PDF no frontend
-         this.generatePDFFile(completeData);
-
-         // Fecha modal de progresso
-         this.closeProgressModal();
-
-         NotificationManager.showToast('PDF gerado com sucesso!', 'success');
+         NotificationManager.showToast(`PDF gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
 
       } catch (error) {
          console.error('Erro ao gerar PDF:', error);
-         this.closeProgressModal();
          NotificationManager.showToast('Erro ao gerar PDF. Tente novamente.', 'error');
       } finally {
          // Restaura botão
@@ -806,191 +718,71 @@ class ExportManager {
    }
 
       /**
-    * Busca dados completos para exportação (OTIMIZADO - requisições paralelas)
+    * Obtém dados filtrados da tabela (apenas dados visíveis)
     */
-   static async getCompleteDataForExport() {
-      const mainData = window.fluxoManager.data || [];
-      const totalItems = mainData.length;
-
-      // Criar modal de progresso
-      this.createProgressModal();
-      this.updateProgress(0, totalItems, 'Iniciando exportação...');
-
-      // Processar em lotes paralelos para ser mais rápido
-      const BATCH_SIZE = 20; // 20 requisições simultâneas
-      const completeData = [];
-
-      for (let i = 0; i < mainData.length; i += BATCH_SIZE) {
-         const batch = mainData.slice(i, i + BATCH_SIZE);
-
-         // Processa lote em paralelo
-         const batchPromises = batch.map(async (item) => {
-            try {
-               const details = await ApiUtils.getFluxoDetails(item.nomovtra, item.nofluxoop);
-               return {
-                  ...item,
-                  tarefas: details.tarefas || []
-               };
-            } catch (error) {
-               console.warn(`Erro ao buscar tarefas do fluxo ${item.nomovtra}:`, error);
-               return {
-                  ...item,
-                  tarefas: []
-               };
-            }
-         });
-
-         // Aguarda o lote completar
-         const batchResults = await Promise.all(batchPromises);
-         completeData.push(...batchResults);
-
-         // Atualiza progresso
-         const progress = Math.min(i + BATCH_SIZE, totalItems);
-         const percentage = Math.round((progress / totalItems) * 100);
-         this.updateProgress(progress, totalItems, `Processando dados... ${percentage}%`);
+   static getFilteredTableData() {
+      const tableManager = window.fluxoManager?.tableManager;
+      if (!tableManager || !tableManager.dataTable) {
+         console.warn('Tabela não inicializada, retornando dados originais');
+         return window.fluxoManager?.data || [];
       }
 
-      this.updateProgress(totalItems, totalItems, 'Dados coletados! Gerando arquivo...');
+      // Obtém dados filtrados da DataTable
+      const filteredData = [];
+      const dataTable = tableManager.dataTable;
 
-      return completeData;
-   }
+      // Itera sobre todas as linhas visíveis (considerando paginação e filtros)
+      dataTable.rows({ search: 'applied' }).every(function() {
+         const rowData = this.data();
+         filteredData.push(rowData);
+      });
 
-   /**
-    * Cria modal de progresso para exportação
-    */
-   static createProgressModal() {
-      // Remove modal existente se houver
-      const existingModal = document.getElementById('export-progress-modal');
-      if (existingModal) {
-         existingModal.remove();
-      }
-
-      const modalHtml = `
-         <div class="modal fade" id="export-progress-modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-            <div class="modal-dialog modal-dialog-centered">
-               <div class="modal-content">
-                  <div class="modal-header">
-                     <h5 class="modal-title">
-                        <i class="bi bi-download me-2"></i>
-                        Exportando Dados
-                     </h5>
-                  </div>
-                  <div class="modal-body text-center">
-                     <div class="mb-3">
-                        <div class="spinner-border text-primary me-2" role="status"></div>
-                        <span id="progress-message">Preparando exportação...</span>
-                     </div>
-
-                     <div class="progress mb-3" style="height: 20px;">
-                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-                             role="progressbar" style="width: 0%">
-                           <span id="progress-text">0%</span>
-                        </div>
-                     </div>
-
-                     <small class="text-muted" id="progress-details">
-                        Processados: <span id="progress-current">0</span> de <span id="progress-total">0</span> itens
-                     </small>
-                  </div>
-               </div>
-            </div>
-         </div>
-      `;
-
-      document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-      // Mostra o modal
-      const modal = new bootstrap.Modal(document.getElementById('export-progress-modal'));
-      modal.show();
-   }
-
-   /**
-    * Atualiza progresso da exportação
-    */
-   static updateProgress(current, total, message) {
-      const percentage = Math.round((current / total) * 100);
-
-      document.getElementById('progress-message').textContent = message;
-      document.getElementById('progress-bar').style.width = `${percentage}%`;
-      document.getElementById('progress-text').textContent = `${percentage}%`;
-      document.getElementById('progress-current').textContent = current;
-      document.getElementById('progress-total').textContent = total;
-   }
-
-   /**
-    * Fecha modal de progresso
-    */
-   static closeProgressModal() {
-      const modal = bootstrap.Modal.getInstance(document.getElementById('export-progress-modal'));
-      if (modal) {
-         modal.hide();
-         setTimeout(() => {
-            document.getElementById('export-progress-modal')?.remove();
-         }, 300);
-      }
+      console.log(`Exportando ${filteredData.length} itens filtrados de ${tableManager.data.length} total`);
+      return filteredData;
    }
 
       /**
     * Gera arquivo Excel no frontend
     */
    static generateExcelFile(data) {
+      // Usar SheetJS (XLSX) para gerar Excel no frontend
+      if (typeof XLSX === 'undefined') {
+         // Fallback: usar CSV se XLSX não estiver disponível
+         this.generateCSVFile(data);
+         return;
+      }
+
       const workbook = XLSX.utils.book_new();
-      const rows = [];
 
-      // Cabeçalho
-      rows.push([
-         'Situação', 'Pedido', 'Cliente', 'Descrição Fluxo', 'Posição',
-         '%', 'Container', 'Tipo Frete', 'Tipo Carga', 'Rota',
-         'Usuário Resp.', 'Início', 'Fim', 'Tarefa', 'Status Tarefa', 'Data Conclusão'
-      ]);
+      // Preparar dados para Excel (apenas dados principais, sem tarefas)
+      const excelData = data.map(item => ({
+         'Situação': item.situacao,
+         'Pedido': item.nomovtra,
+         'Cliente': item.cliente || '',
+         'Descrição Fluxo': item.descricaofluxo || '',
+         'Posição': `${item.posicaofluxo}/${item.qtdetotalfluxo}`,
+         '%': `${item.percentual}%`,
+         'Container': item.container || '',
+         'Tipo Frete': item.nomtipfre || '',
+         'Tipo Carga': item.nomtipcarga || '',
+         'Usuário Resp.': item.usuario_resp || '',
+         'Início': item.datainiciofluxo ? new Date(item.datainiciofluxo).toLocaleDateString('pt-BR') : '',
+         'Fim': item.data ? new Date(item.data).toLocaleDateString('pt-BR') : '',
+         'Processo': item.processo || '',
+         'Placa CAV': item.placacav || '',
+         'Placa CAR': item.placacar || '',
+         'Placa CAR2': item.placacar2 || '',
+         'Rota': item.rota || '',
+         'Doc. Fiscal': item.docfiscal || '',
+         'Nota C': item.notac || '',
+         'Navio': item.navio || '',
+         'Cliente Armador': item.nocli_arm || '',
+         'Cliente Despachante': item.nocli_desp || '',
+         'Cliente': item.nocli || '',
+         'Usuário Agendador': item.usuario_agendador || ''
+      }));
 
-      // Dados com estrutura pai/filho
-      data.forEach(fluxo => {
-         if (fluxo.tarefas && fluxo.tarefas.length > 0) {
-            // Para cada tarefa, cria uma linha com dados do fluxo + tarefa
-            fluxo.tarefas.forEach(tarefa => {
-               rows.push([
-                  fluxo.situacao,
-                  fluxo.nomovtra,
-                  fluxo.cliente || '',
-                  fluxo.descricaofluxo || '',
-                  `${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo}`,
-                  fluxo.percentual + '%',
-                  fluxo.container || '',
-                  fluxo.nomtipfre || '',
-                  fluxo.nomtipcarga || '',
-                  fluxo.rota || '',
-                  fluxo.usuario_resp || '',
-                  ApiUtils.formatDate(fluxo.datainiciofluxo),
-                  ApiUtils.formatDate(fluxo.data),
-                  tarefa.descricao || '',
-                  tarefa.status || '',
-                  tarefa.dataconclusao ? ApiUtils.formatDate(tarefa.dataconclusao) : ''
-               ]);
-            });
-         } else {
-            // Fluxo sem tarefas
-            rows.push([
-               fluxo.situacao,
-               fluxo.nomovtra,
-               fluxo.cliente || '',
-               fluxo.descricaofluxo || '',
-               `${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo}`,
-               fluxo.percentual + '%',
-               fluxo.container || '',
-               fluxo.nomtipfre || '',
-               fluxo.nomtipcarga || '',
-               fluxo.rota || '',
-               fluxo.usuario_resp || '',
-               ApiUtils.formatDate(fluxo.datainiciofluxo),
-               ApiUtils.formatDate(fluxo.data),
-               '', '', ''
-            ]);
-         }
-      });
-
-      // Criar worksheet
-      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
 
       // Ajustar largura das colunas
       const colWidths = [
@@ -1003,258 +795,690 @@ class ExportManager {
          { wch: 15 }, // Container
          { wch: 15 }, // Tipo Frete
          { wch: 15 }, // Tipo Carga
-         { wch: 15 }, // Rota
-         { wch: 20 }, // Usuário
+         { wch: 20 }, // Usuário Resp
          { wch: 12 }, // Início
          { wch: 12 }, // Fim
-         { wch: 40 }, // Tarefa
-         { wch: 15 }, // Status Tarefa
-         { wch: 12 }  // Data Conclusão
+         { wch: 15 }, // Processo
+         { wch: 12 }, // Placa CAV
+         { wch: 12 }, // Placa CAR
+         { wch: 12 }, // Placa CAR2
+         { wch: 20 }, // Rota
+         { wch: 15 }, // Doc Fiscal
+         { wch: 12 }, // Nota C
+         { wch: 20 }, // Navio
+         { wch: 20 }, // Cliente Armador
+         { wch: 20 }, // Cliente Despachante
+         { wch: 15 }, // Cliente
+         { wch: 20 }  // Usuário Agendador
       ];
       worksheet['!cols'] = colWidths;
 
-      // Adicionar ao workbook
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Fluxos Operacionais');
 
       // Gerar arquivo e fazer download
-      const fileName = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
+      const filename = `fluxo_operacional_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, filename);
    }
 
             /**
-    * Gera arquivo PDF profissional e limpo
+    * Gera arquivo PDF no frontend com design profissional
     */
    static generatePDFFile(data) {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
+      try {
+         // Tentar diferentes formas de acessar jsPDF
+         const jsPDF = window.jspdf?.jsPDF || window.jsPDF || window.jsPdf;
 
-      // Configurações
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-      const margin = 20;
-      let yPosition = margin;
-
-      // Cabeçalho simples e profissional
-      doc.setFillColor(54, 69, 79); // Azul escuro profissional
-      doc.rect(0, 0, pageWidth, 30, 'F');
-
-      doc.setFontSize(16);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(255, 255, 255);
-      doc.text('RELATORIO DE FLUXOS OPERACIONAIS', margin, 20);
-
-      // Informações do cabeçalho
-      doc.setFontSize(9);
-      doc.setFont(undefined, 'normal');
-      doc.setTextColor(0, 0, 0);
-      yPosition = 40;
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`, margin, yPosition);
-      doc.text(`Total de fluxos: ${data.length}`, pageWidth - margin - 40, yPosition);
-
-      yPosition = 55;
-
-      // Para cada fluxo
-      data.forEach((fluxo, index) => {
-         // Verificar se precisa de nova página
-         if (yPosition > pageHeight - 70) {
-            doc.addPage();
-            yPosition = margin;
+         if (!jsPDF) {
+            NotificationManager.showToast('Biblioteca jsPDF não encontrada. Verifique se está incluída no HTML.', 'warning');
+            console.error('jsPDF não encontrado. Objetos disponíveis:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+            return;
          }
 
-                  // Cabeçalho do fluxo
-         const situacaoColor = this.getSituacaoColorBySLA(fluxo.alerta_sla);
+         const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+         });
 
-         // Linha colorida do status baseada no SLA numérico
-         doc.setFillColor(...situacaoColor);
-         doc.rect(margin, yPosition, 5, 20, 'F');
+         // Configurações gerais
+         const pageWidth = doc.internal.pageSize.width;
+         const pageHeight = doc.internal.pageSize.height;
+      const margin = 20;
+         let currentY = margin;
+
+         // === CABEÇALHO PRINCIPAL ===
+         this.createPDFHeader(doc, pageWidth, currentY);
+         currentY = 50;
+
+         // === INFORMAÇÕES DO RELATÓRIO ===
+         currentY = this.addReportInfo(doc, data, margin, currentY);
+         currentY += 15;
+
+         // === DADOS DA TABELA ===
+         this.createPDFTable(doc, data, margin, currentY, pageWidth, pageHeight);
+
+         // === RODAPÉ ===
+         this.addPDFFooter(doc, pageWidth, pageHeight, margin);
+
+         // Salvar arquivo
+         const filename = `fluxo_operacional_${new Date().toISOString().split('T')[0]}.pdf`;
+         doc.save(filename);
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         console.error('Stack trace:', error.stack);
+         console.error('Tipo do erro:', error.name);
+         console.error('Objetos PDF disponíveis no window:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+
+         NotificationManager.showToast(`Erro ao gerar PDF: ${error.message}. Verifique o console para mais detalhes.`, 'error');
+      }
+   }
+
+   /**
+    * Cria o cabeçalho principal do PDF
+    */
+   static createPDFHeader(doc, pageWidth, startY) {
+      // Obter cor da empresa ou usar verde como fallback
+      const companyColor = this.getCompanyColor();
 
          // Fundo do cabeçalho
-         doc.setFillColor(248, 249, 250);
-         doc.rect(margin + 5, yPosition, pageWidth - (margin * 2) - 5, 20, 'F');
-         doc.setDrawColor(220, 220, 220);
-         doc.rect(margin + 5, yPosition, pageWidth - (margin * 2) - 5, 20, 'S');
+      doc.setFillColor(...companyColor);
+      doc.rect(0, 0, pageWidth, 40, 'F');
 
-         // Texto do cabeçalho
-         doc.setFontSize(12);
-         doc.setFont(undefined, 'bold');
-         doc.setTextColor(0, 0, 0);
-         doc.text(`FLUXO ${index + 1}: ${fluxo.nomovtra}`, margin + 10, yPosition + 8);
+      // Título principal - melhor espaçamento
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RELATÓRIO DE FLUXOS OPERACIONAIS', pageWidth / 2, startY, { align: 'center' });
 
+      // Subtítulo
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      // doc.text('Sistema de Gestão Logística - MM Softwares', pageWidth / 2, startY + 20, { align: 'center' });
+
+      // Data e hora de geração
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR');
          doc.setFontSize(10);
-         doc.setFont(undefined, 'normal');
-         doc.text(`Cliente: ${fluxo.cliente || 'Nao informado'}`, margin + 10, yPosition + 16);
+      doc.text(`Gerado em: ${dateStr} às ${timeStr}`, pageWidth / 2, startY + 32, { align: 'center' });
+   }
 
-         yPosition += 25;
+   /**
+    * Adiciona informações do relatório
+    */
+   static addReportInfo(doc, data, margin, currentY) {
+         doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESUMO DO RELATÓRIO', margin, currentY);
 
-         // Informações principais em duas colunas
-         const colWidth = (pageWidth - (margin * 2) - 5) / 2;
+      currentY += 8;
+         doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
 
-         // Coluna esquerda
-         doc.setFontSize(9);
-         doc.setFont(undefined, 'bold');
-         doc.text('Situacao:', margin + 5, yPosition);
-         doc.setFont(undefined, 'normal');
-         doc.text(fluxo.situacao, margin + 25, yPosition);
+      // Estatísticas básicas
+      const stats = this.calculateStats(data);
 
-         doc.setFont(undefined, 'bold');
-         doc.text('Progresso:', margin + 5, yPosition + 6);
-         doc.setFont(undefined, 'normal');
-         doc.text(`${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo} (${fluxo.percentual}%)`, margin + 30, yPosition + 6);
+      // Fallback para símbolos simples se emojis não funcionarem
+      doc.text(`Total de itens: ${data.length}`, margin, currentY);
 
-         // Coluna direita
-         doc.setFont(undefined, 'bold');
-         doc.text('Usuario:', margin + colWidth + 10, yPosition);
-         doc.setFont(undefined, 'normal');
-         const usuario = fluxo.usuario_resp || 'Nao informado';
-         doc.text(usuario.substring(0, 25), margin + colWidth + 25, yPosition);
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Vencidos: ${stats.vencidos}`, margin + 70, currentY);
 
-         doc.setFont(undefined, 'bold');
-         doc.text('Periodo:', margin + colWidth + 10, yPosition + 6);
-         doc.setFont(undefined, 'normal');
-         const inicio = ApiUtils.formatDate(fluxo.datainiciofluxo);
-         const fim = ApiUtils.formatDate(fluxo.data);
-         doc.text(`${inicio} - ${fim}`, margin + colWidth + 25, yPosition + 6);
+      doc.setTextColor(255, 193, 7);
+      doc.text(`Em atenção: ${stats.atencao}`, margin + 140, currentY);
 
-         yPosition += 15;
+      doc.setTextColor(40, 167, 69);
+      doc.text(`No prazo: ${stats.prazo}`, margin + 210, currentY);
 
-         // Descrição se houver
-         if (fluxo.descricaofluxo) {
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'bold');
-            doc.text('Descricao:', margin + 5, yPosition);
-            doc.setFont(undefined, 'normal');
+      // Voltar para cor preta
+      doc.setTextColor(0, 0, 0);
 
-            const descricao = fluxo.descricaofluxo.substring(0, 100);
-            const maxWidth = pageWidth - (margin * 2) - 30;
-            const splitDesc = doc.splitTextToSize(descricao, maxWidth);
-            doc.text(splitDesc, margin + 25, yPosition);
-            yPosition += Math.max(5, splitDesc.length * 3);
+      return currentY;
+   }
+
+   /**
+    * Calcula estatísticas dos dados
+    */
+   static calculateStats(data) {
+      return data.reduce((stats, item) => {
+         switch (item.situacao) {
+            case 'Vencida':
+               stats.vencidos++;
+               break;
+            case 'Em atenção':
+               stats.atencao++;
+               break;
+            case 'No prazo':
+               stats.prazo++;
+               break;
+         }
+         return stats;
+      }, { vencidos: 0, atencao: 0, prazo: 0 });
+   }
+
+      /**
+    * Cria a tabela principal do PDF com quebra de linha automática
+    */
+   static createPDFTable(doc, data, margin, startY, pageWidth, pageHeight) {
+      const headers = [
+         'Situação', 'Pedido', 'Cliente', 'Descrição', 'Posição', '%',
+         'Container', 'Tipo Frete', 'Usuário Resp.'
+      ];
+
+      // Calcular larguras automáticas com prioridade para campos importantes
+      const colWidths = this.calculateOptimalColumnWidths(doc, headers, data, pageWidth, margin);
+      let currentY = startY;
+
+      // === CABEÇALHO DA TABELA ===
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+
+      // Desenhar fundo do cabeçalho - altura maior
+      const headerHeight = 12;
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      // Desenhar bordas das células do cabeçalho
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      // Texto do cabeçalho
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9); // Fonte menor para cabeçalho também
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+
+         // Centralizar texto horizontalmente e verticalmente
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+
+      currentY += headerHeight + 2;
+
+      // === DADOS DA TABELA ===
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8); // Fonte menor para caber mais conteúdo
+      const baseRowHeight = 10; // Altura fixa das linhas (sem espaço extra)
+
+      data.forEach((item, index) => {
+         // Preparar dados da linha (removeu data início)
+         const rowData = [
+            item.situacao || '',
+            item.nomovtra?.toString() || '',
+            item.cliente || '',
+            item.descricaofluxo || '',
+            `${item.posicaofluxo}/${item.qtdetotalfluxo}`,
+            `${item.percentual}%`, // Mostra numero% completo
+            item.container || '',
+            item.nomtipfre || '',
+            item.usuario_resp || ''
+         ];
+
+         // Calcular altura necessária para esta linha com quebra de texto
+         const rowHeight = this.calculateRowHeight(doc, rowData, colWidths, baseRowHeight);
+
+         // Verificar nova página
+         if (currentY + rowHeight > pageHeight - 30) {
+            doc.addPage();
+            currentY = margin + 20;
+
+            // Repetir cabeçalho na nova página
+            this.drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth);
+            currentY += headerHeight + 2;
          }
 
-         yPosition += 5;
-
-         // Tarefas
-         if (fluxo.tarefas && fluxo.tarefas.length > 0) {
-            // Cabeçalho das tarefas
-            doc.setFillColor(235, 235, 235);
-            doc.rect(margin + 10, yPosition, pageWidth - (margin * 2) - 20, 8, 'F');
-
-            doc.setFontSize(9);
-            doc.setFont(undefined, 'bold');
-            doc.setTextColor(0, 0, 0);
-            doc.text(`TAREFAS (${fluxo.tarefas.length})`, margin + 15, yPosition + 6);
-
-            yPosition += 12;
-
-            // Lista de tarefas
-            fluxo.tarefas.forEach((tarefa) => {
-               if (yPosition > pageHeight - 25) {
-                  doc.addPage();
-                  yPosition = margin;
-               }
-
-               const isCompleted = tarefa.status === 'Realizado';
-               const statusIcon = isCompleted ? '[OK]' : '[ ]';
-
-               // Linha da tarefa
-               doc.setFontSize(8);
-               doc.setFont(undefined, 'normal');
-               doc.setTextColor(isCompleted ? 0 : 100, isCompleted ? 100 : 100, isCompleted ? 0 : 100);
-               doc.text(statusIcon, margin + 15, yPosition);
-
-               doc.setTextColor(0, 0, 0);
-               const taskText = tarefa.descricao || 'Tarefa sem descricao';
-               const maxTaskWidth = pageWidth - (margin * 2) - 40;
-               const splitTask = doc.splitTextToSize(taskText.substring(0, 80), maxTaskWidth);
-               doc.text(splitTask, margin + 25, yPosition);
-
-               yPosition += Math.max(5, splitTask.length * 3);
-
-               // Data de conclusão
-               if (tarefa.dataconclusao) {
-                  doc.setFontSize(7);
-                  doc.setTextColor(100, 100, 100);
-                  doc.text(`Concluido: ${ApiUtils.formatDate(tarefa.dataconclusao)}`, margin + 25, yPosition);
-                  yPosition += 4;
-               }
-
-               yPosition += 2;
-            });
+         // Cor de fundo alternada
+         if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
          } else {
-            doc.setFontSize(8);
-            doc.setFont(undefined, 'italic');
-            doc.setTextColor(150, 150, 150);
-            doc.text('Nenhuma tarefa encontrada', margin + 15, yPosition);
-            yPosition += 8;
+            doc.setFillColor(255, 255, 255);
          }
+
+         // Desenhar fundo da linha
+         doc.rect(margin, currentY, pageWidth - (margin * 2), rowHeight, 'F');
+
+         // Desenhar bordas das células
+         doc.setDrawColor(220, 220, 220);
+         doc.setLineWidth(0.1);
+         let cellX = margin;
+         colWidths.forEach((width, idx) => {
+            doc.rect(cellX, currentY, width, rowHeight, 'D');
+            cellX += width;
+         });
+
+                  // Desenhar conteúdo das células com centralização vertical
+         currentX = margin;
+         rowData.forEach((text, colIndex) => {
+            const cellWidth = colWidths[colIndex];
+            const availableTextWidth = cellWidth - 4; // 2mm padding de cada lado
+
+            // Configurar fonte e cor baseada na coluna
+            if (colIndex === 0) {
+               // Situação: colorida e negrito
+               const statusColor = this.getStatusColor(item.situacao);
+               doc.setTextColor(...statusColor);
+               doc.setFont('helvetica', 'bold');
+               doc.setFontSize(8);
+            } else if (colIndex === 6) {
+               // Container: fonte ainda menor para garantir que apareça completo
+               doc.setTextColor(0, 0, 0);
+               doc.setFont('helvetica', 'normal');
+               doc.setFontSize(7); // Fonte menor para container
+            } else {
+               // Outras colunas: fonte padrão
+               doc.setTextColor(0, 0, 0);
+               doc.setFont('helvetica', 'normal');
+               doc.setFontSize(8);
+            }
+
+            // Tratamento especial por tipo de coluna
+            let lines;
+            if (colIndex === 2) {
+               // Cliente: truncar em uma linha sem quebra
+               lines = [this.truncateTextToFit(doc, text.toString(), availableTextWidth)];
+            } else if (colIndex === 6) {
+               // Container: NUNCA quebrar, sempre mostrar completo
+               const fullText = text.toString();
+               // Tenta com fonte 7, se não couber, diminui mais
+               if (doc.getTextWidth(fullText) > availableTextWidth) {
+                  doc.setFontSize(6);
+                  if (doc.getTextWidth(fullText) > availableTextWidth) {
+                     doc.setFontSize(5);
+                  }
+               }
+               lines = [fullText]; // Sempre mostra o container completo
+            } else {
+               // Outras colunas: quebrar texto normalmente
+               lines = this.wrapText(doc, text.toString(), availableTextWidth);
+            }
+
+            // Calcular posição Y para centralização vertical
+            const totalTextHeight = lines.length * 3; // 3mm por linha
+            const startY = currentY + (rowHeight - totalTextHeight) / 2 + 3; // Centralizado verticalmente
+
+            // Desenhar cada linha do texto
+            lines.forEach((line, lineIndex) => {
+               const lineY = startY + (lineIndex * 3);
+
+               // Centralizar horizontalmente
+               const textWidth = doc.getTextWidth(line);
+               const textX = currentX + (cellWidth - textWidth) / 2;
+
+               doc.text(line, textX, lineY);
+            });
+
+            currentX += cellWidth;
+         });
+
+         currentY += rowHeight; // SEM espaço extra entre linhas
+      });
+   }
+
+   /**
+    * Desenha cabeçalho da tabela (para páginas adicionais)
+    */
+      static drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth) {
+      const headerHeight = 12;
+
+      doc.setFillColor(240, 240, 240);
+         doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      // Desenhar bordas das células do cabeçalho
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9); // Fonte menor para cabeçalho
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+
+         // Centralizar texto horizontalmente e verticalmente
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+   }
+
+   /**
+    * Adiciona rodapé ao PDF
+    */
+   static addPDFFooter(doc, pageWidth, pageHeight, margin) {
+      const totalPages = doc.internal.getNumberOfPages();
+
+      for (let i = 1; i <= totalPages; i++) {
+         doc.setPage(i);
 
          // Linha separadora
          doc.setDrawColor(200, 200, 200);
-         doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
-         yPosition += 15;
+         doc.setLineWidth(0.5);
+         doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+         // Informações do rodapé
+         doc.setTextColor(100, 100, 100);
+         doc.setFontSize(8);
+         doc.setFont('helvetica', 'normal');
+
+         // Esquerda: Info da empresa
+         doc.text('MM Softwares - Sistema de Gestão Logística', margin, pageHeight - 8);
+
+         // Centro: Data
+         const now = new Date();
+         doc.text(`Relatório gerado em ${now.toLocaleDateString('pt-BR')}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+         // Direita: Numeração
+         doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+   }
+
+   /**
+    * Retorna cor RGB baseada na situação
+    */
+   static getStatusColor(situacao) {
+      switch (situacao) {
+         case 'Vencida':
+            return [220, 53, 69]; // Vermelho
+         case 'Em atenção':
+            return [255, 152, 0]; // Laranja
+         case 'No prazo':
+            return [76, 175, 80]; // Verde
+         default:
+            return [0, 0, 0]; // Preto
+      }
+   }
+
+   /**
+    * Calcular larguras ótimas das colunas baseadas no conteúdo com prioridade para campos importantes
+    */
+      static calculateOptimalColumnWidths(doc, headers, data, pageWidth, margin) {
+      const availableWidth = pageWidth - (margin * 2);
+
+      // Larguras mínimas fixas para garantir legibilidade (removeu data início)
+      const minWidths = [
+         15,  // Situação
+         15,  // Pedido
+         30,  // Cliente - Reduzido para truncar com ...
+         50,  // Descrição - MUITO IMPORTANTE (mais espaço)
+         12,  // Posição
+         8,   // %
+         20,  // Container - Aumentado para não quebrar
+         25,  // Tipo Frete
+         25   // Usuário Resp
+      ];
+
+      // Prioridades para distribuição de espaço extra (maior = mais importante)
+      const priorities = [2, 2, 3, 6, 1, 1, 3, 4, 3];
+
+      // Calcular largura total das colunas mínimas
+      const totalMinWidth = minWidths.reduce((sum, width) => sum + width, 0);
+
+      // Se há espaço extra, distribuir proporcionalmente às prioridades
+      if (totalMinWidth < availableWidth) {
+         const extraSpace = availableWidth - totalMinWidth;
+         const totalPriority = priorities.reduce((sum, p) => sum + p, 0);
+
+         return minWidths.map((minWidth, index) => {
+            const extraForColumn = (extraSpace * priorities[index]) / totalPriority;
+            return minWidth + extraForColumn;
+         });
+      }
+
+      // Se não cabe nem o mínimo, usar proporções das prioridades
+      const totalPriority = priorities.reduce((sum, p) => sum + p, 0);
+      return priorities.map(priority => (availableWidth * priority) / totalPriority);
+   }
+
+   /**
+    * Quebra texto em múltiplas linhas para caber na largura disponível
+    */
+   static wrapText(doc, text, maxWidth) {
+      if (!text || text.trim() === '') return [''];
+
+      const words = text.trim().split(' ');
+      const lines = [];
+      let currentLine = '';
+
+      for (const word of words) {
+         const testLine = currentLine ? `${currentLine} ${word}` : word;
+         const testWidth = doc.getTextWidth(testLine);
+
+         if (testWidth <= maxWidth) {
+            currentLine = testLine;
+         } else {
+            // Se a linha atual não está vazia, salva ela
+            if (currentLine) {
+               lines.push(currentLine);
+               currentLine = word;
+            } else {
+               // Palavra muito longa, trunca ela
+               const truncated = this.truncateWordToFit(doc, word, maxWidth);
+               lines.push(truncated);
+               currentLine = '';
+            }
+         }
+      }
+
+      // Adiciona a última linha se não estiver vazia
+      if (currentLine) {
+         lines.push(currentLine);
+      }
+
+      // Limitar a 3 linhas por célula para não ficar muito alto
+      return lines.slice(0, 3);
+   }
+
+      /**
+    * Trunca uma palavra longa para caber na largura disponível
+    */
+   static truncateWordToFit(doc, word, maxWidth) {
+      if (doc.getTextWidth(word) <= maxWidth) {
+         return word;
+      }
+
+      const ellipsis = '...';
+      const ellipsisWidth = doc.getTextWidth(ellipsis);
+
+      for (let i = word.length - 1; i > 0; i--) {
+         const truncated = word.substring(0, i) + ellipsis;
+         if (doc.getTextWidth(truncated) <= maxWidth) {
+            return truncated;
+         }
+      }
+
+      return ellipsis;
+   }
+
+   /**
+    * Trunca texto em uma linha para caber na largura disponível (sem quebra de linha)
+    */
+   static truncateTextToFit(doc, text, maxWidth) {
+      if (!text) return '';
+
+      const cleanText = text.toString().trim();
+      if (doc.getTextWidth(cleanText) <= maxWidth) {
+         return cleanText;
+      }
+
+      const ellipsis = '...';
+
+      for (let i = cleanText.length - 1; i > 0; i--) {
+         const truncated = cleanText.substring(0, i) + ellipsis;
+         if (doc.getTextWidth(truncated) <= maxWidth) {
+            return truncated;
+         }
+      }
+
+      return ellipsis;
+   }
+
+      /**
+    * Calcula a altura necessária para uma linha baseada no conteúdo com quebra de texto
+    */
+   static calculateRowHeight(doc, rowData, colWidths, baseHeight) {
+      let maxLines = 1;
+
+      rowData.forEach((text, colIndex) => {
+         const cellWidth = colWidths[colIndex];
+         const availableTextWidth = cellWidth - 4; // padding
+
+         // Cliente (col 2) e Container (col 6) são sempre 1 linha
+         if (colIndex === 2 || colIndex === 6) {
+            maxLines = Math.max(maxLines, 1);
+         } else {
+            // Configurar fonte temporariamente para medição
+            doc.setFontSize(8);
+            const lines = this.wrapText(doc, text.toString(), availableTextWidth);
+            maxLines = Math.max(maxLines, lines.length);
+         }
       });
 
-      // Rodapé simples
-      const totalPages = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-         doc.setPage(i);
-         doc.setFontSize(8);
-         doc.setTextColor(100, 100, 100);
-         doc.text(`Pagina ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
-         doc.text('MM Softwares - Software para transportadoras, armazéns e depots', margin, pageHeight - 10);
-      }
-
-      // Salvar PDF
-      const fileName = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.pdf`;
-      doc.save(fileName);
+      // Altura mais compacta: 3mm por linha + mínimo padding
+      return Math.max(baseHeight, maxLines * 3 + 4);
    }
 
    /**
-    * Retorna cores para o PDF baseada na lógica correta do SLA
+    * Obtém a cor da empresa do localStorage ou usa verde como fallback
     */
-   static getSituacaoColorRGB(situacao) {
-      switch (situacao) {
-         case 'Vencida': return [220, 53, 69];    // Vermelho - SLA Crítico (3)
-         case 'Em atenção': return [255, 193, 7]; // Amarelo - SLA Atenção (2)
-         case 'No prazo': return [40, 167, 69];   // Verde - SLA Normal (1)
-         default: return [108, 117, 125];         // Cinza - Outros casos
+   static getCompanyColor() {
+      try {
+         // Tentar obter cor da empresa do localStorage
+         const companyData = localStorage.getItem('company');
+         if (companyData) {
+            const company = JSON.parse(companyData);
+            if (company.primaryColor) {
+               // Converter cor hex para RGB
+               return this.hexToRgb(company.primaryColor);
+            }
+         }
+      } catch (error) {
+         console.warn('Erro ao obter cor da empresa:', error);
       }
+
+      // Fallback: Verde profissional
+      return [40, 167, 69]; // Verde Material Design
    }
 
    /**
-    * Retorna cores baseada diretamente no valor numérico do ALERTA_SLA
+    * Converte cor hex para RGB
     */
-   static getSituacaoColorBySLA(alertaSla) {
-      switch (alertaSla) {
-         case 3: return [220, 53, 69];   // Vermelho - SLA Crítico (prazo passou)
-         case 2: return [255, 193, 7];   // Amarelo - SLA Atenção (falta 10 min)
-         case 1: return [40, 167, 69];   // Verde - SLA Normal (dentro do prazo)
-         default: return [108, 117, 125]; // Cinza - Valor inválido
-      }
+   static hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [
+         parseInt(result[1], 16),
+         parseInt(result[2], 16),
+         parseInt(result[3], 16)
+      ] : [40, 167, 69]; // Fallback verde
    }
 
    /**
-    * Retorna cor RGB para a situação (baseada na lógica correta do SLA)
+    * Ajusta texto para caber na largura disponível da célula
     */
-   static getSituacaoColor(situacao) {
-      switch (situacao) {
-         case 'Vencida': return [220, 53, 69];   // Vermelho - SLA Crítico (3)
-         case 'Em atenção': return [255, 193, 7]; // Amarelo - SLA Atenção (2)
-         case 'No prazo': return [40, 167, 69];   // Verde - SLA Normal (1)
-         default: return [108, 117, 125];         // Cinza - Outros casos
+   static fitTextToWidth(doc, text, maxWidth) {
+      if (!text) return '';
+
+      const originalText = text.toString().trim();
+      let currentText = originalText;
+
+      // Se o texto cabe, retornar como está
+      if (doc.getTextWidth(currentText) <= maxWidth) {
+         return currentText;
       }
+
+      // Tentar reduzir a fonte primeiro (até um mínimo de 7pt)
+      const originalSize = 9;
+      for (let fontSize = originalSize; fontSize >= 7; fontSize -= 0.5) {
+         doc.setFontSize(fontSize);
+         if (doc.getTextWidth(originalText) <= maxWidth) {
+            return originalText;
+         }
+      }
+
+      // Se ainda não cabe, truncar com reticências
+      doc.setFontSize(originalSize); // Voltar para tamanho original
+      const ellipsis = '...';
+      const ellipsisWidth = doc.getTextWidth(ellipsis);
+
+      for (let i = originalText.length - 1; i > 0; i--) {
+         const truncated = originalText.substring(0, i) + ellipsis;
+         if (doc.getTextWidth(truncated) <= maxWidth) {
+            return truncated;
+         }
+      }
+
+      return ellipsis; // Caso extremo
    }
 
    /**
-    * Retorna emoji para a situação
+    * Trunca texto para caber na coluna com melhor formatação (legacy)
     */
-   static getSituacaoEmoji(situacao) {
-      switch (situacao) {
-         case 'Vencida': return '🚨';
-         case 'Em atenção': return '⚠️';
-         case 'No prazo': return '✅';
-         default: return '📋';
-      }
+   static truncateText(text, maxLength) {
+      if (!text) return '';
+      const str = text.toString().trim();
+      return str.length > maxLength ? str.substring(0, maxLength - 3) + '...' : str;
+   }
+
+   /**
+    * Fallback: gera arquivo CSV se XLSX não estiver disponível
+    */
+   static generateCSVFile(data) {
+      const headers = [
+         'Situação', 'Pedido', 'Cliente', 'Descrição Fluxo', 'Posição', '%',
+         'Container', 'Tipo Frete', 'Tipo Carga', 'Usuário Resp.', 'Início', 'Fim'
+      ];
+
+      const csvContent = [
+         headers.join(','),
+         ...data.map(item => [
+            `"${item.situacao}"`,
+            item.nomovtra,
+            `"${item.cliente || ''}"`,
+            `"${item.descricaofluxo || ''}"`,
+            `${item.posicaofluxo}/${item.qtdetotalfluxo}`,
+            `${item.percentual}%`,
+            `"${item.container || ''}"`,
+            `"${item.nomtipfre || ''}"`,
+            `"${item.nomtipcarga || ''}"`,
+            `"${item.usuario_resp || ''}"`,
+            item.datainiciofluxo ? new Date(item.datainiciofluxo).toLocaleDateString('pt-BR') : '',
+            item.data ? new Date(item.data).toLocaleDateString('pt-BR') : ''
+         ].join(','))
+      ].join('\n');
+
+      // Criar blob e fazer download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `fluxo_operacional_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
    }
 }
 
