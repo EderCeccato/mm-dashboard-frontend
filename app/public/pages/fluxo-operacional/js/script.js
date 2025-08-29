@@ -120,8 +120,8 @@ class ApiUtils {
    }
 
    /**
-    * Calcula situação SLA baseado no alerta
-    * @param {number} alertaSla - Valor do alerta SLA (1 = vencido, 0 = normal)
+    * Calcula situação SLA baseado na lógica correta do ALERTA_SLA
+    * @param {number} alertaSla - Valor do alerta SLA (1=Normal, 2=Atenção, 3=Crítico)
     * @param {number} percentual - Percentual de conclusão
     * @returns {Object} Situação e classe CSS
     */
@@ -130,16 +130,16 @@ class ApiUtils {
          return { status: 'Concluída', class: 'success' };
       }
 
-      if (alertaSla === 1) {
+      if (alertaSla === 3) {
+         // SLA Crítico - prazo já passou
          return { status: 'Vencida', class: 'danger' };
-      }
-
-      // Lógica baseada no tempo restante (pode ser ajustada conforme regra de negócio)
-      if (percentual >= 75) {
+      } else if (alertaSla === 2) {
+         // SLA em atenção - falta 10 minutos para estourar
          return { status: 'Em atenção', class: 'warning' };
+      } else {
+         // SLA Normal (alertaSla === 1) - dentro do prazo
+         return { status: 'No prazo', class: 'success' };
       }
-
-      return { status: 'No prazo', class: 'secondary' };
    }
 
    /**
@@ -507,18 +507,11 @@ class TableManager {
    }
 
    styleTableRow(row, data) {
+      // Remove todas as classes de coloração - mantém tabela padrão cinza/branco
       row.classList.remove('flow-warning', 'flow-overdue', 'flow-completed');
 
-      if (data.percentual >= 100) {
-         row.classList.add('flow-completed');
-         return;
-      }
-
-      if (data.alerta_sla === 1) {
-         row.classList.add('flow-overdue');
-      } else if (data.percentual >= 75) {
-         row.classList.add('flow-warning');
-      }
+      // Não aplica mais cores nas linhas - apenas os badges de situação ficam coloridos
+      // A tabela permanece com o estilo padrão cinza/branco alternado
    }
 
    bindTableEvents() {
@@ -1062,10 +1055,10 @@ class ExportManager {
             yPosition = margin;
          }
 
-         // Cabeçalho do fluxo
-         const situacaoColor = this.getSituacaoColorRGB(fluxo.situacao);
+                  // Cabeçalho do fluxo
+         const situacaoColor = this.getSituacaoColorBySLA(fluxo.alerta_sla);
 
-         // Linha colorida do status
+         // Linha colorida do status baseada no SLA numérico
          doc.setFillColor(...situacaoColor);
          doc.rect(margin, yPosition, 5, 20, 'F');
 
@@ -1202,7 +1195,7 @@ class ExportManager {
          doc.setFontSize(8);
          doc.setTextColor(100, 100, 100);
          doc.text(`Pagina ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
-         doc.text('MM Softwares - Sistema de Gestao', margin, pageHeight - 10);
+         doc.text('MM Softwares - Software para transportadoras, armazéns e depots', margin, pageHeight - 10);
       }
 
       // Salvar PDF
@@ -1211,26 +1204,38 @@ class ExportManager {
    }
 
    /**
-    * Retorna cores mais suaves para o PDF
+    * Retorna cores para o PDF baseada na lógica correta do SLA
     */
    static getSituacaoColorRGB(situacao) {
       switch (situacao) {
-         case 'Vencida': return [220, 53, 69];
-         case 'Em atenção': return [255, 193, 7];
-         case 'No prazo': return [40, 167, 69];
-         default: return [108, 117, 125];
+         case 'Vencida': return [220, 53, 69];    // Vermelho - SLA Crítico (3)
+         case 'Em atenção': return [255, 193, 7]; // Amarelo - SLA Atenção (2)
+         case 'No prazo': return [40, 167, 69];   // Verde - SLA Normal (1)
+         default: return [108, 117, 125];         // Cinza - Outros casos
       }
    }
 
    /**
-    * Retorna cor RGB para a situação
+    * Retorna cores baseada diretamente no valor numérico do ALERTA_SLA
+    */
+   static getSituacaoColorBySLA(alertaSla) {
+      switch (alertaSla) {
+         case 3: return [220, 53, 69];   // Vermelho - SLA Crítico (prazo passou)
+         case 2: return [255, 193, 7];   // Amarelo - SLA Atenção (falta 10 min)
+         case 1: return [40, 167, 69];   // Verde - SLA Normal (dentro do prazo)
+         default: return [108, 117, 125]; // Cinza - Valor inválido
+      }
+   }
+
+   /**
+    * Retorna cor RGB para a situação (baseada na lógica correta do SLA)
     */
    static getSituacaoColor(situacao) {
       switch (situacao) {
-         case 'Vencida': return [220, 53, 69]; // Vermelho
-         case 'Em atenção': return [255, 193, 7]; // Amarelo
-         case 'No prazo': return [25, 135, 84]; // Verde
-         default: return [0, 0, 0]; // Preto
+         case 'Vencida': return [220, 53, 69];   // Vermelho - SLA Crítico (3)
+         case 'Em atenção': return [255, 193, 7]; // Amarelo - SLA Atenção (2)
+         case 'No prazo': return [40, 167, 69];   // Verde - SLA Normal (1)
+         default: return [108, 117, 125];         // Cinza - Outros casos
       }
    }
 
@@ -1363,10 +1368,10 @@ class FluxoOperacionalManager {
    }
 
    processItemData(item) {
-      const alertaSla = item.alerta_sla || 0;
+      const alertaSla = item.alerta_sla || 1;
       const percentual = item.percentual || 0;
 
-      // Calcular situação e prioridade para ordenação
+      // Calcular situação baseada na lógica correta do ALERTA_SLA
       let situacao = '';
       let situacaoClass = '';
       let prioridade = 0; // Para ordenação: menor valor = maior prioridade
@@ -1375,17 +1380,20 @@ class FluxoOperacionalManager {
          situacao = 'Concluída';
          situacaoClass = 'success';
          prioridade = 4;
-      } else if (alertaSla === 1) {
+      } else if (alertaSla === 3) {
+         // SLA Crítico - prazo já passou
          situacao = 'Vencida';
          situacaoClass = 'danger';
          prioridade = 1; // Máxima prioridade
-      } else if (percentual >= 75) {
+      } else if (alertaSla === 2) {
+         // SLA em atenção - falta 10 minutos para estourar
          situacao = 'Em atenção';
          situacaoClass = 'warning';
          prioridade = 2;
       } else {
+         // SLA Normal (alertaSla === 1) - dentro do prazo
          situacao = 'No prazo';
-         situacaoClass = 'secondary';
+         situacaoClass = 'success';
          prioridade = 3;
       }
 
