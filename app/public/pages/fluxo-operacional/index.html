@@ -12,7 +12,7 @@
    <!-- Favicon -->
    <link rel="icon" href="" type="image/x-icon">
    <!-- Main Theme Js -->
-   <script src="/assets/js/main.min.js"></script>
+   <!-- <script src="/assets/js/main.min.js"></script> -->
    <!-- Bootstrap Css -->
    <link id="style" href="/assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
    <!-- Style Css -->
@@ -48,14 +48,6 @@
    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
    <link rel="stylesheet" href="https://cdn.datatables.net/colreorder/1.7.0/css/colReorder.bootstrap5.min.css">
 
-   <!-- Main JS -->
-   <script src="/assets/js/main.js"></script>
-   <script src="/assets/js/auth-manager.js"></script>
-   <script src="/assets/js/module-manager.js"></script>
-   <script src="/assets/js/company-branding.js"></script>
-
-   <!-- jQuery (necessário para DataTables) -->
-   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
    <meta http-equiv="imagetoolbar" content="no">
 </head>
 
@@ -614,12 +606,20 @@
             <div class="row">
                <div class="col-xl-12">
                   <div class="card custom-card">
-                     <div class="card-header justify-content-end" style="background-color: var(--primary-color); color: white;">
+                     <div class="card-header justify-content-between" style="background-color: var(--primary-color); color: white;">
+                        <div class="d-flex align-items-center">
+                           <h5 class="mb-0">
+                              <i class="bi bi-diagram-3 me-2"></i>
+                              Fluxo Operacional
+                           </h5>
+                           <span class="badge bg-light text-dark ms-2" id="total-records">0 registros</span>
+                        </div>
                         <div class="d-flex gap-2">
                            <!-- Botão Filtros -->
                            <button type="button" class="btn btn-outline-light btn-sm" id="btn-toggle-filters">
                               <i class="bi bi-funnel me-1"></i>
                               Filtros
+                              <span class="badge bg-warning text-dark ms-1" id="active-filters-count" style="display: none;">0</span>
                            </button>
                            <!-- Botão Configurar Colunas -->
                            <button type="button" class="btn btn-outline-light btn-sm" id="btn-column-settings">
@@ -633,15 +633,23 @@
                                  Exportar
                               </button>
                               <ul class="dropdown-menu">
-                                 <li><a class="dropdown-item" href="#" id="export-excel"><i class="bi bi-file-earmark-excel me-2"></i>Excel</a></li>
-                                 <li><a class="dropdown-item" href="#" id="export-pdf"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</a></li>
+                                 <li><a class="dropdown-item" href="#" data-export="excel"><i class="bi bi-file-earmark-excel me-2"></i>Excel</a></li>
+                                 <li><a class="dropdown-item" href="#" data-export="pdf"><i class="bi bi-file-earmark-pdf me-2"></i>PDF</a></li>
                               </ul>
                            </div>
                         </div>
                      </div>
                          <div class="card-body">
+                        <!-- Loading Indicator -->
+                        <div id="loading-indicator" class="text-center py-5" style="display: none;">
+                           <div class="spinner-border text-primary" role="status">
+                              <span class="visually-hidden">Carregando...</span>
+                           </div>
+                           <p class="mt-2 text-muted">Carregando dados do fluxo operacional...</p>
+                        </div>
+
                         <!-- Tabela de Fluxo Operacional -->
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="table-container">
                            <table class="table table-bordered table-striped" id="tms-table">
                               <thead>
                                  <tr>
@@ -739,33 +747,7 @@
                </select>
             </div>
 
-            <!-- Container / Processo Cliente -->
-            <div class="mb-3">
-               <label for="filter-container" class="form-label">
-                  <i class="bi bi-box-seam me-1"></i>Container
-               </label>
-               <input type="text" class="form-control" id="filter-container" placeholder="Número do container...">
-            </div>
-            <div class="mb-3">
-               <label for="filter-processo-cliente" class="form-label">
-                  <i class="bi bi-file-text me-1"></i>Processo Cliente
-               </label>
-               <input type="text" class="form-control" id="filter-processo-cliente" placeholder="Código do processo do cliente...">
-            </div>
 
-            <!-- Cavalo / Reboque / Usuário -->
-            <div class="mb-3">
-               <label for="filter-cavalo" class="form-label">
-                  <i class="bi bi-truck-front me-1"></i>Cavalo
-               </label>
-               <input type="text" class="form-control" id="filter-cavalo" placeholder="Placa do cavalo...">
-            </div>
-            <div class="mb-3">
-               <label for="filter-reboque" class="form-label">
-                  <i class="bi bi-truck-flatbed me-1"></i>Reboque
-               </label>
-               <input type="text" class="form-control" id="filter-reboque" placeholder="Placa do reboque...">
-            </div>
             <div class="mb-3">
                <label for="filter-usuario" class="form-label">
                   <i class="bi bi-person-badge me-1"></i>Usuário Responsável
@@ -775,28 +757,7 @@
                </select>
             </div>
 
-            <!-- Contrato -->
-            <div class="mb-3">
-               <label for="filter-contrato" class="form-label">
-                  <i class="bi bi-file-earmark-text me-1"></i>Contrato
-               </label>
-               <select class="form-select" id="filter-contrato">
-                  <option value="">Todos</option>
-               </select>
-            </div>
 
-            <!-- Período da Operação -->
-            <div class="mb-3">
-               <label for="filter-date-range" class="form-label">
-                  <i class="bi bi-calendar me-1"></i>Período da Operação
-               </label>
-               <div class="input-group">
-                  <input type="text" class="form-control" id="filter-date-range" placeholder="Selecionar período..." readonly>
-                  <span class="input-group-text">
-                     <i class="bi bi-calendar-range"></i>
-                  </span>
-               </div>
-            </div>
 
             <hr>
 
@@ -907,10 +868,19 @@
       </div>
    </div>
 
+   <!-- jQuery (necessário para DataTables) -->
+   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
    <!-- Popper JS -->
    <script src="/assets/libs/@popperjs/core/umd/popper.min.js"></script>
    <!-- Bootstrap JS -->
    <script src="/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+   <!-- Main JS - DEVE VIR ANTES DOS OUTROS -->
+   <script src="/assets/js/main.js"></script>
+   <script src="/assets/js/auth-manager.js"></script>
+   <script src="/assets/js/module-manager.js"></script>
+   <script src="/assets/js/company-branding.js"></script>
    <!-- Defaultmenu JS -->
    <script src="/assets/js/defaultmenu.min.js"></script>
    <!-- Node Waves JS-->
@@ -955,6 +925,9 @@
 
    <!-- Choices.js para select múltiplo -->
    <script src="/assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
+
+   <!-- XLSX para exportação Excel -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
    <script src="/pages/fluxo-operacional/js/script.js"></script>
 </body>

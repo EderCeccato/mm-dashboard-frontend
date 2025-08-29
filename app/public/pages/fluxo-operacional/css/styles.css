@@ -188,6 +188,101 @@ tr.flow-overdue td {
     background-color: rgba(220, 53, 69, 0.15) !important; /* vermelho suave */
 }
 
+/* Concluído */
+tr.flow-completed td {
+    background-color: rgba(25, 135, 84, 0.1) !important; /* verde suave */
+}
+
+/* ===== LOADING E ERROR STATES ===== */
+#loading-indicator {
+    min-height: 200px;
+}
+
+/* ===== TABELA ALTURA TOTAL E ESPAÇAMENTO ===== */
+.card-body {
+    padding: 1rem 0;
+    margin: 0;
+}
+
+#table-container {
+    width: 100%;
+    margin: 0;
+    padding: 0 1rem;
+}
+
+.dataTables_wrapper {
+    width: 100%;
+    margin: 0;
+}
+
+.table-responsive {
+    margin: 0;
+    padding: 0;
+}
+
+/* Remove barra de rolagem vertical */
+.dataTables_scrollBody {
+    max-height: none !important;
+    overflow-y: visible !important;
+}
+
+/* Remove espaçamentos extras */
+.container-fluid {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.main-content {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.col-xl-12 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* Garante que a tabela ocupe toda largura */
+.table {
+    width: 100% !important;
+    margin: 0;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+/* Remove scroll do DataTables */
+.dataTables_wrapper .dataTables_scroll {
+    overflow: visible !important;
+}
+
+.dataTables_wrapper .dataTables_scrollHead,
+.dataTables_wrapper .dataTables_scrollBody {
+    overflow: visible !important;
+}
+
+/* ===== BADGES DE CONTADORES ===== */
+#total-records {
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+#active-filters-count {
+    font-size: 0.65rem;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 50%;
+}
+
 /* ===== BOTÕES DE AÇÃO ===== */
 .btn-action {
     padding: 0.25rem 0.4rem;
