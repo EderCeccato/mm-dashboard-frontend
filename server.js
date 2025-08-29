@@ -1,4 +1,16 @@
 require('dotenv').config(); // Carrega variáveis de ambiente
+
+// Suprime warnings de deprecação específicos (opcional)
+process.noDeprecation = false; // Mantém outros warnings importantes
+const originalEmitWarning = process.emitWarning;
+process.emitWarning = function(warning, name, code) {
+  // Suprime apenas o warning específico do util._extend
+  if (code === 'DEP0060') {
+    return;
+  }
+  return originalEmitWarning.call(this, warning, name, code);
+};
+
 const express = require('express');
 const path = require('path');
 const cookieParser = require('cookie-parser');
@@ -30,12 +42,12 @@ app.use(express.urlencoded({
   limit: '50mb'
 }));
 
-// Configuração do proxy para as rotas da API
+// Configuração do proxy para as rotas da API - versão otimizada
 app.use('/api', createProxyMiddleware({
   target: BACKEND_URL,
   changeOrigin: true,
   secure: ENVIRONMENT === 'production',
-  logLevel: ENVIRONMENT === 'development' ? 'debug' : 'warn',
+  logLevel: ENVIRONMENT === 'development' ? 'info' : 'warn', // Mudança de 'debug' para 'info'
 
   // Configurações de timeout mais robustas
   timeout: 60000, // 60 segundos
@@ -58,8 +70,7 @@ app.use('/api', createProxyMiddleware({
 
     // Log apenas em desenvolvimento
     if (ENVIRONMENT === 'development') {
-      if (req.body && Object.keys(req.body).length > 0) {
-      }
+      // console.log(`🔄 Proxy: ${req.method} ${req.path} -> ${BACKEND_URL}${req.path}`);
     }
   },
 
@@ -239,5 +250,5 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`🌐 Servidor frontend rodando em http://localhost:${PORT}`);
   // console.log(`🔄 Proxy configurado: /api/* -> ${BACKEND_URL}/api/*`);
-  // console.log('✅ Sistema pronto para uso!');
+  console.log('✅ Sistema pronto para uso!');
 });
