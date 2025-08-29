@@ -176,21 +176,23 @@ table.dataTable thead>tr>th.sorting{
     letter-spacing: 0.5px;
 }
 
-/* ===== COLORAÇÃO POR PERÍODO DO FLUXO ===== */
-/* Linha normal: sem cor específica (no prazo - primeira metade) */
-/* Segunda metade do período */
-tr.flow-warning td {
-    background-color: rgba(255, 193, 7, 0.15) !important; /* amarelo/laranja suave */
+/* ===== TABELA PADRÃO CINZA/BRANCO (estilo SIWEB) ===== */
+/* Remove coloração das linhas - mantém apenas cinza/branco alternado */
+#tms-table tbody tr {
+    background-color: transparent;
 }
 
-/* Vencido */
-tr.flow-overdue td {
-    background-color: rgba(220, 53, 69, 0.15) !important; /* vermelho suave */
+#tms-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa; /* Cinza claro alternado */
 }
 
-/* Concluído */
-tr.flow-completed td {
-    background-color: rgba(25, 135, 84, 0.1) !important; /* verde suave */
+#tms-table tbody tr:nth-child(odd) {
+    background-color: #ffffff; /* Branco */
+}
+
+/* Hover mantém o estilo padrão */
+#tms-table tbody tr:hover {
+    background-color: rgba(13, 110, 253, 0.05) !important;
 }
 
 /* ===== LOADING E ERROR STATES ===== */
@@ -224,27 +226,6 @@ tr.flow-completed td {
 .dataTables_scrollBody {
     max-height: none !important;
     overflow-y: visible !important;
-}
-
-/* Remove espaçamentos extras */
-.container-fluid {
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.main-content {
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.row {
-    margin-left: 0;
-    margin-right: 0;
-}
-
-.col-xl-12 {
-    padding-left: 1rem;
-    padding-right: 1rem;
 }
 
 /* Garante que a tabela ocupe toda largura */
