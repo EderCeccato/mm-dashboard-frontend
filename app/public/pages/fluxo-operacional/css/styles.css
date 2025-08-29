@@ -642,11 +642,6 @@ table.dataTable thead>tr>th.sorting{
     border-right-color: #495057;
 }
 
-[data-theme-mode="dark"] .card {
-    background-color: #212529;
-    border-color: #495057;
-}
-
 [data-theme-mode="dark"] .card-header {
     border-bottom-color: #495057;
 }
