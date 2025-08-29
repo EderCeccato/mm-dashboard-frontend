@@ -49,24 +49,6 @@ class ApiUtils {
 
    /**
     * Exporta dados para Excel
-    * @returns {Promise<Blob>} Arquivo Excel
-    */
-   static async exportToExcel() {
-      const response = await this.request('/api/fluxo-operacional/export/excel', 'GET');
-      return response;
-   }
-
-   /**
-    * Exporta dados para PDF
-    * @returns {Promise<Blob>} Arquivo PDF
-    */
-   static async exportToPDF() {
-      const response = await this.request('/api/fluxo-operacional/export/pdf', 'GET');
-      return response;
-   }
-
-   /**
-    * Exporta dados para Excel
     * @param {Object} filters - Filtros ativos
     * @returns {Promise<Blob>} Arquivo Excel
     */
@@ -738,189 +720,222 @@ class ModalManager {
  * Classe responsável por gerenciar exportações Excel/PDF com feedback visual
  */
 class ExportManager {
-   /**
-    * Exporta dados para Excel com feedback visual
+      /**
+    * Exporta dados para Excel (gerado no frontend)
     */
-   static async exportToExcel() {
+      static async exportToExcel() {
       const btn = document.querySelector('[data-export="excel"]');
       const originalText = btn.innerHTML;
 
       try {
-         // Desabilita botão e mostra loading
+         // Desabilita botão
          btn.disabled = true;
          btn.innerHTML = `
             <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            Gerando Excel...
+            Exportando...
          `;
 
-         // Mostra toast de início
-         NotificationManager.showToast('Iniciando exportação para Excel...', 'info');
+         // Busca dados completos com modal de progresso
+         const completeData = await this.getCompleteDataForExport();
 
-         // Chama API para gerar Excel
-         const response = await ApiUtils.exportToExcel();
+         // Atualiza progresso para geração do arquivo
+         this.updateProgress(completeData.length, completeData.length, 'Gerando arquivo Excel...');
 
-         // Cria link para download
-         const blob = new Blob([response], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-         });
-         const url = window.URL.createObjectURL(blob);
-         const a = document.createElement('a');
-         a.href = url;
-         a.download = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.xlsx`;
-         document.body.appendChild(a);
-         a.click();
-         window.URL.revokeObjectURL(url);
-         document.body.removeChild(a);
+         // Pequeno delay para mostrar a mensagem
+         await new Promise(resolve => setTimeout(resolve, 500));
 
-         NotificationManager.showToast('Excel exportado com sucesso!', 'success');
+         // Gera Excel no frontend
+         this.generateExcelFile(completeData);
 
-      } catch (error) {
-         console.error('Erro ao exportar Excel:', error);
-         NotificationManager.showToast('Erro ao exportar Excel. Tente novamente.', 'error');
-      } finally {
-         // Restaura botão
-         btn.disabled = false;
-         btn.innerHTML = originalText;
-      }
-   }
-
-   /**
-    * Exporta dados para PDF com feedback visual
-    */
-   static async exportToPDF() {
-      const btn = document.querySelector('[data-export="pdf"]');
-      const originalText = btn.innerHTML;
-
-      try {
-         // Desabilita botão e mostra loading
-         btn.disabled = true;
-         btn.innerHTML = `
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            Gerando PDF...
-         `;
-
-         // Mostra toast de início
-         NotificationManager.showToast('Iniciando exportação para PDF...', 'info');
-
-         // Chama API para gerar PDF
-         const response = await ApiUtils.exportToPDF();
-
-         // Cria link para download
-         const blob = new Blob([response], { type: 'application/pdf' });
-         const url = window.URL.createObjectURL(blob);
-         const a = document.createElement('a');
-         a.href = url;
-         a.download = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.pdf`;
-         document.body.appendChild(a);
-         a.click();
-         window.URL.revokeObjectURL(url);
-         document.body.removeChild(a);
-
-         NotificationManager.showToast('PDF exportado com sucesso!', 'success');
-
-      } catch (error) {
-         console.error('Erro ao exportar PDF:', error);
-         NotificationManager.showToast('Erro ao exportar PDF. Tente novamente.', 'error');
-      } finally {
-         // Restaura botão
-         btn.disabled = false;
-         btn.innerHTML = originalText;
-      }
-   }
-
-   /**
-    * Exportação local usando dados já carregados (fallback)
-    */
-   static async exportToExcelLocal() {
-      const btn = document.querySelector('[data-export="excel"]');
-      const originalText = btn.innerHTML;
-
-      try {
-         // Desabilita botão e mostra loading
-         btn.disabled = true;
-         btn.innerHTML = `
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            Preparando Excel...
-         `;
-
-         NotificationManager.showToast('Preparando dados para Excel...', 'info');
-
-         // Busca dados completos com tarefas
-         const data = await this.getCompleteData();
-
-         // Gera Excel localmente
-         const workbook = this.createExcelWorkbook(data);
-         const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-         // Download
-         const blob = new Blob([excelBuffer], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-         });
-         const url = window.URL.createObjectURL(blob);
-         const a = document.createElement('a');
-         a.href = url;
-         a.download = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.xlsx`;
-         document.body.appendChild(a);
-         a.click();
-         window.URL.revokeObjectURL(url);
-         document.body.removeChild(a);
+         // Fecha modal de progresso
+         this.closeProgressModal();
 
          NotificationManager.showToast('Excel gerado com sucesso!', 'success');
 
       } catch (error) {
-         console.error('Erro ao gerar Excel local:', error);
+         console.error('Erro ao gerar Excel:', error);
+         this.closeProgressModal();
          NotificationManager.showToast('Erro ao gerar Excel. Tente novamente.', 'error');
       } finally {
+         // Restaura botão
          btn.disabled = false;
          btn.innerHTML = originalText;
       }
    }
 
-   /**
-    * Busca dados completos incluindo tarefas para cada fluxo
+      /**
+    * Exporta dados para PDF (gerado no frontend)
     */
-   static async getCompleteData() {
+      static async exportToPDF() {
+      const btn = document.querySelector('[data-export="pdf"]');
+      const originalText = btn.innerHTML;
+
+      try {
+         // Desabilita botão
+         btn.disabled = true;
+         btn.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Exportando...
+         `;
+
+         // Busca dados completos com modal de progresso
+         const completeData = await this.getCompleteDataForExport();
+
+         // Atualiza progresso para geração do arquivo
+         this.updateProgress(completeData.length, completeData.length, 'Gerando arquivo PDF...');
+
+         // Pequeno delay para mostrar a mensagem
+         await new Promise(resolve => setTimeout(resolve, 500));
+
+         // Gera PDF no frontend
+         this.generatePDFFile(completeData);
+
+         // Fecha modal de progresso
+         this.closeProgressModal();
+
+         NotificationManager.showToast('PDF gerado com sucesso!', 'success');
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         this.closeProgressModal();
+         NotificationManager.showToast('Erro ao gerar PDF. Tente novamente.', 'error');
+      } finally {
+         // Restaura botão
+         btn.disabled = false;
+         btn.innerHTML = originalText;
+      }
+   }
+
+      /**
+    * Busca dados completos para exportação (OTIMIZADO - requisições paralelas)
+    */
+   static async getCompleteDataForExport() {
       const mainData = window.fluxoManager.data || [];
+      const totalItems = mainData.length;
+
+      // Criar modal de progresso
+      this.createProgressModal();
+      this.updateProgress(0, totalItems, 'Iniciando exportação...');
+
+      // Processar em lotes paralelos para ser mais rápido
+      const BATCH_SIZE = 20; // 20 requisições simultâneas
       const completeData = [];
 
-      // Para cada fluxo, busca as tarefas
-      for (const item of mainData) {
-         try {
-            const details = await ApiUtils.getFluxoDetails(item.nomovtra, item.nofluxoop);
-            completeData.push({
-               ...item,
-               tarefas: details.tarefas || []
-            });
-         } catch (error) {
-            console.warn(`Erro ao buscar tarefas do fluxo ${item.nomovtra}:`, error);
-            completeData.push({
-               ...item,
-               tarefas: []
-            });
-         }
+      for (let i = 0; i < mainData.length; i += BATCH_SIZE) {
+         const batch = mainData.slice(i, i + BATCH_SIZE);
+
+         // Processa lote em paralelo
+         const batchPromises = batch.map(async (item) => {
+            try {
+               const details = await ApiUtils.getFluxoDetails(item.nomovtra, item.nofluxoop);
+               return {
+                  ...item,
+                  tarefas: details.tarefas || []
+               };
+            } catch (error) {
+               console.warn(`Erro ao buscar tarefas do fluxo ${item.nomovtra}:`, error);
+               return {
+                  ...item,
+                  tarefas: []
+               };
+            }
+         });
+
+         // Aguarda o lote completar
+         const batchResults = await Promise.all(batchPromises);
+         completeData.push(...batchResults);
+
+         // Atualiza progresso
+         const progress = Math.min(i + BATCH_SIZE, totalItems);
+         const percentage = Math.round((progress / totalItems) * 100);
+         this.updateProgress(progress, totalItems, `Processando dados... ${percentage}%`);
       }
+
+      this.updateProgress(totalItems, totalItems, 'Dados coletados! Gerando arquivo...');
 
       return completeData;
    }
 
    /**
-    * Cria workbook Excel com estrutura hierárquica
+    * Cria modal de progresso para exportação
     */
-   static createExcelWorkbook(data) {
-      // Implementação será feita quando tiver a biblioteca XLSX carregada
-      // Por enquanto retorna estrutura básica
-      return {
-         SheetNames: ['Fluxos Operacionais'],
-         Sheets: {
-            'Fluxos Operacionais': this.createExcelSheet(data)
-         }
-      };
+   static createProgressModal() {
+      // Remove modal existente se houver
+      const existingModal = document.getElementById('export-progress-modal');
+      if (existingModal) {
+         existingModal.remove();
+      }
+
+      const modalHtml = `
+         <div class="modal fade" id="export-progress-modal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+               <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title">
+                        <i class="bi bi-download me-2"></i>
+                        Exportando Dados
+                     </h5>
+                  </div>
+                  <div class="modal-body text-center">
+                     <div class="mb-3">
+                        <div class="spinner-border text-primary me-2" role="status"></div>
+                        <span id="progress-message">Preparando exportação...</span>
+                     </div>
+
+                     <div class="progress mb-3" style="height: 20px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                             role="progressbar" style="width: 0%">
+                           <span id="progress-text">0%</span>
+                        </div>
+                     </div>
+
+                     <small class="text-muted" id="progress-details">
+                        Processados: <span id="progress-current">0</span> de <span id="progress-total">0</span> itens
+                     </small>
+                  </div>
+               </div>
+            </div>
+         </div>
+      `;
+
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+      // Mostra o modal
+      const modal = new bootstrap.Modal(document.getElementById('export-progress-modal'));
+      modal.show();
    }
 
    /**
-    * Cria sheet Excel com dados hierárquicos
+    * Atualiza progresso da exportação
     */
-   static createExcelSheet(data) {
+   static updateProgress(current, total, message) {
+      const percentage = Math.round((current / total) * 100);
+
+      document.getElementById('progress-message').textContent = message;
+      document.getElementById('progress-bar').style.width = `${percentage}%`;
+      document.getElementById('progress-text').textContent = `${percentage}%`;
+      document.getElementById('progress-current').textContent = current;
+      document.getElementById('progress-total').textContent = total;
+   }
+
+   /**
+    * Fecha modal de progresso
+    */
+   static closeProgressModal() {
+      const modal = bootstrap.Modal.getInstance(document.getElementById('export-progress-modal'));
+      if (modal) {
+         modal.hide();
+         setTimeout(() => {
+            document.getElementById('export-progress-modal')?.remove();
+         }, 300);
+      }
+   }
+
+      /**
+    * Gera arquivo Excel no frontend
+    */
+   static generateExcelFile(data) {
+      const workbook = XLSX.utils.book_new();
       const rows = [];
 
       // Cabeçalho
@@ -938,19 +953,19 @@ class ExportManager {
                rows.push([
                   fluxo.situacao,
                   fluxo.nomovtra,
-                  fluxo.cliente,
-                  fluxo.descricaofluxo,
+                  fluxo.cliente || '',
+                  fluxo.descricaofluxo || '',
                   `${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo}`,
                   fluxo.percentual + '%',
-                  fluxo.container,
-                  fluxo.nomtipfre,
-                  fluxo.nomtipcarga,
-                  fluxo.rota,
-                  fluxo.usuario_resp,
+                  fluxo.container || '',
+                  fluxo.nomtipfre || '',
+                  fluxo.nomtipcarga || '',
+                  fluxo.rota || '',
+                  fluxo.usuario_resp || '',
                   ApiUtils.formatDate(fluxo.datainiciofluxo),
                   ApiUtils.formatDate(fluxo.data),
-                  tarefa.descricao,
-                  tarefa.status,
+                  tarefa.descricao || '',
+                  tarefa.status || '',
                   tarefa.dataconclusao ? ApiUtils.formatDate(tarefa.dataconclusao) : ''
                ]);
             });
@@ -959,15 +974,15 @@ class ExportManager {
             rows.push([
                fluxo.situacao,
                fluxo.nomovtra,
-               fluxo.cliente,
-               fluxo.descricaofluxo,
+               fluxo.cliente || '',
+               fluxo.descricaofluxo || '',
                `${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo}`,
                fluxo.percentual + '%',
-               fluxo.container,
-               fluxo.nomtipfre,
-               fluxo.nomtipcarga,
-               fluxo.rota,
-               fluxo.usuario_resp,
+               fluxo.container || '',
+               fluxo.nomtipfre || '',
+               fluxo.nomtipcarga || '',
+               fluxo.rota || '',
+               fluxo.usuario_resp || '',
                ApiUtils.formatDate(fluxo.datainiciofluxo),
                ApiUtils.formatDate(fluxo.data),
                '', '', ''
@@ -975,7 +990,260 @@ class ExportManager {
          }
       });
 
-      return XLSX.utils.aoa_to_sheet(rows);
+      // Criar worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+
+      // Ajustar largura das colunas
+      const colWidths = [
+         { wch: 12 }, // Situação
+         { wch: 15 }, // Pedido
+         { wch: 30 }, // Cliente
+         { wch: 40 }, // Descrição
+         { wch: 10 }, // Posição
+         { wch: 8 },  // %
+         { wch: 15 }, // Container
+         { wch: 15 }, // Tipo Frete
+         { wch: 15 }, // Tipo Carga
+         { wch: 15 }, // Rota
+         { wch: 20 }, // Usuário
+         { wch: 12 }, // Início
+         { wch: 12 }, // Fim
+         { wch: 40 }, // Tarefa
+         { wch: 15 }, // Status Tarefa
+         { wch: 12 }  // Data Conclusão
+      ];
+      worksheet['!cols'] = colWidths;
+
+      // Adicionar ao workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Fluxos Operacionais');
+
+      // Gerar arquivo e fazer download
+      const fileName = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+   }
+
+            /**
+    * Gera arquivo PDF profissional e limpo
+    */
+   static generatePDFFile(data) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Configurações
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 20;
+      let yPosition = margin;
+
+      // Cabeçalho simples e profissional
+      doc.setFillColor(54, 69, 79); // Azul escuro profissional
+      doc.rect(0, 0, pageWidth, 30, 'F');
+
+      doc.setFontSize(16);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text('RELATORIO DE FLUXOS OPERACIONAIS', margin, 20);
+
+      // Informações do cabeçalho
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+      yPosition = 40;
+      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} as ${new Date().toLocaleTimeString('pt-BR')}`, margin, yPosition);
+      doc.text(`Total de fluxos: ${data.length}`, pageWidth - margin - 40, yPosition);
+
+      yPosition = 55;
+
+      // Para cada fluxo
+      data.forEach((fluxo, index) => {
+         // Verificar se precisa de nova página
+         if (yPosition > pageHeight - 70) {
+            doc.addPage();
+            yPosition = margin;
+         }
+
+         // Cabeçalho do fluxo
+         const situacaoColor = this.getSituacaoColorRGB(fluxo.situacao);
+
+         // Linha colorida do status
+         doc.setFillColor(...situacaoColor);
+         doc.rect(margin, yPosition, 5, 20, 'F');
+
+         // Fundo do cabeçalho
+         doc.setFillColor(248, 249, 250);
+         doc.rect(margin + 5, yPosition, pageWidth - (margin * 2) - 5, 20, 'F');
+         doc.setDrawColor(220, 220, 220);
+         doc.rect(margin + 5, yPosition, pageWidth - (margin * 2) - 5, 20, 'S');
+
+         // Texto do cabeçalho
+         doc.setFontSize(12);
+         doc.setFont(undefined, 'bold');
+         doc.setTextColor(0, 0, 0);
+         doc.text(`FLUXO ${index + 1}: ${fluxo.nomovtra}`, margin + 10, yPosition + 8);
+
+         doc.setFontSize(10);
+         doc.setFont(undefined, 'normal');
+         doc.text(`Cliente: ${fluxo.cliente || 'Nao informado'}`, margin + 10, yPosition + 16);
+
+         yPosition += 25;
+
+         // Informações principais em duas colunas
+         const colWidth = (pageWidth - (margin * 2) - 5) / 2;
+
+         // Coluna esquerda
+         doc.setFontSize(9);
+         doc.setFont(undefined, 'bold');
+         doc.text('Situacao:', margin + 5, yPosition);
+         doc.setFont(undefined, 'normal');
+         doc.text(fluxo.situacao, margin + 25, yPosition);
+
+         doc.setFont(undefined, 'bold');
+         doc.text('Progresso:', margin + 5, yPosition + 6);
+         doc.setFont(undefined, 'normal');
+         doc.text(`${fluxo.posicaofluxo}/${fluxo.qtdetotalfluxo} (${fluxo.percentual}%)`, margin + 30, yPosition + 6);
+
+         // Coluna direita
+         doc.setFont(undefined, 'bold');
+         doc.text('Usuario:', margin + colWidth + 10, yPosition);
+         doc.setFont(undefined, 'normal');
+         const usuario = fluxo.usuario_resp || 'Nao informado';
+         doc.text(usuario.substring(0, 25), margin + colWidth + 25, yPosition);
+
+         doc.setFont(undefined, 'bold');
+         doc.text('Periodo:', margin + colWidth + 10, yPosition + 6);
+         doc.setFont(undefined, 'normal');
+         const inicio = ApiUtils.formatDate(fluxo.datainiciofluxo);
+         const fim = ApiUtils.formatDate(fluxo.data);
+         doc.text(`${inicio} - ${fim}`, margin + colWidth + 25, yPosition + 6);
+
+         yPosition += 15;
+
+         // Descrição se houver
+         if (fluxo.descricaofluxo) {
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'bold');
+            doc.text('Descricao:', margin + 5, yPosition);
+            doc.setFont(undefined, 'normal');
+
+            const descricao = fluxo.descricaofluxo.substring(0, 100);
+            const maxWidth = pageWidth - (margin * 2) - 30;
+            const splitDesc = doc.splitTextToSize(descricao, maxWidth);
+            doc.text(splitDesc, margin + 25, yPosition);
+            yPosition += Math.max(5, splitDesc.length * 3);
+         }
+
+         yPosition += 5;
+
+         // Tarefas
+         if (fluxo.tarefas && fluxo.tarefas.length > 0) {
+            // Cabeçalho das tarefas
+            doc.setFillColor(235, 235, 235);
+            doc.rect(margin + 10, yPosition, pageWidth - (margin * 2) - 20, 8, 'F');
+
+            doc.setFontSize(9);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(0, 0, 0);
+            doc.text(`TAREFAS (${fluxo.tarefas.length})`, margin + 15, yPosition + 6);
+
+            yPosition += 12;
+
+            // Lista de tarefas
+            fluxo.tarefas.forEach((tarefa) => {
+               if (yPosition > pageHeight - 25) {
+                  doc.addPage();
+                  yPosition = margin;
+               }
+
+               const isCompleted = tarefa.status === 'Realizado';
+               const statusIcon = isCompleted ? '[OK]' : '[ ]';
+
+               // Linha da tarefa
+               doc.setFontSize(8);
+               doc.setFont(undefined, 'normal');
+               doc.setTextColor(isCompleted ? 0 : 100, isCompleted ? 100 : 100, isCompleted ? 0 : 100);
+               doc.text(statusIcon, margin + 15, yPosition);
+
+               doc.setTextColor(0, 0, 0);
+               const taskText = tarefa.descricao || 'Tarefa sem descricao';
+               const maxTaskWidth = pageWidth - (margin * 2) - 40;
+               const splitTask = doc.splitTextToSize(taskText.substring(0, 80), maxTaskWidth);
+               doc.text(splitTask, margin + 25, yPosition);
+
+               yPosition += Math.max(5, splitTask.length * 3);
+
+               // Data de conclusão
+               if (tarefa.dataconclusao) {
+                  doc.setFontSize(7);
+                  doc.setTextColor(100, 100, 100);
+                  doc.text(`Concluido: ${ApiUtils.formatDate(tarefa.dataconclusao)}`, margin + 25, yPosition);
+                  yPosition += 4;
+               }
+
+               yPosition += 2;
+            });
+         } else {
+            doc.setFontSize(8);
+            doc.setFont(undefined, 'italic');
+            doc.setTextColor(150, 150, 150);
+            doc.text('Nenhuma tarefa encontrada', margin + 15, yPosition);
+            yPosition += 8;
+         }
+
+         // Linha separadora
+         doc.setDrawColor(200, 200, 200);
+         doc.line(margin, yPosition + 5, pageWidth - margin, yPosition + 5);
+         yPosition += 15;
+      });
+
+      // Rodapé simples
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+         doc.setPage(i);
+         doc.setFontSize(8);
+         doc.setTextColor(100, 100, 100);
+         doc.text(`Pagina ${i} de ${totalPages}`, pageWidth - margin - 20, pageHeight - 10);
+         doc.text('MM Softwares - Sistema de Gestao', margin, pageHeight - 10);
+      }
+
+      // Salvar PDF
+      const fileName = `fluxo-operacional-${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+   }
+
+   /**
+    * Retorna cores mais suaves para o PDF
+    */
+   static getSituacaoColorRGB(situacao) {
+      switch (situacao) {
+         case 'Vencida': return [220, 53, 69];
+         case 'Em atenção': return [255, 193, 7];
+         case 'No prazo': return [40, 167, 69];
+         default: return [108, 117, 125];
+      }
+   }
+
+   /**
+    * Retorna cor RGB para a situação
+    */
+   static getSituacaoColor(situacao) {
+      switch (situacao) {
+         case 'Vencida': return [220, 53, 69]; // Vermelho
+         case 'Em atenção': return [255, 193, 7]; // Amarelo
+         case 'No prazo': return [25, 135, 84]; // Verde
+         default: return [0, 0, 0]; // Preto
+      }
+   }
+
+   /**
+    * Retorna emoji para a situação
+    */
+   static getSituacaoEmoji(situacao) {
+      switch (situacao) {
+         case 'Vencida': return '🚨';
+         case 'Em atenção': return '⚠️';
+         case 'No prazo': return '✅';
+         default: return '📋';
+      }
    }
 }
 
