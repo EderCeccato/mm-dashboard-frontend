@@ -142,171 +142,13 @@ class TMSManager {
          clWindowText: '#000000',
       };
 
-      const color_without_opacity = colorMap[colorName] || '#000000';
-      const color_with_opacity = color_without_opacity + '22';
+      const color_without_opacity = colorMap[colorName] || '#FFFFFF';
+      const color_with_opacity = color_without_opacity + '99';
 
       return {
          backgroundColor: color_with_opacity,
-         textColor: color_without_opacity
+         textColor: '#FFFFFF'
       };
-   }
-
-   /**
-    * Dados de exemplo para TMS (método mantido para compatibilidade)
-    */
-   getSampleData() {
-      return [
-         {
-               nomovtra: 'TMS001',
-               processo: 'PROC-2024-001',
-               tipo_carga: 'CONTAINER',
-               container: 'MSKU1234567',
-               rota: 'Santos/SP → São Paulo/SP',
-               destinatario: 'ABC Importadora Ltda',
-               numero_nfe: '000123456',
-               volume: '25,5 m³',
-               peso_nfe: '15.750 kg',
-               data_registro: '15/01/2024',
-               previsao_entrega: '18/01/2024',
-               entregue: '17/01/2024',
-               motorista: 'João Silva Santos',
-               tracao: 'ABC-1234',
-               reboque: 'DEF-5678',
-               valor_frete: 2500.00,
-               pedagio: 150.00,
-               valor_gris: 75.00,
-               seguro: 125.00,
-               icms: 300.00,
-               outros: 50.00,
-               total: 3200.00,
-               status: 'Entregue',
-               empresa: 'Transportadora ABC',
-               follow_up: 'Entrega confirmada',
-               ocorrencia: null,
-               lat: -23.5505,
-               lng: -46.6333
-         },
-         {
-               nomovtra: 'TMS002',
-               processo: 'PROC-2024-002',
-               tipo_carga: 'CARGA GERAL',
-               container: null,
-               rota: 'Rio de Janeiro/RJ → Belo Horizonte/MG',
-               destinatario: 'XYZ Comercial S.A.',
-               numero_nfe: '000987654',
-               volume: '18,2 m³',
-               peso_nfe: '12.300 kg',
-               data_registro: '16/01/2024',
-               previsao_entrega: '19/01/2024',
-               entregue: null,
-               motorista: 'Maria Santos Costa',
-               tracao: 'GHI-9876',
-               reboque: 'JKL-5432',
-               valor_frete: 1800.00,
-               pedagio: 120.00,
-               valor_gris: 54.00,
-               seguro: 90.00,
-               icms: 216.00,
-               outros: 30.00,
-               total: 2310.00,
-               status: 'Em trânsito',
-               empresa: 'Transportadora XYZ',
-               follow_up: 'Saída confirmada',
-               ocorrencia: null,
-               lat: -22.9068,
-               lng: -43.1729
-         },
-         {
-               nomovtra: 'TMS003',
-               processo: 'PROC-2024-003',
-               tipo_carga: 'REFRIGERADA',
-               container: 'TCLU9876543',
-               rota: 'Campinas/SP → Brasília/DF',
-               destinatario: 'Supermercados Brasil Ltda',
-               numero_nfe: '000456789',
-               volume: '32,8 m³',
-               peso_nfe: '22.150 kg',
-               data_registro: '17/01/2024',
-               previsao_entrega: '20/01/2024',
-               entregue: null,
-               motorista: 'Carlos Eduardo Lima',
-               tracao: 'MNO-2468',
-               reboque: 'PQR-1357',
-               valor_frete: 3200.00,
-               pedagio: 180.00,
-               valor_gris: 96.00,
-               seguro: 160.00,
-               icms: 384.00,
-               outros: 80.00,
-               total: 4100.00,
-               status: 'Aguardando coleta',
-               empresa: 'Refrigerados Trans',
-               follow_up: 'Aguardando liberação',
-               ocorrencia: 'Atraso na documentação',
-               lat: -22.9056,
-               lng: -47.0608
-         },
-         {
-               nomovtra: 'TMS004',
-               processo: 'PROC-2024-004',
-               tipo_carga: 'GRANEL',
-               container: null,
-               rota: 'Vitória/ES → Salvador/BA',
-               destinatario: 'Industria Alimentícia Norte',
-               numero_nfe: '000111222',
-               volume: '45,0 m³',
-               peso_nfe: '28.500 kg',
-               data_registro: '18/01/2024',
-               previsao_entrega: '22/01/2024',
-               entregue: null,
-               motorista: 'Roberto Alves Pereira',
-               tracao: 'STU-3691',
-               reboque: 'VWX-7410',
-               valor_frete: 2800.00,
-               pedagio: 200.00,
-               valor_gris: 84.00,
-               seguro: 140.00,
-               icms: 336.00,
-               outros: 40.00,
-               total: 3600.00,
-               status: 'Em trânsito',
-               empresa: 'Graneleiros Sul',
-               follow_up: 'Viagem em andamento',
-               ocorrencia: null,
-               lat: -20.3155,
-               lng: -40.3128
-         },
-         {
-               nomovtra: 'TMS005',
-               processo: 'PROC-2024-005',
-               tipo_carga: 'PERIGOSA',
-               container: 'HAZM5555555',
-               rota: 'Paulínia/SP → Duque de Caxias/RJ',
-               destinatario: 'Petroquímica Industrial Ltda',
-               numero_nfe: '000333444',
-               volume: '28,5 m³',
-               peso_nfe: '18.750 kg',
-               data_registro: '19/01/2024',
-               previsao_entrega: '21/01/2024',
-               entregue: null,
-               motorista: 'Ana Paula Rodrigues',
-               tracao: 'YZA-1472',
-               reboque: 'BCD-5836',
-               valor_frete: 4500.00,
-               pedagio: 160.00,
-               valor_gris: 135.00,
-               seguro: 225.00,
-               icms: 540.00,
-               outros: 140.00,
-               total: 5700.00,
-               status: 'Aguardando coleta',
-               empresa: 'Perigosos Express',
-               follow_up: 'Documentação em análise',
-               ocorrencia: null,
-               lat: -22.7609,
-               lng: -47.1507
-         }
-      ];
    }
 
    /**
@@ -317,23 +159,24 @@ class TMSManager {
 			{ key: 'nomstatusfre', name: 'Status', visible: true, order: 0 },
 			{ key: 'nomovtra', name: 'Pedido', visible: true, order: 1 },
 			{ key: 'processo', name: 'Processo', visible: true, order: 2 },
-			{ key: 'nomtipcarga', name: 'Tipo de Carga', visible: true, order: 3 },
-			{ key: 'container', name: 'Container', visible: true, order: 4 },
-			{ key: 'rota', name: 'Rota', visible: true, order: 5 },
-			{ key: 'destinatario', name: 'Destinatário', visible: true, order: 6 },
-			{ key: 'doccliente', name: 'NF-e', visible: true, order: 7 },
-			{ key: 'qtdevol', name: 'Vol.', visible: true, order: 8 },
-			{ key: 'pesototalnf', name: 'Peso NF-e', visible: true, order: 9 },
-			{ key: 'vlrtotalnf', name: 'Total NF-e', visible: true, order: 10 },
-			{ key: 'placacav', name: 'Tração', visible: true, order: 11 },
-			{ key: 'placacar', name: 'Reboque', visible: true, order: 12 },
-			{ key: 'vlrfrete', name: 'Vlr Frete', visible: true, order: 13 },
-			{ key: 'vlrped', name: 'Pedágio', visible: true, order: 14 },
-			{ key: 'vlrgris', name: 'Gris', visible: true, order: 15 },
-			{ key: 'vlrseg', name: 'Seguro', visible: true, order: 16 },
-			{ key: 'icmvlr', name: 'ICMS', visible: true, order: 17 },
-			{ key: 'vlrout', name: 'Outros', visible: true, order: 18 },
-			{ key: 'totalfrete', name: 'Total', visible: true, order: 19 }
+			{ key: 'data', name: 'Data Registro', visible: true, order: 3 },
+			{ key: 'nomtipcarga', name: 'Tipo de Carga', visible: true, order: 4 },
+			{ key: 'container', name: 'Container', visible: true, order: 5 },
+			{ key: 'rota', name: 'Rota', visible: true, order: 6 },
+			{ key: 'destinatario', name: 'Destinatário', visible: true, order: 7 },
+			{ key: 'doccliente', name: 'NF-e', visible: true, order: 8 },
+			{ key: 'qtdevol', name: 'Vol.', visible: true, order: 9 },
+			{ key: 'pesototalnf', name: 'Peso NF-e', visible: true, order: 10 },
+			{ key: 'vlrtotalnf', name: 'Total NF-e', visible: true, order: 11 },
+			{ key: 'placacav', name: 'Tração', visible: true, order: 12 },
+			{ key: 'placacar', name: 'Reboque', visible: true, order: 13 },
+			{ key: 'vlrfrete', name: 'Vlr Frete', visible: true, order: 14 },
+			{ key: 'vlrped', name: 'Pedágio', visible: true, order: 15 },
+			{ key: 'vlrgris', name: 'Gris', visible: true, order: 16 },
+			{ key: 'vlrseg', name: 'Seguro', visible: true, order: 17 },
+			{ key: 'icmvlr', name: 'ICMS', visible: true, order: 18 },
+			{ key: 'vlrout', name: 'Outros', visible: true, order: 19 },
+			{ key: 'totalfrete', name: 'Total', visible: true, order: 20 }
 		];
    }
 
@@ -360,6 +203,8 @@ class TMSManager {
 				render: (data, type, row) => {
 					if (col.key === 'nomstatusfre') {
 						return this.getStatusBadgeWithColor(data, row.color);
+					} else if (col.key === 'data') {
+						return data ? this.formatDate(data) : '-';
 					} else if (col.key.includes('vlr') || col.key === 'totalfrete' ||
 						col.key === 'vlrtotalnf' || col.key.includes('icm')) {
 						return data ? this.formatCurrency(data) : '-';
@@ -421,22 +266,84 @@ class TMSManager {
     */
    initializeDateRangePicker() {
       const dateRangeInput = document.getElementById('filter-date-range');
-      if (!dateRangeInput || typeof flatpickr === 'undefined') return;
+      if (!dateRangeInput) {
+         console.warn('Elemento filter-date-range não encontrado');
+         return;
+      }
 
-      this.dateRangePicker = flatpickr(dateRangeInput, {
-         mode: 'range',
-         dateFormat: 'd/m/Y',
-         locale: 'pt'
-      });
+      if (typeof flatpickr === 'undefined') {
+         console.warn('Flatpickr não está carregado');
+         return;
+      }
 
-      const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
-      if (iconElement) {
-         iconElement.style.cursor = 'pointer';
-         iconElement.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            this.dateRangePicker?.open();
+      try {
+         console.log('Inicializando Flatpickr...');
+
+         // Configurar locale português se disponível
+         if (typeof flatpickr.l10ns !== 'undefined' && flatpickr.l10ns.pt) {
+            flatpickr.localize(flatpickr.l10ns.pt);
+         }
+
+         this.dateRangePicker = flatpickr(dateRangeInput, {
+            mode: 'range',
+            dateFormat: 'd/m/Y',
+            locale: 'pt',
+            allowInput: false,
+            clickOpens: true,
+            appendTo: document.body,
+            static: false,
+            position: 'auto',
+            positionElement: dateRangeInput,
+            minDate: '2020-01-01',
+            maxDate: 'today',
+            onReady: function() {
+               console.log('Flatpickr está pronto');
+               // Forçar z-index alto
+               const calendar = this.calendarContainer;
+               if (calendar) {
+                  calendar.style.zIndex = '99999';
+               }
+            },
+            onOpen: function() {
+               console.log('Flatpickr abriu');
+               // Forçar z-index alto quando abre
+               const calendar = this.calendarContainer;
+               if (calendar) {
+                  calendar.style.zIndex = '99999';
+                  calendar.style.position = 'fixed';
+               }
+            },
+            onClose: function() {
+               console.log('Flatpickr fechou');
+            }
          });
+
+         const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
+         if (iconElement) {
+            iconElement.style.cursor = 'pointer';
+            iconElement.addEventListener('click', (e) => {
+               e.preventDefault();
+               e.stopPropagation();
+               console.log('Ícone clicado, abrindo Flatpickr...');
+               if (this.dateRangePicker) {
+                  this.dateRangePicker.open();
+               }
+            });
+         }
+
+         // Adicionar evento de clique diretamente no input também
+         dateRangeInput.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Input clicado, abrindo Flatpickr...');
+            if (this.dateRangePicker) {
+               this.dateRangePicker.open();
+            }
+         });
+
+         console.log('Flatpickr inicializado com sucesso');
+
+      } catch (error) {
+         console.error('Erro ao inicializar Flatpickr:', error);
       }
    }
 
@@ -545,7 +452,7 @@ class TMSManager {
 
       const colors = TMSManager.status_color(colorName || 'clDefault');
 
-      return `<span class="badge" style="background-color: ${colors.backgroundColor}; color: ${colors.textColor}; border: 1px solid ${colors.textColor}">${status}</span>`;
+      return `<span class="badge" style="background-color: ${colors.backgroundColor}; color: ${colors.textColor};">${status}</span>`;
    }
 
    /**
@@ -1260,6 +1167,11 @@ class TMSManager {
          this.dataTable.column(columnMap.destinatario).search(filters.destinatario);
       }
 
+      // Aplicar filtro de data se selecionado
+      if (filters.dateRange) {
+         this.applyDateFilter(filters.dateRange);
+      }
+
       this.dataTable.draw();
 
       // Atualizar contador de registros filtrados
@@ -1276,6 +1188,70 @@ class TMSManager {
 
       const filteredCount = this.dataTable.rows({search: 'applied'}).count();
       this.showToast(`${filteredCount} pedido(s) encontrado(s)`, 'success');
+   }
+
+   /**
+    * Aplica filtro de data
+    */
+   applyDateFilter(dateRange) {
+      if (!dateRange || !dateRange.includes(' to ')) return;
+
+      const [startDate, endDate] = dateRange.split(' to ');
+
+      console.log('Aplicando filtro de data:', startDate, 'até', endDate);
+
+      // Função para converter data de dd/mm/yyyy para Date
+      const parseDate = (dateStr) => {
+         const [day, month, year] = dateStr.split('/');
+         return new Date(year, month - 1, day);
+      };
+
+      const start = parseDate(startDate);
+      const end = parseDate(endDate);
+
+      // Ajustar fim do dia para incluir o dia completo
+      end.setHours(23, 59, 59, 999);
+
+      console.log('Período de filtro:', start, 'até', end);
+
+      // Limpar filtros de data existentes
+      $.fn.dataTable.ext.search = $.fn.dataTable.ext.search.filter(fn => fn.name !== 'dateFilter');
+
+      // Função customizada para filtrar datas
+      const dateFilter = (settings, data, dataIndex) => {
+         if (settings.nTable.id !== 'tms-table') return true;
+
+         const row = this.data[dataIndex];
+         if (!row || !row.data) return true;
+
+         const dataRegistro = row.data;
+         if (!dataRegistro) return true;
+
+         let rowDate;
+
+         // Tentar diferentes formatos de data
+         if (typeof dataRegistro === 'string') {
+            // Se já está em formato brasileiro (dd/mm/yyyy)
+            if (dataRegistro.includes('/')) {
+               const [day, month, year] = dataRegistro.split('/');
+               rowDate = new Date(year, month - 1, day);
+            }
+            // Se está em formato ISO (yyyy-mm-dd)
+            else {
+               rowDate = new Date(dataRegistro);
+            }
+         } else {
+            rowDate = new Date(dataRegistro);
+         }
+
+         const isInRange = rowDate >= start && rowDate <= end;
+         console.log('Data do registro:', dataRegistro, '-> Date:', rowDate, 'Em período?', isInRange);
+
+         return isInRange;
+      };
+
+      dateFilter.name = 'dateFilter';
+      $.fn.dataTable.ext.search.push(dateFilter);
    }
 
    /**
@@ -1298,6 +1274,14 @@ class TMSManager {
       if (filterForm) {
          filterForm.reset();
       }
+
+      // Limpar date range picker
+      if (this.dateRangePicker) {
+         this.dateRangePicker.clear();
+      }
+
+      // Limpar filtros customizados de data
+      $.fn.dataTable.ext.search.splice(0, $.fn.dataTable.ext.search.length);
 
       if (this.dataTable) {
          this.dataTable.search('').columns().search('').draw();
@@ -1618,6 +1602,7 @@ class ExportManager {
          'Status': item.nomstatusfre || '',
          'Pedido': item.nomovtra || '',
          'Processo': item.processo || '',
+         'Data Registro': item.data || '',
          'Tipo de Carga': item.nomtipcarga || '',
          'Container': item.container || '',
          'Rota': item.rota || '',
@@ -1645,6 +1630,7 @@ class ExportManager {
          { wch: 12 }, // Status
          { wch: 15 }, // Pedido
          { wch: 15 }, // Processo
+         { wch: 12 }, // Data Registro
          { wch: 15 }, // Tipo de Carga
          { wch: 15 }, // Container
          { wch: 30 }, // Rota
@@ -1807,7 +1793,7 @@ class ExportManager {
     */
    static createPDFTable(doc, data, margin, startY, pageWidth, pageHeight) {
       const headers = [
-         'Status', 'Pedido', 'Tipo Carga', 'Container', 'Destinatário', 
+         'Status', 'Pedido', 'Tipo Carga', 'Container', 'Destinatário',
          'Tração', 'Motorista', 'Vlr Frete'
       ];
 
@@ -1898,7 +1884,7 @@ class ExportManager {
          currentX = margin;
          rowData.forEach((text, colIndex) => {
             const cellWidth = colWidths[colIndex];
-            
+
             // Configurar cor baseada na coluna
             if (colIndex === 0) {
                // Status: colorido
@@ -1912,12 +1898,12 @@ class ExportManager {
             // Truncar texto se necessário
             const availableWidth = cellWidth - 4;
             const truncatedText = this.truncateTextToFit(doc, text.toString(), availableWidth);
-            
+
             // Centralizar texto
             const textWidth = doc.getTextWidth(truncatedText);
             const textX = currentX + (cellWidth - textWidth) / 2;
             const textY = currentY + rowHeight / 2 + 2;
-            
+
             doc.text(truncatedText, textX, textY);
             currentX += cellWidth;
          });
@@ -2037,7 +2023,7 @@ class ExportManager {
    }
 
    /**
-    * Obtém a cor da empresa do localStorage ou usa azul como fallback
+    * Obtém a cor da empresa do localStorage ou usa cor padrão como fallback
     */
    static getCompanyColor() {
       try {
@@ -2045,6 +2031,7 @@ class ExportManager {
          if (companyData) {
             const company = JSON.parse(companyData);
             if (company.primaryColor) {
+               console.log('Usando cor da empresa:', company.primaryColor);
                return this.hexToRgb(company.primaryColor);
             }
          }
@@ -2052,20 +2039,43 @@ class ExportManager {
          console.warn('Erro ao obter cor da empresa:', error);
       }
 
-      // Fallback: Azul profissional para TMS
-      return [0, 123, 255]; // Azul Bootstrap
+      // Fallback: Usar CSS variable da empresa se disponível
+      const primaryColorVar = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim();
+      if (primaryColorVar) {
+         console.log('Usando CSS variable da empresa:', primaryColorVar);
+         return this.hexToRgb(primaryColorVar);
+      }
+
+      // Fallback final: Verde profissional para TMS
+      console.log('Usando cor fallback Verde');
+      return [0, 129, 0]; // Verde MM
    }
 
    /**
     * Converte cor hex para RGB
     */
    static hexToRgb(hex) {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result ? [
-         parseInt(result[1], 16),
-         parseInt(result[2], 16),
-         parseInt(result[3], 16)
-      ] : [0, 123, 255]; // Fallback azul
+      if (!hex) return [0, 129, 0]; // Fallback Verde
+
+      // Remove # se existir e limpa espaços
+      const cleanHex = hex.replace('#', '').trim();
+
+      // Regex para hex de 6 caracteres
+      const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(cleanHex);
+
+      if (result) {
+         const rgb = [
+            parseInt(result[1], 16),
+            parseInt(result[2], 16),
+            parseInt(result[3], 16)
+         ];
+         console.log(`Convertido ${hex} para RGB:`, rgb);
+         return rgb;
+      }
+
+      // Se não conseguir converter, usar fallback
+      console.warn(`Não foi possível converter a cor: ${hex}`);
+      return [0, 129, 0]; // Fallback Verde
    }
 
    /**

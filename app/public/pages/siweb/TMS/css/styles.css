@@ -573,3 +573,13 @@ table.dataTable thead>tr>th.sorting{
 [data-theme-mode="dark"] .custom-tooltip {
     background-color: #495057;
 }
+
+.flatpickr-calendar {
+    z-index: 99999 !important;
+}
+.flatpickr-calendar.open {
+    z-index: 99999 !important;
+}
+.flatpickr-calendar.static {
+    position: absolute !important;
+}

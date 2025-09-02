@@ -16094,7 +16094,7 @@ hr {
 }
 
 .flatpickr-day {
-   color: var(--default-text-color) !important;
+   /* color: var(--default-text-color) !important; */
    font-weight: 500 !important
 }
 
