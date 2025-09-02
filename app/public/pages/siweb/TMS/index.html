@@ -625,6 +625,7 @@
                            <button type="button" class="btn btn-outline-light btn-sm" id="btn-toggle-filters">
                               <i class="bi bi-funnel me-1"></i>
                               Filtros
+                              <span class="badge bg-warning text-dark ms-1" id="active-filters-count" style="display: none;">0</span>
                            </button>
                            <!-- Botão Configurar Colunas -->
                            <button type="button" class="btn btn-outline-light btn-sm" id="btn-column-settings">
@@ -751,45 +752,6 @@
                </select>
             </div>
 
-            <!-- Container -->
-            <div class="mb-3">
-               <label for="filter-container" class="form-label">
-                  <i class="bi bi-box me-1"></i>Container
-               </label>
-               <input type="text" class="form-control" id="filter-container" placeholder="Número do container...">
-            </div>
-
-            <!-- Processo -->
-            <div class="mb-3">
-               <label for="filter-processo" class="form-label">
-                  <i class="bi bi-file-text me-1"></i>Processo
-               </label>
-               <input type="text" class="form-control" id="filter-processo" placeholder="Número do processo...">
-            </div>
-
-            <!-- Período de Registro -->
-            <div class="mb-3">
-               <label for="filter-date-range" class="form-label">
-                  <i class="bi bi-calendar me-1"></i>Período de Registro
-               </label>
-               <div class="input-group">
-                  <input type="text" class="form-control" id="filter-date-range" placeholder="Selecionar período..." readonly>
-                  <span class="input-group-text">
-                     <i class="bi bi-calendar-range"></i>
-                  </span>
-               </div>
-            </div>
-
-            <!-- Empresa -->
-            <div class="mb-3">
-               <label for="filter-empresa" class="form-label">
-                  <i class="bi bi-building me-1"></i>Empresa
-               </label>
-               <select class="form-select" id="filter-empresa">
-                  <option value="">Todas as empresas</option>
-                  <!-- Opções serão carregadas via JavaScript -->
-               </select>
-            </div>
 
             <!-- Destinatário -->
             <div class="mb-3">

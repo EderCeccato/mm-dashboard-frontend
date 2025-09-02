@@ -19,12 +19,12 @@ class TMSManager {
       this.loadSavedSettings();
       await this.loadProcessosData();
       this.populateFilterOptions();
-      this.initializeDateRangePicker();
       this.initializeDataTable();
       this.bindEvents();
       this.initializeColumnSettings();
       this.showTableAfterLoad(); // Mostrar tabela após carregar
       this.updateTotalRecords(this.data.length); // Atualizar contador
+      this.updateActiveFiltersCount(); // Inicializar contador de filtros
       this.showToast('Sistema TMS carregado com sucesso!', 'success');
    }
 
@@ -416,38 +416,11 @@ class TMSManager {
    }
 
    /**
-    * Inicializa o date range picker
+    * Inicializa o date range picker (removido - não necessário com DataTables)
     */
    initializeDateRangePicker() {
-      const dateRangeInput = document.getElementById('filter-date-range');
-      if (!dateRangeInput) return;
-
-      if (typeof flatpickr !== 'undefined') {
-         this.dateRangePicker = flatpickr(dateRangeInput, {
-               mode: "range",
-               dateFormat: "d/m/Y",
-               locale: "pt",
-               minDate: "2020-01-01",
-               maxDate: "today",
-               allowInput: false,
-               clickOpens: true,
-               appendTo: document.body,
-               static: false,
-               position: "auto"
-         });
-
-         const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
-         if (iconElement) {
-               iconElement.style.cursor = 'pointer';
-               iconElement.addEventListener('click', (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (this.dateRangePicker) {
-                     this.dateRangePicker.open();
-                  }
-               });
-         }
-      }
+      // Removido - filtro de período não necessário pois DataTables já tem pesquisa
+      console.log('Date range picker removido - DataTables tem pesquisa nativa');
    }
 
    /**
@@ -1206,17 +1179,46 @@ class TMSManager {
    }
 
    /**
+    * Obtém valores dos filtros
+    */
+   getFilterValues() {
+      return {
+         status: document.getElementById('filter-status')?.value || '',
+         tipoCarga: document.getElementById('filter-tipo-carga')?.value || '',
+         motorista: document.getElementById('filter-motorista')?.value || '',
+         destinatario: document.getElementById('filter-destinatario')?.value || ''
+      };
+   }
+
+   /**
+    * Atualiza contador de filtros ativos
+    */
+   updateActiveFiltersCount() {
+      const filters = this.getFilterValues();
+      let activeCount = 0;
+
+      Object.values(filters).forEach(value => {
+         if (value && value !== '') activeCount++;
+      });
+
+      const badge = document.getElementById('active-filters-count');
+      if (badge) {
+         if (activeCount > 0) {
+            badge.textContent = activeCount;
+            badge.style.display = 'inline';
+         } else {
+            badge.style.display = 'none';
+         }
+      }
+   }
+
+   /**
     * Aplica filtros
     */
    applyFilters() {
       if (!this.dataTable) return;
 
-      const status = document.getElementById('filter-status')?.value || '';
-      const tipoCarga = document.getElementById('filter-tipo-carga')?.value || '';
-      const motorista = document.getElementById('filter-motorista')?.value || '';
-      const container = document.getElementById('filter-container')?.value || '';
-      const processo = document.getElementById('filter-processo')?.value || '';
-      const destinatario = document.getElementById('filter-destinatario')?.value || '';
+      const filters = this.getFilterValues();
 
       // Limpar todos os filtros primeiro
       this.dataTable.search('').columns().search('').draw();
@@ -1226,28 +1228,20 @@ class TMSManager {
          'nomstatusfre': this.getColumnIndex('nomstatusfre'),
          'nomtipcarga': this.getColumnIndex('nomtipcarga'),
          'motorista': this.getColumnIndex('motorista'),
-         'container': this.getColumnIndex('container'),
-         'processo': this.getColumnIndex('processo'),
          'destinatario': this.getColumnIndex('destinatario')
       };
 
-      if (status && columnMap.nomstatusfre !== -1) {
-         this.dataTable.column(columnMap.nomstatusfre).search(status);
+      if (filters.status && columnMap.nomstatusfre !== -1) {
+         this.dataTable.column(columnMap.nomstatusfre).search(filters.status);
       }
-      if (tipoCarga && columnMap.nomtipcarga !== -1) {
-         this.dataTable.column(columnMap.nomtipcarga).search(tipoCarga);
+      if (filters.tipoCarga && columnMap.nomtipcarga !== -1) {
+         this.dataTable.column(columnMap.nomtipcarga).search(filters.tipoCarga);
       }
-      if (motorista && columnMap.motorista !== -1) {
-         this.dataTable.column(columnMap.motorista).search(motorista);
+      if (filters.motorista && columnMap.motorista !== -1) {
+         this.dataTable.column(columnMap.motorista).search(filters.motorista);
       }
-      if (container && columnMap.container !== -1) {
-         this.dataTable.column(columnMap.container).search(container);
-      }
-      if (processo && columnMap.processo !== -1) {
-         this.dataTable.column(columnMap.processo).search(processo);
-      }
-      if (destinatario && columnMap.destinatario !== -1) {
-         this.dataTable.column(columnMap.destinatario).search(destinatario);
+      if (filters.destinatario && columnMap.destinatario !== -1) {
+         this.dataTable.column(columnMap.destinatario).search(filters.destinatario);
       }
 
       this.dataTable.draw();
@@ -1255,6 +1249,9 @@ class TMSManager {
       // Atualizar contador de registros filtrados
       const info = this.dataTable.page.info();
       this.updateTotalRecords(info.recordsDisplay);
+
+      // Atualizar contador de filtros ativos
+      this.updateActiveFiltersCount();
 
       const filtersSidebar = bootstrap.Offcanvas.getInstance(document.getElementById('filters-sidebar'));
       if (filtersSidebar) {
@@ -1291,6 +1288,9 @@ class TMSManager {
          // Atualizar contador após limpar filtros
          this.updateTotalRecords(this.data.length);
       }
+
+      // Atualizar contador de filtros ativos
+      this.updateActiveFiltersCount();
 
       this.showToast('Filtros limpos', 'info');
    }
