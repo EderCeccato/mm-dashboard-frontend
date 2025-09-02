@@ -356,7 +356,7 @@ class TableManager {
       this.dataTable = $('#tms-table').DataTable({
          data: this.data,
          columns,
-         pageLength: 25,
+         pageLength: 10,
          lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
          language: { url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json' },
          responsive: true,

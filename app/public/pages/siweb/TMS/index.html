@@ -598,7 +598,12 @@
          <div class="container-fluid">
             <!-- Page Header -->
             <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
-               <h1 class="page-title fw-semibold fs-18 mb-0">TMS - Gestão de Transporte</h1>
+               <div>
+                  <h1 class="page-title fw-semibold fs-18 mb-0">TMS - Gestão de Transporte</h1>
+                  <div class="mt-1">
+                     <span id="total-records" class="badge bg-primary">0 registros</span>
+                  </div>
+               </div>
                <div class="ms-md-1 ms-0">
                   <nav>
                      <ol class="breadcrumb mb-0">
@@ -640,8 +645,17 @@
                         </div>
                      </div>
                          <div class="card-body">
+                        <!-- Loading da tabela -->
+                        <div id="table-loading" class="text-center p-5">
+                           <div class="spinner-border text-primary mb-3" style="width: 2rem; height: 2rem;" role="status">
+                              <span class="visually-hidden">Carregando dados...</span>
+                           </div>
+                           <h6 class="text-muted">Carregando dados da tabela</h6>
+                           <p class="text-muted mb-0">Aguarde enquanto preparamos os registros...</p>
+                        </div>
+
                         <!-- Tabela de TMS -->
-                        <div class="table-responsive">
+                        <div class="table-responsive" id="table-container" style="display: none;">
                            <table class="table table-bordered table-striped" id="tms-table">
                               <thead>
                                  <tr>
@@ -841,208 +855,345 @@
       </div>
    </div>
 
-   <!-- Modal Detalhes do Pedido TMS -->
-   <div class="modal fade" id="modal-operation-details" tabindex="-1" aria-labelledby="modalOperationDetailsLabel" aria-hidden="true">
+   <!-- Modal Detalhes do Processo TMS -->
+   <div class="modal fade" id="modal-process-details" tabindex="-1" aria-labelledby="modalProcessDetailsLabel" aria-hidden="true">
       <div class="modal-dialog modal-xl">
-         <div class="modal-content">
-            <div class="modal-header">
-               <h1 class="modal-title fs-5" id="modalOperationDetailsLabel">
-                  <i class="bi bi-truck me-2"></i>Detalhes do Pedido TMS
-               </h1>
+         <div class="modal-content position-relative">
+            <!-- Loading overlay do modal -->
+            <div id="modal-loading-overlay" class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-white" style="z-index: 9999; border-radius: 0.375rem;">
+               <div class="text-center">
+                  <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                     <span class="visually-hidden">Carregando dados...</span>
+                  </div>
+                  <h5 class="text-muted">Carregando detalhes do processo</h5>
+                  <p class="text-muted mb-0">Aguarde enquanto buscamos todas as informações...</p>
+               </div>
+            </div>
+            <div class="modal-header border-bottom">
+               <div class="d-flex align-items-center">
+                  <i class="bi bi-truck fs-4 text-primary me-3"></i>
+                  <div>
+                     <h1 class="modal-title fs-5 mb-0" id="modalProcessDetailsLabel">
+                        Detalhes do Processo <span id="modal-process-number" class="text-primary"></span>
+                     </h1>
+                     <small class="text-muted">Gestão de Transporte - TMS</small>
+                  </div>
+               </div>
                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-               <div class="row">
-                  <!-- Informações Principais -->
-                  <div class="col-md-6">
-                     <div class="card border-primary mb-3">
-                        <div class="card-header bg-primary text-white">
-                           <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Principais</h6>
-                        </div>
-                        <div class="card-body">
-                           <div class="row">
-                              <div class="col-6">
-                                 <strong>Pedido:</strong><br>
-                                 <span id="detail-nomovtra" class="text-primary fs-5"></span>
-                              </div>
-                              <div class="col-6">
-                                 <strong>Processo:</strong><br>
-                                 <span id="detail-processo"></span>
+
+            <!-- Navegação por Abas -->
+            <div class="modal-header bg-light p-0">
+               <nav class="nav nav-pills nav-fill w-100" id="process-tabs" role="tablist">
+                  <button class="nav-link active rounded-0 border-0" id="tab-informacoes" data-bs-toggle="pill" data-bs-target="#content-informacoes" type="button" role="tab">
+                     <i class="bi bi-info-circle me-1"></i>Informações
+                  </button>
+                  <button class="nav-link rounded-0 border-0" id="tab-rastreamento" data-bs-toggle="pill" data-bs-target="#content-rastreamento" type="button" role="tab">
+                     <i class="bi bi-geo-alt me-1"></i>Rastreamento
+                  </button>
+                  <button class="nav-link rounded-0 border-0" id="tab-ocorrencias" data-bs-toggle="pill" data-bs-target="#content-ocorrencias" type="button" role="tab">
+                     <i class="bi bi-exclamation-triangle me-1"></i>Ocorrências <span class="badge bg-danger ms-1" id="ocorrencias-count">0</span>
+                  </button>
+                  <button class="nav-link rounded-0 border-0" id="tab-followups" data-bs-toggle="pill" data-bs-target="#content-followups" type="button" role="tab">
+                     <i class="bi bi-arrow-repeat me-1"></i>Follow-ups <span class="badge bg-warning ms-1" id="followups-count">0</span>
+                  </button>
+                  <button class="nav-link rounded-0 border-0" id="tab-documentos" data-bs-toggle="pill" data-bs-target="#content-documentos" type="button" role="tab">
+                     <i class="bi bi-file-earmark-text me-1"></i>Documentos <span class="badge bg-info ms-1" id="documentos-count">0</span>
+                  </button>
+                  <button class="nav-link rounded-0 border-0" id="tab-comprovantes" data-bs-toggle="pill" data-bs-target="#content-comprovantes" type="button" role="tab">
+                     <i class="bi bi-file-earmark-check me-1"></i>Comprovantes <span class="badge bg-success ms-1" id="comprovantes-count">0</span>
+                  </button>
+               </nav>
+            </div>
+
+            <div class="modal-body p-0">
+               <div class="tab-content" id="process-tab-content">
+                  <!-- Aba Informações -->
+                  <div class="tab-pane fade show active" id="content-informacoes" role="tabpanel">
+                     <div class="p-4">
+                        <div class="row">
+                           <!-- Informações Principais -->
+                           <div class="col-lg-4">
+                              <div class="card border-primary mb-4">
+                                 <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Principais</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Pedido</label>
+                                          <div class="fw-bold text-primary fs-5" id="process-nomovtra">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Processo</label>
+                                          <div class="fw-semibold" id="process-processo">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Container</label>
+                                          <div id="process-container">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Status</label>
+                                          <div id="process-status">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Tipo de Carga</label>
+                                          <div id="process-tipo-carga">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Tipo Frete</label>
+                                          <div id="process-tipo-frete">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Tipo Container</label>
+                                          <div id="process-tipo-container">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Data Registro</label>
+                                          <div id="process-data-registro">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Destinatário</label>
+                                          <div id="process-destinatario">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Rota</label>
+                                          <div class="text-info fw-semibold" id="process-rota">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
                               </div>
                            </div>
-                           <hr>
-                           <div class="row">
-                              <div class="col-6">
-                                 <strong>Container:</strong><br>
-                                 <span id="detail-container"></span>
+
+                           <!-- Transporte e Datas -->
+                           <div class="col-lg-4">
+                              <div class="card border-warning mb-4">
+                                 <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Transporte</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Motorista</label>
+                                          <div class="fw-semibold" id="process-motorista">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Tração</label>
+                                          <div id="process-tracao">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Reboque</label>
+                                          <div id="process-reboque">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Reboque 2</label>
+                                          <div id="process-reboque2">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
                               </div>
-                              <div class="col-6">
-                                 <strong>Status:</strong><br>
-                                 <span id="detail-status" class="badge"></span>
+
+                              <div class="card border-info mb-4">
+                                 <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bi bi-calendar me-2"></i>Datas</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Data Início Viagem</label>
+                                          <div id="process-data-inicio-viagem">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Data Entregue</label>
+                                          <div id="process-data-entregue">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <!-- Documentos -->
+                           <div class="col-lg-4">
+                              <div class="card border-secondary mb-4">
+                                 <div class="card-header bg-secondary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-file-earmark me-2"></i>Documentos</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Tipo Doc Fiscal</label>
+                                          <div id="process-doc-fiscal">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Número Doc Fiscal</label>
+                                          <div id="process-numero-doc-fiscal">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">NF-e Cliente</label>
+                                          <div id="process-nfe-cliente">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Volume</label>
+                                          <div id="process-volume">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Peso NF-e</label>
+                                          <div id="process-peso-nfe">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Valor Total NF-e</label>
+                                          <div class="text-info fw-semibold" id="process-vlr-total-nfe">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        <!-- Valores Financeiros - Largura Total -->
+                        <div class="row">
+                           <div class="col-12">
+                              <div class="card border-success">
+                                 <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Valores Financeiros</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">Valor Frete</label>
+                                          <div class="text-success fw-bold" id="process-vlr-frete">-</div>
+                                       </div>
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">Pedágio</label>
+                                          <div id="process-pedagio">-</div>
+                                       </div>
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">GRIS</label>
+                                          <div id="process-gris">-</div>
+                                       </div>
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">Seguro</label>
+                                          <div id="process-seguro">-</div>
+                                       </div>
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">ICMS</label>
+                                          <div id="process-icms">-</div>
+                                       </div>
+                                       <div class="col-md-2">
+                                          <label class="form-label text-muted mb-1">Outros</label>
+                                          <div id="process-outros">-</div>
+                                       </div>
+                                    </div>
+                                    <hr class="my-3">
+                                    <div class="row">
+                                       <div class="col-md-12 text-center">
+                                          <label class="form-label text-muted mb-1">Total Geral</label>
+                                          <div class="text-primary fw-bold fs-4" id="process-total">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
                               </div>
                            </div>
                         </div>
                      </div>
                   </div>
 
-                  <!-- Informações de Carga -->
-                  <div class="col-md-6">
-                     <div class="card border-success mb-3">
-                        <div class="card-header bg-success text-white">
-                           <h6 class="mb-0"><i class="bi bi-box me-2"></i>Informações de Carga</h6>
+                                    <!-- Aba Rastreamento -->
+                  <div class="tab-pane fade" id="content-rastreamento" role="tabpanel">
+                     <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                           <h5 class="mb-0"><i class="bi bi-geo-alt text-danger me-2"></i>Rastreamento do Veículo</h5>
+                           <div id="tracking-status" class="badge bg-secondary">Carregando...</div>
                         </div>
-                        <div class="card-body">
-                           <div class="row">
-                              <div class="col-6">
-                                 <strong>Tipo de Carga:</strong><br>
-                                 <span id="detail-tipo-carga"></span>
-                              </div>
-                              <div class="col-6">
-                                 <strong>Volume:</strong><br>
-                                 <span id="detail-volume"></span>
-                              </div>
-                           </div>
-                           <hr>
-                           <div class="row">
-                              <div class="col-6">
-                                 <strong>Peso NF-e:</strong><br>
-                                 <span id="detail-peso-nfe"></span>
-                              </div>
-                              <div class="col-6">
-                                 <strong>NF-e:</strong><br>
-                                 <span id="detail-numero-nfe"></span>
+
+                        <div class="row">
+                           <div class="col-12">
+                              <div class="card border-danger">
+                                 <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Localização Atual</h6>
+                                    <small id="location-last-update">Última atualização: -</small>
+                                 </div>
+                                 <div class="card-body p-0 position-relative">
+                                    <!-- Loading overlay -->
+                                    <div id="map-loading" class="position-absolute w-100 h-100 d-flex align-items-center justify-content-center bg-light" style="z-index: 1000;">
+                                       <div class="text-center">
+                                          <div class="spinner-border text-primary mb-2" role="status">
+                                             <span class="visually-hidden">Carregando localização...</span>
+                                          </div>
+                                          <p class="text-muted mb-0">Carregando localização...</p>
+                                       </div>
+                                    </div>
+
+                                    <!-- Mensagem quando não há localização -->
+                                    <div id="no-location" class="text-center p-5" style="display: none !important;">
+                                       <i class="bi bi-geo-alt-slash fs-1 text-muted mb-3"></i>
+                                       <h5 class="text-muted">Localização Indisponível</h5>
+                                       <p class="text-muted">Não foi possível obter a localização atual do veículo.</p>
+                                    </div>
+
+                                    <!-- Mapa -->
+                                    <div id="process-map" style="height: 450px; min-height: 450px;"></div>
+                                 </div>
                               </div>
                            </div>
                         </div>
                      </div>
                   </div>
 
-                  <!-- Datas -->
-                  <div class="col-md-6">
-                     <div class="card border-warning mb-3">
-                        <div class="card-header bg-warning text-dark">
-                           <h6 class="mb-0"><i class="bi bi-calendar me-2"></i>Cronograma</h6>
+                  <!-- Aba Ocorrências -->
+                  <div class="tab-pane fade" id="content-ocorrencias" role="tabpanel">
+                     <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                           <h5 class="mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Ocorrências</h5>
                         </div>
-                        <div class="card-body">
-                           <div class="mb-2">
-                              <strong>Data de Registro:</strong><br>
-                              <span id="detail-data-registro"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Previsão de Entrega:</strong><br>
-                              <span id="detail-previsao-entrega"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Data de Entrega:</strong><br>
-                              <span id="detail-entregue"></span>
-                           </div>
+                        <div class="list-group" id="ocorrencias-list">
+                           <!-- Conteúdo será preenchido via JavaScript -->
                         </div>
                      </div>
                   </div>
 
-                  <!-- Transporte e Destinatário -->
-                  <div class="col-md-6">
-                     <div class="card border-info mb-3">
-                        <div class="card-header bg-info text-white">
-                           <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Transporte e Destinatário</h6>
+                  <!-- Aba Follow-ups -->
+                  <div class="tab-pane fade" id="content-followups" role="tabpanel">
+                     <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                           <h5 class="mb-0"><i class="bi bi-arrow-repeat text-warning me-2"></i>Follow-ups</h5>
                         </div>
-                        <div class="card-body">
-                           <div class="mb-2">
-                              <strong>Motorista:</strong><br>
-                              <span id="detail-motorista"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Tração:</strong><br>
-                              <span id="detail-tracao"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Reboque:</strong><br>
-                              <span id="detail-reboque"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Destinatário:</strong><br>
-                              <span id="detail-destinatario"></span>
-                           </div>
-                           <div class="mb-2">
-                              <strong>Rota:</strong><br>
-                              <span id="detail-rota"></span>
-                           </div>
+                        <div class="list-group" id="followups-list">
+                           <!-- Conteúdo será preenchido via JavaScript -->
                         </div>
                      </div>
                   </div>
 
-                  <!-- Valores Financeiros -->
-                  <div class="col-12">
-                     <div class="card border-warning mb-3">
-                        <div class="card-header bg-warning text-dark">
-                           <h6 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Valores Financeiros</h6>
+                  <!-- Aba Documentos -->
+                  <div class="tab-pane fade" id="content-documentos" role="tabpanel">
+                     <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                           <h5 class="mb-0"><i class="bi bi-file-earmark-text text-info me-2"></i>Documentos</h5>
                         </div>
-                        <div class="card-body">
-                           <div class="row">
-                              <div class="col-md-3">
-                                 <strong>Valor Frete:</strong><br>
-                                 <span id="detail-valor-frete" class="text-success fw-bold"></span>
-                              </div>
-                              <div class="col-md-3">
-                                 <strong>Pedágio:</strong><br>
-                                 <span id="detail-pedagio"></span>
-                              </div>
-                              <div class="col-md-3">
-                                 <strong>Valor GRIS:</strong><br>
-                                 <span id="detail-valor-gris"></span>
-                              </div>
-                              <div class="col-md-3">
-                                 <strong>Seguro:</strong><br>
-                                 <span id="detail-seguro"></span>
-                              </div>
-                           </div>
-                           <hr>
-                           <div class="row">
-                              <div class="col-md-3">
-                                 <strong>ICMS:</strong><br>
-                                 <span id="detail-icms"></span>
-                              </div>
-                              <div class="col-md-3">
-                                 <strong>Outros:</strong><br>
-                                 <span id="detail-outros"></span>
-                              </div>
-                              <div class="col-md-3">
-                                 <strong>Total:</strong><br>
-                                 <span id="detail-total" class="text-primary fw-bold fs-5"></span>
-                              </div>
-                           </div>
+                        <div class="list-group" id="documentos-list">
+                           <!-- Conteúdo será preenchido via JavaScript -->
                         </div>
                      </div>
                   </div>
 
-                  <!-- Localização -->
-                  <div class="col-12">
-                     <div class="card border-danger">
-                        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                           <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Localização</h6>
-                           <button type="button" class="btn btn-light btn-sm" id="btn-show-location">
-                              <i class="bi bi-map me-1"></i>Ver no Mapa
-                           </button>
+                  <!-- Aba Comprovantes -->
+                  <div class="tab-pane fade" id="content-comprovantes" role="tabpanel">
+                     <div class="p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                           <h5 class="mb-0"><i class="bi bi-file-earmark-check text-success me-2"></i>Comprovantes</h5>
                         </div>
-                        <div class="card-body">
-                           <div id="location-info" class="text-center">
-                              <div class="spinner-border text-primary" role="status" style="display: none;">
-                                 <span class="visually-hidden">Carregando localização...</span>
-                              </div>
-                              <div id="location-content">
-                                 <i class="bi bi-geo-alt-fill fs-1 text-danger"></i>
-                                 <p class="mt-2 text-muted">Clique em "Ver no Mapa" para visualizar a localização da operação</p>
-                              </div>
-                           </div>
-                            <!-- Mapa será inserido aqui -->
-                            <div id="operation-map" style="height: 450px; display: none;"></div>
+                        <div class="list-group" id="comprovantes-list">
+                           <!-- Conteúdo será preenchido via JavaScript -->
                         </div>
                      </div>
                   </div>
                </div>
             </div>
-            <div class="modal-footer">
-               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+
+            <div class="modal-footer bg-light">
+               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                  <i class="bi bi-x-circle me-1"></i>Fechar
+               </button>
             </div>
          </div>
       </div>
