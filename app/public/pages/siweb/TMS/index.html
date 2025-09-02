@@ -56,6 +56,13 @@
 
    <!-- jQuery (necessário para DataTables) -->
    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+   <!-- XLSX para exportação Excel -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+   <!-- jsPDF para exportação PDF -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
    <meta http-equiv="imagetoolbar" content="no">
 </head>
 
@@ -762,6 +769,19 @@
                   <option value="">Todos os destinatários</option>
                   <!-- Opções serão carregadas via JavaScript -->
                </select>
+            </div>
+
+            <!-- Período de Registro -->
+            <div class="mb-3">
+               <label for="filter-date-range" class="form-label">
+                  <i class="bi bi-calendar me-1"></i>Período de Registro
+               </label>
+               <div class="input-group">
+                  <input type="text" class="form-control" id="filter-date-range" placeholder="Selecionar período..." readonly>
+                  <span class="input-group-text">
+                     <i class="bi bi-calendar-range"></i>
+                  </span>
+               </div>
             </div>
 
             <hr>

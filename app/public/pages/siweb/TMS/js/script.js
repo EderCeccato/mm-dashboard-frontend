@@ -19,6 +19,7 @@ class TMSManager {
       this.loadSavedSettings();
       await this.loadProcessosData();
       this.populateFilterOptions();
+      this.initializeDateRangePicker();
       this.initializeDataTable();
       this.bindEvents();
       this.initializeColumnSettings();
@@ -416,11 +417,27 @@ class TMSManager {
    }
 
    /**
-    * Inicializa o date range picker (removido - não necessário com DataTables)
+    * Inicializa o date range picker
     */
    initializeDateRangePicker() {
-      // Removido - filtro de período não necessário pois DataTables já tem pesquisa
-      console.log('Date range picker removido - DataTables tem pesquisa nativa');
+      const dateRangeInput = document.getElementById('filter-date-range');
+      if (!dateRangeInput || typeof flatpickr === 'undefined') return;
+
+      this.dateRangePicker = flatpickr(dateRangeInput, {
+         mode: 'range',
+         dateFormat: 'd/m/Y',
+         locale: 'pt'
+      });
+
+      const iconElement = dateRangeInput.nextElementSibling?.querySelector('i');
+      if (iconElement) {
+         iconElement.style.cursor = 'pointer';
+         iconElement.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.dateRangePicker?.open();
+         });
+      }
    }
 
    /**
@@ -1147,16 +1164,14 @@ class TMSManager {
     * Vincula eventos de exportação
     */
    bindExportEvents() {
-      document.getElementById('export-excel')?.addEventListener('click', () => {
-         this.showToast('Exportação para Excel será implementada', 'info');
+      document.getElementById('export-excel')?.addEventListener('click', (e) => {
+         e.preventDefault();
+         ExportManager.exportToExcel();
       });
 
-      document.getElementById('export-csv')?.addEventListener('click', () => {
-         this.showToast('Exportação para CSV será implementada', 'info');
-      });
-
-      document.getElementById('export-pdf')?.addEventListener('click', () => {
-         this.showToast('Exportação para PDF será implementada', 'info');
+      document.getElementById('export-pdf')?.addEventListener('click', (e) => {
+         e.preventDefault();
+         ExportManager.exportToPDF();
       });
    }
 
@@ -1186,7 +1201,8 @@ class TMSManager {
          status: document.getElementById('filter-status')?.value || '',
          tipoCarga: document.getElementById('filter-tipo-carga')?.value || '',
          motorista: document.getElementById('filter-motorista')?.value || '',
-         destinatario: document.getElementById('filter-destinatario')?.value || ''
+         destinatario: document.getElementById('filter-destinatario')?.value || '',
+         dateRange: document.getElementById('filter-date-range')?.value || ''
       };
    }
 
@@ -1476,6 +1492,619 @@ class TMSManager {
       toastElement.addEventListener('hidden.bs.toast', () => {
          toastElement.remove();
       });
+   }
+}
+
+// ===== GERENCIADOR DE EXPORTAÇÃO =====
+/**
+ * Classe responsável por gerenciar exportações Excel/PDF para TMS
+ */
+class ExportManager {
+   /**
+    * Exporta dados para Excel (gerado no frontend)
+    */
+   static async exportToExcel() {
+      const btn = document.querySelector('#export-excel');
+      const originalText = btn.innerHTML;
+
+      try {
+         // Desabilita botão
+         btn.disabled = true;
+         btn.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Exportando...
+         `;
+
+         // Obtém dados filtrados da tabela
+         const filteredData = this.getFilteredTableData();
+
+         if (filteredData.length === 0) {
+            window.tmsManager.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
+
+         // Gera Excel no frontend com dados filtrados
+         this.generateExcelFile(filteredData);
+
+         window.tmsManager.showToast(`Excel gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
+
+      } catch (error) {
+         console.error('Erro ao gerar Excel:', error);
+         window.tmsManager.showToast('Erro ao gerar Excel. Tente novamente.', 'error');
+      } finally {
+         // Restaura botão
+         btn.disabled = false;
+         btn.innerHTML = originalText;
+      }
+   }
+
+   /**
+    * Exporta dados para PDF (gerado no frontend)
+    */
+   static async exportToPDF() {
+      const btn = document.querySelector('#export-pdf');
+      const originalText = btn.innerHTML;
+
+      try {
+         // Desabilita botão
+         btn.disabled = true;
+         btn.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Exportando...
+         `;
+
+         // Obtém dados filtrados da tabela
+         const filteredData = this.getFilteredTableData();
+
+         if (filteredData.length === 0) {
+            window.tmsManager.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
+
+         // Gera PDF no frontend com dados filtrados
+         this.generatePDFFile(filteredData);
+
+         window.tmsManager.showToast(`PDF gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         window.tmsManager.showToast('Erro ao gerar PDF. Tente novamente.', 'error');
+      } finally {
+         // Restaura botão
+         btn.disabled = false;
+         btn.innerHTML = originalText;
+      }
+   }
+
+   /**
+    * Obtém dados filtrados da tabela (apenas dados visíveis)
+    */
+   static getFilteredTableData() {
+      const tableManager = window.tmsManager;
+      if (!tableManager || !tableManager.dataTable) {
+         console.warn('Tabela não inicializada, retornando dados originais');
+         return window.tmsManager?.data || [];
+      }
+
+      // Obtém dados filtrados da DataTable
+      const filteredData = [];
+      const dataTable = tableManager.dataTable;
+
+      // Itera sobre todas as linhas visíveis (considerando paginação e filtros)
+      dataTable.rows({ search: 'applied' }).every(function() {
+         const rowData = this.data();
+         filteredData.push(rowData);
+      });
+
+      console.log(`Exportando ${filteredData.length} itens filtrados de ${tableManager.data.length} total`);
+      return filteredData;
+   }
+
+   /**
+    * Gera arquivo Excel no frontend
+    */
+   static generateExcelFile(data) {
+      // Usar SheetJS (XLSX) para gerar Excel no frontend
+      if (typeof XLSX === 'undefined') {
+         // Fallback: usar CSV se XLSX não estiver disponível
+         this.generateCSVFile(data);
+         return;
+      }
+
+      const workbook = XLSX.utils.book_new();
+
+      // Preparar dados para Excel (campos do TMS)
+      const excelData = data.map(item => ({
+         'Status': item.nomstatusfre || '',
+         'Pedido': item.nomovtra || '',
+         'Processo': item.processo || '',
+         'Tipo de Carga': item.nomtipcarga || '',
+         'Container': item.container || '',
+         'Rota': item.rota || '',
+         'Destinatário': item.destinatario || '',
+         'NF-e': item.doccliente || '',
+         'Volume': item.qtdevol ? parseInt(item.qtdevol) : '',
+         'Peso NF-e': item.pesototalnf || '',
+         'Total NF-e': item.vlrtotalnf || '',
+         'Tração': item.placacav || '',
+         'Reboque': item.placacar || '',
+         'Vlr Frete': item.vlrfrete || '',
+         'Pedágio': item.vlrped || '',
+         'Gris': item.vlrgris || '',
+         'Seguro': item.vlrseg || '',
+         'ICMS': item.icmvlr || '',
+         'Outros': item.vlrout || '',
+         'Total': item.totalfrete || '',
+         'Motorista': item.motorista || ''
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Ajustar largura das colunas
+      const colWidths = [
+         { wch: 12 }, // Status
+         { wch: 15 }, // Pedido
+         { wch: 15 }, // Processo
+         { wch: 15 }, // Tipo de Carga
+         { wch: 15 }, // Container
+         { wch: 30 }, // Rota
+         { wch: 25 }, // Destinatário
+         { wch: 15 }, // NF-e
+         { wch: 8 },  // Volume
+         { wch: 12 }, // Peso NF-e
+         { wch: 15 }, // Total NF-e
+         { wch: 12 }, // Tração
+         { wch: 12 }, // Reboque
+         { wch: 12 }, // Vlr Frete
+         { wch: 10 }, // Pedágio
+         { wch: 10 }, // Gris
+         { wch: 10 }, // Seguro
+         { wch: 10 }, // ICMS
+         { wch: 10 }, // Outros
+         { wch: 12 }, // Total
+         { wch: 20 }  // Motorista
+      ];
+      worksheet['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'TMS - Transporte');
+
+      // Gerar arquivo e fazer download
+      const filename = `tms_transporte_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+   }
+
+   /**
+    * Gera arquivo PDF no frontend com design profissional
+    */
+   static generatePDFFile(data) {
+      try {
+         // Tentar diferentes formas de acessar jsPDF
+         const jsPDF = window.jspdf?.jsPDF || window.jsPDF || window.jsPdf;
+
+         if (!jsPDF) {
+            window.tmsManager.showToast('Biblioteca jsPDF não encontrada. Verifique se está incluída no HTML.', 'warning');
+            console.error('jsPDF não encontrado. Objetos disponíveis:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+            return;
+         }
+
+         const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+         });
+
+         // Configurações gerais
+         const pageWidth = doc.internal.pageSize.width;
+         const pageHeight = doc.internal.pageSize.height;
+         const margin = 20;
+         let currentY = margin;
+
+         // === CABEÇALHO PRINCIPAL ===
+         this.createPDFHeader(doc, pageWidth, currentY);
+         currentY = 50;
+
+         // === INFORMAÇÕES DO RELATÓRIO ===
+         currentY = this.addReportInfo(doc, data, margin, currentY);
+         currentY += 15;
+
+         // === DADOS DA TABELA ===
+         this.createPDFTable(doc, data, margin, currentY, pageWidth, pageHeight);
+
+         // === RODAPÉ ===
+         this.addPDFFooter(doc, pageWidth, pageHeight, margin);
+
+         // Salvar arquivo
+         const filename = `tms_transporte_${new Date().toISOString().split('T')[0]}.pdf`;
+         doc.save(filename);
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         window.tmsManager.showToast(`Erro ao gerar PDF: ${error.message}. Verifique o console para mais detalhes.`, 'error');
+      }
+   }
+
+   /**
+    * Cria o cabeçalho principal do PDF
+    */
+   static createPDFHeader(doc, pageWidth, startY) {
+      // Obter cor da empresa ou usar azul como fallback
+      const companyColor = this.getCompanyColor();
+
+      // Fundo do cabeçalho
+      doc.setFillColor(...companyColor);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+
+      // Título principal
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RELATÓRIO TMS - GESTÃO DE TRANSPORTE', pageWidth / 2, startY, { align: 'center' });
+
+      // Subtítulo
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+
+      // Data e hora de geração
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR');
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${dateStr} às ${timeStr}`, pageWidth / 2, startY + 32, { align: 'center' });
+   }
+
+   /**
+    * Adiciona informações do relatório
+    */
+   static addReportInfo(doc, data, margin, currentY) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESUMO DO RELATÓRIO', margin, currentY);
+
+      currentY += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+
+      // Estatísticas básicas
+      const stats = this.calculateTMSStats(data);
+
+      doc.text(`Total de processos: ${data.length}`, margin, currentY);
+
+      doc.setTextColor(40, 167, 69);
+      doc.text(`Entregues: ${stats.entregues}`, margin + 70, currentY);
+
+      doc.setTextColor(255, 193, 7);
+      doc.text(`Em trânsito: ${stats.transito}`, margin + 140, currentY);
+
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Pendentes: ${stats.pendentes}`, margin + 210, currentY);
+
+      // Voltar para cor preta
+      doc.setTextColor(0, 0, 0);
+
+      return currentY;
+   }
+
+   /**
+    * Calcula estatísticas dos dados do TMS
+    */
+   static calculateTMSStats(data) {
+      return data.reduce((stats, item) => {
+         const status = item.nomstatusfre?.toLowerCase() || '';
+         if (status.includes('entregue') || status.includes('concluída')) {
+            stats.entregues++;
+         } else if (status.includes('trânsito') || status.includes('operação')) {
+            stats.transito++;
+         } else {
+            stats.pendentes++;
+         }
+         return stats;
+      }, { entregues: 0, transito: 0, pendentes: 0 });
+   }
+
+   /**
+    * Cria a tabela principal do PDF
+    */
+   static createPDFTable(doc, data, margin, startY, pageWidth, pageHeight) {
+      const headers = [
+         'Status', 'Pedido', 'Tipo Carga', 'Container', 'Destinatário', 
+         'Tração', 'Motorista', 'Vlr Frete'
+      ];
+
+      // Calcular larguras automáticas
+      const colWidths = this.calculateOptimalColumnWidths(doc, headers, pageWidth, margin);
+      let currentY = startY;
+
+      // === CABEÇALHO DA TABELA ===
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+
+      const headerHeight = 12;
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      // Desenhar bordas das células do cabeçalho
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      // Texto do cabeçalho
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+
+      currentY += headerHeight + 2;
+
+      // === DADOS DA TABELA ===
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const baseRowHeight = 10;
+
+      data.forEach((item, index) => {
+         const rowData = [
+            item.nomstatusfre || '',
+            item.nomovtra?.toString() || '',
+            item.nomtipcarga || '',
+            item.container || '',
+            item.destinatario || '',
+            item.placacav || '',
+            item.motorista || '',
+            item.vlrfrete ? `R$ ${parseFloat(item.vlrfrete).toLocaleString('pt-BR', {minimumFractionDigits: 2})}` : ''
+         ];
+
+         const rowHeight = baseRowHeight;
+
+         // Verificar nova página
+         if (currentY + rowHeight > pageHeight - 30) {
+            doc.addPage();
+            currentY = margin + 20;
+            this.drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth);
+            currentY += headerHeight + 2;
+         }
+
+         // Cor de fundo alternada
+         if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+         } else {
+            doc.setFillColor(255, 255, 255);
+         }
+
+         doc.rect(margin, currentY, pageWidth - (margin * 2), rowHeight, 'F');
+
+         // Desenhar bordas das células
+         doc.setDrawColor(220, 220, 220);
+         doc.setLineWidth(0.1);
+         let cellX = margin;
+         colWidths.forEach((width, idx) => {
+            doc.rect(cellX, currentY, width, rowHeight, 'D');
+            cellX += width;
+         });
+
+         // Desenhar conteúdo das células
+         currentX = margin;
+         rowData.forEach((text, colIndex) => {
+            const cellWidth = colWidths[colIndex];
+            
+            // Configurar cor baseada na coluna
+            if (colIndex === 0) {
+               // Status: colorido
+               doc.setTextColor(0, 0, 0);
+               doc.setFont('helvetica', 'bold');
+            } else {
+               doc.setTextColor(0, 0, 0);
+               doc.setFont('helvetica', 'normal');
+            }
+
+            // Truncar texto se necessário
+            const availableWidth = cellWidth - 4;
+            const truncatedText = this.truncateTextToFit(doc, text.toString(), availableWidth);
+            
+            // Centralizar texto
+            const textWidth = doc.getTextWidth(truncatedText);
+            const textX = currentX + (cellWidth - textWidth) / 2;
+            const textY = currentY + rowHeight / 2 + 2;
+            
+            doc.text(truncatedText, textX, textY);
+            currentX += cellWidth;
+         });
+
+         currentY += rowHeight;
+      });
+   }
+
+   /**
+    * Desenha cabeçalho da tabela (para páginas adicionais)
+    */
+   static drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth) {
+      const headerHeight = 12;
+
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+   }
+
+   /**
+    * Adiciona rodapé ao PDF
+    */
+   static addPDFFooter(doc, pageWidth, pageHeight, margin) {
+      const totalPages = doc.internal.getNumberOfPages();
+
+      for (let i = 1; i <= totalPages; i++) {
+         doc.setPage(i);
+
+         // Linha separadora
+         doc.setDrawColor(200, 200, 200);
+         doc.setLineWidth(0.5);
+         doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+         // Informações do rodapé
+         doc.setTextColor(100, 100, 100);
+         doc.setFontSize(8);
+         doc.setFont('helvetica', 'normal');
+
+         // Esquerda: Info da empresa
+         doc.text('MM Softwares - TMS Gestão de Transporte', margin, pageHeight - 8);
+
+         // Centro: Data
+         const now = new Date();
+         doc.text(`Relatório gerado em ${now.toLocaleDateString('pt-BR')}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+         // Direita: Numeração
+         doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+   }
+
+   /**
+    * Calcular larguras ótimas das colunas
+    */
+   static calculateOptimalColumnWidths(doc, headers, pageWidth, margin) {
+      const availableWidth = pageWidth - (margin * 2);
+      const minWidths = [15, 15, 20, 18, 35, 15, 25, 18]; // larguras mínimas
+      const priorities = [2, 3, 3, 2, 4, 2, 3, 3]; // prioridades
+
+      const totalMinWidth = minWidths.reduce((sum, width) => sum + width, 0);
+
+      if (totalMinWidth < availableWidth) {
+         const extraSpace = availableWidth - totalMinWidth;
+         const totalPriority = priorities.reduce((sum, p) => sum + p, 0);
+
+         return minWidths.map((minWidth, index) => {
+            const extraForColumn = (extraSpace * priorities[index]) / totalPriority;
+            return minWidth + extraForColumn;
+         });
+      }
+
+      const totalPriority = priorities.reduce((sum, p) => sum + p, 0);
+      return priorities.map(priority => (availableWidth * priority) / totalPriority);
+   }
+
+   /**
+    * Trunca texto para caber na largura disponível
+    */
+   static truncateTextToFit(doc, text, maxWidth) {
+      if (!text) return '';
+
+      const cleanText = text.toString().trim();
+      if (doc.getTextWidth(cleanText) <= maxWidth) {
+         return cleanText;
+      }
+
+      const ellipsis = '...';
+      for (let i = cleanText.length - 1; i > 0; i--) {
+         const truncated = cleanText.substring(0, i) + ellipsis;
+         if (doc.getTextWidth(truncated) <= maxWidth) {
+            return truncated;
+         }
+      }
+
+      return ellipsis;
+   }
+
+   /**
+    * Obtém a cor da empresa do localStorage ou usa azul como fallback
+    */
+   static getCompanyColor() {
+      try {
+         const companyData = localStorage.getItem('company');
+         if (companyData) {
+            const company = JSON.parse(companyData);
+            if (company.primaryColor) {
+               return this.hexToRgb(company.primaryColor);
+            }
+         }
+      } catch (error) {
+         console.warn('Erro ao obter cor da empresa:', error);
+      }
+
+      // Fallback: Azul profissional para TMS
+      return [0, 123, 255]; // Azul Bootstrap
+   }
+
+   /**
+    * Converte cor hex para RGB
+    */
+   static hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [
+         parseInt(result[1], 16),
+         parseInt(result[2], 16),
+         parseInt(result[3], 16)
+      ] : [0, 123, 255]; // Fallback azul
+   }
+
+   /**
+    * Fallback: gera arquivo CSV se XLSX não estiver disponível
+    */
+   static generateCSVFile(data) {
+      const headers = [
+         'Status', 'Pedido', 'Processo', 'Tipo de Carga', 'Container', 'Rota',
+         'Destinatário', 'NF-e', 'Volume', 'Peso NF-e', 'Vlr Frete', 'Total'
+      ];
+
+      const csvContent = [
+         headers.join(','),
+         ...data.map(item => [
+            `"${item.nomstatusfre || ''}"`,
+            item.nomovtra || '',
+            `"${item.processo || ''}"`,
+            `"${item.nomtipcarga || ''}"`,
+            `"${item.container || ''}"`,
+            `"${item.rota || ''}"`,
+            `"${item.destinatario || ''}"`,
+            `"${item.doccliente || ''}"`,
+            item.qtdevol ? parseInt(item.qtdevol) : '',
+            item.pesototalnf || '',
+            item.vlrfrete || '',
+            item.totalfrete || ''
+         ].join(','))
+      ].join('\n');
+
+      // Criar blob e fazer download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `tms_transporte_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
    }
 }
 
