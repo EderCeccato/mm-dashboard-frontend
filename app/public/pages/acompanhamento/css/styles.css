@@ -1,0 +1,338 @@
+/* Estilos customizados para página de acompanhamento */
+
+:root {
+   --primary-color: #6c63ff;
+   --primary-color-hover: #5a52d5;
+   --primary-rgb: 108, 99, 255;
+}
+
+.tracking-page {
+   background-color: #f8f9fa;
+   min-height: 100vh;
+   display: flex;
+   flex-direction: column;
+}
+
+/* Header */
+.app-header {
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+   z-index: 1040;
+}
+
+#company-logo-container img {
+   max-height: 50px;
+   max-width: 200px;
+   width: auto;
+   height: auto;
+   object-fit: contain;
+}
+
+/* Main Content */
+.main-content {
+   flex: 1;
+   padding-top: 20px;
+}
+
+/* Cards personalizados */
+.card {
+   border: none;
+   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+   border-radius: 12px;
+   transition: all 0.3s ease;
+}
+
+.card:hover {
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+   transform: translateY(-2px);
+}
+
+.card-header {
+   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+   border-radius: 12px 12px 0 0 !important;
+   font-weight: 600;
+}
+
+/* Cores personalizadas baseadas no tema da empresa */
+.bg-primary,
+.btn-primary,
+.text-primary,
+.nav-link.active {
+   background-color: var(--primary-color) !important;
+   border-color: var(--primary-color) !important;
+   color: white !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+   background-color: var(--primary-color-hover) !important;
+   border-color: var(--primary-color-hover) !important;
+}
+
+.text-primary {
+   color: var(--primary-color) !important;
+}
+
+/* Navegação das abas */
+.nav-pills .nav-link {
+   color: #6c757d;
+   background: transparent;
+   border-radius: 0;
+   padding: 1rem;
+   border-bottom: 3px solid transparent;
+   transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link:hover {
+   background-color: rgba(var(--primary-rgb), 0.1);
+   color: var(--primary-color);
+}
+
+.nav-pills .nav-link.active {
+   background-color: transparent !important;
+   color: var(--primary-color) !important;
+   border-bottom-color: var(--primary-color) !important;
+}
+
+/* Badges das abas */
+.nav-link .badge {
+   font-size: 0.75rem;
+   padding: 0.25em 0.5em;
+}
+
+/* Header do pedido */
+.card.bg-primary {
+   background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-color-hover) 100%) !important;
+}
+
+/* Informações do pedido */
+.form-label {
+   font-size: 0.875rem;
+   font-weight: 600;
+   color: #6c757d !important;
+   text-transform: uppercase;
+   letter-spacing: 0.5px;
+}
+
+/* Status badge */
+.badge {
+   font-size: 0.875rem;
+   padding: 0.5em 1em;
+   border-radius: 20px;
+}
+
+/* Mapa */
+#tracking-map {
+   border-radius: 0 0 12px 12px;
+}
+
+.leaflet-container {
+   border-radius: 0 0 12px 12px;
+}
+
+/* Lista de itens */
+.list-group-item {
+   border: none;
+   border-bottom: 1px solid #eee;
+   padding: 1rem;
+   transition: background-color 0.2s ease;
+}
+
+.list-group-item:hover {
+   background-color: #f8f9fa;
+}
+
+.list-group-item:last-child {
+   border-bottom: none;
+}
+
+.list-group-flush .list-group-item:first-child {
+   border-top: none;
+}
+
+/* Estados de loading e erro */
+.spinner-border {
+   color: var(--primary-color);
+}
+
+#initial-loading,
+#error-state {
+   min-height: 400px;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+}
+
+/* Theme Switcher */
+#theme-switcher {
+   border: 2px solid #dee2e6;
+   background: white;
+   color: #6c757d;
+   transition: all 0.3s ease;
+}
+
+#theme-switcher:hover {
+   border-color: var(--primary-color);
+   color: var(--primary-color);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+   .main-content {
+      padding: 1rem;
+   }
+
+   .container-fluid {
+      padding: 0 1rem;
+   }
+
+   .card-body {
+      padding: 1rem;
+   }
+
+   .nav-pills .nav-link {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.875rem;
+   }
+
+   .nav-link .badge {
+      font-size: 0.7rem;
+      padding: 0.2em 0.4em;
+   }
+
+   #company-logo-container img {
+      max-height: 40px;
+      max-width: 150px;
+   }
+
+   .card.bg-primary .card-body {
+      padding: 1.5rem;
+   }
+
+   .card.bg-primary h2 {
+      font-size: 1.5rem;
+   }
+
+   #tracking-map {
+      height: 400px !important;
+      min-height: 400px !important;
+   }
+}
+
+@media (max-width: 576px) {
+   .nav-pills .nav-link {
+      padding: 0.5rem 0.25rem;
+   }
+
+   .nav-link span:not(.badge) {
+      font-size: 0.75rem;
+   }
+
+   .form-label {
+      font-size: 0.8rem;
+   }
+
+   .card.bg-primary h2 {
+      font-size: 1.25rem;
+   }
+}
+
+/* Animações */
+.card,
+.list-group-item {
+   animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+   from {
+      opacity: 0;
+      transform: translateY(20px);
+   }
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+/* Toast customizado */
+.toast {
+   backdrop-filter: blur(10px);
+}
+
+.toast-header {
+   backdrop-filter: blur(10px);
+}
+
+/* Melhorias visuais */
+.fw-bold {
+   font-weight: 600 !important;
+}
+
+.fs-5 {
+   font-size: 1.1rem !important;
+}
+
+/* Estados das abas */
+.tab-pane {
+   animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+   from {
+      opacity: 0;
+   }
+   to {
+      opacity: 1;
+   }
+}
+
+/* Footer */
+footer {
+   margin-top: auto;
+   border-top: 1px solid #eee;
+}
+
+/* Dark mode support */
+[data-theme-mode="dark"] .tracking-page {
+   background-color: #1a1d21;
+   color: #fff;
+}
+
+[data-theme-mode="dark"] .app-header .navbar {
+   background-color: #2a2d31 !important;
+}
+
+[data-theme-mode="dark"] .card {
+   background-color: #2a2d31;
+   color: #fff;
+}
+
+[data-theme-mode="dark"] .form-label {
+   color: #adb5bd !important;
+}
+
+[data-theme-mode="dark"] .text-muted {
+   color: #6c757d !important;
+}
+
+[data-theme-mode="dark"] .list-group-item {
+   background-color: transparent;
+   border-color: #495057;
+   color: #fff;
+}
+
+[data-theme-mode="dark"] .list-group-item:hover {
+   background-color: #343a40;
+}
+
+[data-theme-mode="dark"] footer {
+   background-color: #2a2d31 !important;
+   border-color: #495057;
+}
+
+[data-theme-mode="dark"] #theme-switcher {
+   background-color: #343a40;
+   border-color: #495057;
+   color: #adb5bd;
+}

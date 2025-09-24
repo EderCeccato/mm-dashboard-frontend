@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-br" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="light" loader="enable">
+
+<head>
+   <!-- Meta Data -->
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <title>Acompanhamento de Pedido - MM Softwares</title>
+   <meta name="Description" content="Acompanhamento de Pedido - MM Softwares">
+   <meta name="Author" content="MM Softwares">
+   <meta name="keywords" content="acompanhamento, pedido, transporte, tms">
+
+   <!-- Bootstrap Css -->
+   <link id="style" href="/assets/libs/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+   <!-- Style Css -->
+   <link href="/assets/css/styles.min.css" rel="stylesheet">
+   <link href="css/styles.css" rel="stylesheet">
+   <!-- Icons Css -->
+   <link href="/assets/css/icons.css" rel="stylesheet">
+   <!-- Node Waves Css -->
+   <link href="/assets/libs/node-waves/waves.min.css" rel="stylesheet">
+   <!-- Simplebar Css -->
+   <link href="/assets/libs/simplebar/simplebar.min.css" rel="stylesheet">
+   <!-- Sweet Alert 2 -->
+   <link rel="stylesheet" href="/assets/libs/sweetalert2/sweetalert2.min.css">
+   <!-- Leaflet CSS -->
+   <link rel="stylesheet" href="/assets/libs/leaflet/leaflet.css">
+   <!-- Custom Switcher CSS -->
+   <link href="/assets/css/custom-switcher.min.css" rel="stylesheet">
+</head>
+
+<body class="tracking-page">
+   <!-- Loader -->
+   <div id="loader">
+      <img src="/assets/images/media/media-79.svg" alt="">
+   </div>
+   <!-- End Loader -->
+
+   <!-- Toast Container -->
+   <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 99999;"></div>
+
+   <!-- Header -->
+   <header class="app-header sticky-top" id="main-header">
+      <nav class="navbar navbar-expand-lg bg-white shadow-sm">
+         <div class="container-fluid">
+            <!-- Logo -->
+            <div class="navbar-brand d-flex align-items-center">
+               <div id="company-logo-container" class="me-3">
+                  <!-- Logo será inserida via JavaScript -->
+               </div>
+               <div class="d-none d-md-block">
+                  <h5 class="mb-0 text-primary fw-bold">Acompanhamento de Pedido</h5>
+                  <small class="text-muted">Sistema de Gestão de Transporte</small>
+               </div>
+            </div>
+
+            <!-- Controles -->
+            <div class="navbar-nav ms-auto d-flex align-items-center">
+               <!-- Theme Switcher -->
+               <div class="dropdown me-3">
+                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="theme-switcher" data-bs-toggle="dropdown">
+                     <i class="bi bi-sun-fill" id="theme-icon"></i>
+                     <span class="d-none d-md-inline-block ms-2" id="theme-text">Claro</span>
+                  </button>
+                  <ul class="dropdown-menu">
+                     <li><a class="dropdown-item" href="javascript:void(0);" data-theme-mode="light"><i class="bi bi-sun-fill me-2"></i>Claro</a></li>
+                     <li><a class="dropdown-item" href="javascript:void(0);" data-theme-mode="dark"><i class="bi bi-moon-fill me-2"></i>Escuro</a></li>
+                     <li><a class="dropdown-item" href="javascript:void(0);" data-theme-mode="auto"><i class="bi bi-circle-half me-2"></i>Auto</a></li>
+                  </ul>
+               </div>
+
+               <!-- Botão de Atualizar -->
+               <button class="btn btn-primary" id="btn-refresh">
+                  <i class="bi bi-arrow-clockwise me-2"></i>
+                  <span class="d-none d-md-inline">Atualizar</span>
+               </button>
+            </div>
+         </div>
+      </nav>
+   </header>
+
+   <!-- Main Content -->
+   <main class="main-content">
+      <div class="container-fluid p-4">
+         <!-- Loading Estado Inicial -->
+         <div id="initial-loading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+               <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-3 text-muted">Carregando informações do pedido...</p>
+         </div>
+
+         <!-- Conteúdo Principal -->
+         <div id="main-content" class="d-none">
+            <!-- Header do Pedido -->
+            <div class="row mb-4">
+               <div class="col-12">
+                  <div class="card bg-primary text-white">
+                     <div class="card-body">
+                        <div class="row align-items-center">
+                           <div class="col-lg-8">
+                              <div class="d-flex align-items-center">
+                                 <i class="bi bi-truck fs-1 me-3"></i>
+                                 <div>
+                                    <h2 class="mb-1">Pedido <span id="pedido-numero" class="fw-bold">#</span></h2>
+                                    <p class="mb-0 opacity-75">
+                                       <span id="pedido-destinatario">-</span> • <span id="pedido-rota">-</span>
+                                    </p>
+                                 </div>
+                              </div>
+                           </div>
+                           <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                              <div class="mb-2">
+                                 <span class="badge bg-light text-dark fs-6" id="pedido-status">-</span>
+                              </div>
+                              <small class="opacity-75">Última atualização: <span id="last-update">-</span></small>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Navegação por Abas -->
+            <div class="row mb-4">
+               <div class="col-12">
+                  <div class="card">
+                     <div class="card-body p-0">
+                        <nav class="nav nav-pills nav-fill" id="tracking-tabs" role="tablist">
+                           <button class="nav-link active rounded-0 border-0 py-3" id="tab-informacoes" data-bs-toggle="pill" data-bs-target="#content-informacoes" type="button" role="tab">
+                              <i class="bi bi-info-circle me-2"></i>
+                              <span class="d-none d-md-inline">Informações</span>
+                              <span class="d-md-none">Info</span>
+                           </button>
+                           <button class="nav-link rounded-0 border-0 py-3" id="tab-rastreamento" data-bs-toggle="pill" data-bs-target="#content-rastreamento" type="button" role="tab">
+                              <i class="bi bi-geo-alt me-2"></i>
+                              <span class="d-none d-md-inline">Rastreamento</span>
+                              <span class="d-md-none">Local</span>
+                           </button>
+                           <button class="nav-link rounded-0 border-0 py-3" id="tab-ocorrencias" data-bs-toggle="pill" data-bs-target="#content-ocorrencias" type="button" role="tab">
+                              <i class="bi bi-exclamation-triangle me-2"></i>
+                              <span class="d-none d-md-inline">Ocorrências</span>
+                              <span class="d-md-none">Ocorr</span>
+                              <span class="badge bg-danger ms-1" id="ocorrencias-count">0</span>
+                           </button>
+                           <button class="nav-link rounded-0 border-0 py-3" id="tab-followups" data-bs-toggle="pill" data-bs-target="#content-followups" type="button" role="tab">
+                              <i class="bi bi-arrow-repeat me-2"></i>
+                              <span class="d-none d-md-inline">Follow-ups</span>
+                              <span class="d-md-none">Follow</span>
+                              <span class="badge bg-warning ms-1" id="followups-count">0</span>
+                           </button>
+                           <button class="nav-link rounded-0 border-0 py-3" id="tab-documentos" data-bs-toggle="pill" data-bs-target="#content-documentos" type="button" role="tab">
+                              <i class="bi bi-file-earmark-text me-2"></i>
+                              <span class="d-none d-md-inline">Documentos</span>
+                              <span class="d-md-none">Docs</span>
+                              <span class="badge bg-info ms-1" id="documentos-count">0</span>
+                           </button>
+                           <button class="nav-link rounded-0 border-0 py-3" id="tab-comprovantes" data-bs-toggle="pill" data-bs-target="#content-comprovantes" type="button" role="tab">
+                              <i class="bi bi-file-earmark-check me-2"></i>
+                              <span class="d-none d-md-inline">Comprovantes</span>
+                              <span class="d-md-none">Compr</span>
+                              <span class="badge bg-success ms-1" id="comprovantes-count">0</span>
+                           </button>
+                        </nav>
+                     </div>
+                  </div>
+               </div>
+            </div>
+
+            <!-- Conteúdo das Abas -->
+            <div class="row">
+               <div class="col-12">
+                  <div class="tab-content" id="tracking-tab-content">
+                     <!-- Aba Informações -->
+                     <div class="tab-pane fade show active" id="content-informacoes" role="tabpanel">
+                        <div class="row g-4">
+                           <!-- Informações Principais -->
+                           <div class="col-lg-4">
+                              <div class="card h-100">
+                                 <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Informações Principais</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Pedido</label>
+                                          <div class="fw-bold text-primary fs-5" id="info-nomovtra">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Processo</label>
+                                          <div class="fw-semibold" id="info-processo">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Container</label>
+                                          <div id="info-container">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Status</label>
+                                          <div id="info-status">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Tipo de Carga</label>
+                                          <div id="info-tipo-carga">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Destinatário</label>
+                                          <div id="info-destinatario">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Rota</label>
+                                          <div id="info-rota">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <!-- Informações de Transporte -->
+                           <div class="col-lg-4">
+                              <div class="card h-100">
+                                 <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Transporte</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Motorista</label>
+                                          <div id="info-motorista">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Tração</label>
+                                          <div id="info-tracao">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Reboque</label>
+                                          <div id="info-reboque">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Tipo de Frete</label>
+                                          <div id="info-tipo-frete">-</div>
+                                       </div>
+                                       <div class="col-12">
+                                          <label class="form-label text-muted mb-1">Tipo de Container</label>
+                                          <div id="info-tipo-container">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Data Registro</label>
+                                          <div id="info-data-registro">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Data Entrega</label>
+                                          <div id="info-data-entrega">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <!-- Informações Financeiras -->
+                           <div class="col-lg-4">
+                              <div class="card h-100">
+                                 <div class="card-header bg-warning text-white">
+                                    <h6 class="mb-0"><i class="bi bi-currency-dollar me-2"></i>Valores</h6>
+                                 </div>
+                                 <div class="card-body">
+                                    <div class="row g-3">
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Frete</label>
+                                          <div id="info-vlr-frete">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Pedágio</label>
+                                          <div id="info-pedagio">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">GRIS</label>
+                                          <div id="info-gris">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Seguro</label>
+                                          <div id="info-seguro">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">ICMS</label>
+                                          <div id="info-icms">-</div>
+                                       </div>
+                                       <div class="col-6">
+                                          <label class="form-label text-muted mb-1">Outros</label>
+                                          <div id="info-outros">-</div>
+                                       </div>
+                                    </div>
+                                    <hr class="my-3">
+                                    <div class="row">
+                                       <div class="col-12 text-center">
+                                          <label class="form-label text-muted mb-1">Total Geral</label>
+                                          <div class="text-primary fw-bold fs-4" id="info-total">-</div>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Aba Rastreamento -->
+                     <div class="tab-pane fade" id="content-rastreamento" role="tabpanel">
+                        <div class="card">
+                           <div class="card-header">
+                              <div class="d-flex justify-content-between align-items-center">
+                                 <h6 class="mb-0"><i class="bi bi-geo-alt text-danger me-2"></i>Rastreamento do Veículo</h6>
+                                 <div class="d-flex align-items-center">
+                                    <span class="badge bg-secondary me-2" id="tracking-status">Carregando...</span>
+                                    <small class="text-muted" id="location-last-update">Última atualização: -</small>
+                                 </div>
+                              </div>
+                           </div>
+                           <div class="card-body p-0">
+                              <!-- Loading do Mapa -->
+                              <div id="map-loading" class="text-center p-5">
+                                 <div class="spinner-border text-primary mb-3" role="status">
+                                    <span class="visually-hidden">Carregando...</span>
+                                 </div>
+                                 <p class="text-muted mb-0">Carregando localização...</p>
+                              </div>
+
+                              <!-- Mensagem quando não há localização -->
+                              <div id="no-location" class="text-center p-5" style="display: none;">
+                                 <i class="bi bi-geo-alt-slash fs-1 text-muted mb-3"></i>
+                                 <h5 class="text-muted">Localização Indisponível</h5>
+                                 <p class="text-muted">Não foi possível obter a localização atual do veículo.</p>
+                              </div>
+
+                              <!-- Mapa -->
+                              <div id="tracking-map" style="height: 500px; min-height: 500px;"></div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Aba Ocorrências -->
+                     <div class="tab-pane fade" id="content-ocorrencias" role="tabpanel">
+                        <div class="card">
+                           <div class="card-header">
+                              <h6 class="mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Ocorrências</h6>
+                           </div>
+                           <div class="card-body">
+                              <div class="list-group list-group-flush" id="ocorrencias-list">
+                                 <!-- Conteúdo será preenchido via JavaScript -->
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Aba Follow-ups -->
+                     <div class="tab-pane fade" id="content-followups" role="tabpanel">
+                        <div class="card">
+                           <div class="card-header">
+                              <h6 class="mb-0"><i class="bi bi-arrow-repeat text-warning me-2"></i>Follow-ups</h6>
+                           </div>
+                           <div class="card-body">
+                              <div class="list-group list-group-flush" id="followups-list">
+                                 <!-- Conteúdo será preenchido via JavaScript -->
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Aba Documentos -->
+                     <div class="tab-pane fade" id="content-documentos" role="tabpanel">
+                        <div class="card">
+                           <div class="card-header">
+                              <h6 class="mb-0"><i class="bi bi-file-earmark-text text-info me-2"></i>Documentos</h6>
+                           </div>
+                           <div class="card-body">
+                              <div class="list-group list-group-flush" id="documentos-list">
+                                 <!-- Conteúdo será preenchido via JavaScript -->
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+
+                     <!-- Aba Comprovantes -->
+                     <div class="tab-pane fade" id="content-comprovantes" role="tabpanel">
+                        <div class="card">
+                           <div class="card-header">
+                              <h6 class="mb-0"><i class="bi bi-file-earmark-check text-success me-2"></i>Comprovantes</h6>
+                           </div>
+                           <div class="card-body">
+                              <div class="list-group list-group-flush" id="comprovantes-list">
+                                 <!-- Conteúdo será preenchido via JavaScript -->
+                              </div>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         </div>
+
+         <!-- Estado de Erro -->
+         <div id="error-state" class="text-center py-5 d-none">
+            <i class="bi bi-exclamation-triangle fs-1 text-danger mb-3"></i>
+            <h4 class="text-danger">Erro ao Carregar Dados</h4>
+            <p class="text-muted mb-4">Não foi possível carregar as informações do pedido.</p>
+            <button class="btn btn-primary" id="btn-retry">
+               <i class="bi bi-arrow-clockwise me-2"></i>Tentar Novamente
+            </button>
+         </div>
+      </div>
+   </main>
+
+   <!-- Footer -->
+   <footer class="bg-light py-3 mt-4">
+      <div class="container-fluid">
+         <div class="row align-items-center">
+            <div class="col-md-6">
+               <p class="mb-0 text-muted">
+                  © <span id="year"></span> MM Softwares. Todos os direitos reservados.
+               </p>
+            </div>
+            <div class="col-md-6 text-md-end">
+               <small class="text-muted">Sistema de Gestão de Transporte</small>
+            </div>
+         </div>
+      </div>
+   </footer>
+
+   <!-- Scripts -->
+   <!-- Bootstrap JS -->
+   <script src="/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+   <!-- Leaflet JS -->
+   <script src="/assets/libs/leaflet/leaflet.js"></script>
+   <!-- Sweet Alert 2 -->
+   <script src="/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+   <!-- Simplebar JS -->
+   <script src="/assets/libs/simplebar/simplebar.min.js"></script>
+   <!-- Main Theme Js -->
+   <script src="/assets/js/main.min.js"></script>
+   <!-- Custom Switcher JS -->
+   <script src="/assets/js/custom-switcher.min.js"></script>
+   <!-- Custom JS -->
+   <script src="/assets/js/company-branding.js"></script>
+   <script src="js/script.js"></script>
+
+   <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+   </script>
+</body>
+
+</html>
