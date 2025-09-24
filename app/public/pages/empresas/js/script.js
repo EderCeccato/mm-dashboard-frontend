@@ -1,4 +1,6 @@
 // Configurações globais para validação de arquivos
+const BASE_URL = 'http://localhost:3301'
+
 const FILE_VALIDATION_CONFIG = {
    'company-background': {
       maxWidth: 700,
