@@ -11,7 +11,6 @@ class TMSManager {
       this.columnSettings = this.getDefaultColumnSettings();
       this.currentPedido = null;
       this.map = null;
-      this.apiBaseUrl = window.location.origin + '/api/tms';
       this.init();
    }
 
@@ -55,13 +54,7 @@ class TMSManager {
     */
    async loadProcessosData() {
       try {
-         const response = await fetch(`${this.apiBaseUrl}/processos`, {
-            method: 'GET',
-            headers: {
-               'Content-Type': 'application/json',
-               'Authorization': `Bearer ${localStorage.getItem('token')}`
-            }
-         });
+         const response = await Thefetch(`/api/tms/processos`, 'GET');
 
          if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
@@ -738,19 +731,13 @@ class TMSManager {
     * Carrega detalhes do processo da API
     */
    async loadProcessoDetalhes(nomovtra) {
-      const response = await fetch(`${this.apiBaseUrl}/processos/${nomovtra}/detalhes`, {
-         method: 'GET',
-         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-         }
-      });
-
-      if (!response.ok) {
-         throw new Error(`Erro HTTP: ${response.status}`);
+      // Verifica se a função Thefetch está disponível
+      if (typeof Thefetch !== 'function') {
+         console.error('❌ Função Thefetch não encontrada');
+         throw new Error('Sistema de requisições não disponível');
       }
 
-      const result = await response.json();
+      const result = await Thefetch(`/api/processos/${nomovtra}/detalhes`, 'GET');
       if (!result.success) {
          throw new Error(result.message || 'Erro ao carregar detalhes');
       }
@@ -762,19 +749,13 @@ class TMSManager {
     * Carrega localização do veículo
     */
    async loadVehicleLocation(placa) {
-      const response = await fetch(`${this.apiBaseUrl}/localizacao/${placa}`, {
-         method: 'GET',
-         headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-         }
-      });
-
-      if (!response.ok) {
-         throw new Error(`Erro HTTP: ${response.status}`);
+      // Verifica se a função Thefetch está disponível
+      if (typeof Thefetch !== 'function') {
+         console.error('❌ Função Thefetch não encontrada');
+         throw new Error('Sistema de requisições não disponível');
       }
 
-      const result = await response.json();
+      const result = await Thefetch(`/api/localizacao/${placa}`, 'GET');
       if (result.success && result.data) {
          return result.data;
       }

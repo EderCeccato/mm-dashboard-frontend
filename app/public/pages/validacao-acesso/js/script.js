@@ -169,38 +169,26 @@ class AccessValidationManager {
      * Verifica se o código já existe no banco MySQL
      */
     async checkExistingAccess(accessCode) {
-        const response = await fetch(`${this.apiBaseUrl}/acompanhamento/check-access`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ accessCode })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
+        // Verifica se a função Thefetch está disponível
+        if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            throw new Error('Sistema de requisições não disponível');
         }
 
-        return await response.json();
+        return await Thefetch('/api/acompanhamento/check-access', 'POST', { accessCode });
     }
 
     /**
      * Valida novo código de acesso no Firebird
      */
     async validateNewAccess(accessCode) {
-        const response = await fetch(`${this.apiBaseUrl}/acompanhamento/validate-access`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ accessCode })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
+        // Verifica se a função Thefetch está disponível
+        if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            throw new Error('Sistema de requisições não disponível');
         }
 
-        return await response.json();
+        return await Thefetch('/api/acompanhamento/validate-access', 'POST', { accessCode });
     }
 
     /**

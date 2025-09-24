@@ -5,7 +5,6 @@
 
 class TrackingManager {
     constructor() {
-        this.apiBaseUrl = '/api';
         this.map = null;
         this.urlHash = this.getUrlHash();
         this.currentPedido = null;
@@ -204,18 +203,13 @@ class TrackingManager {
         try {
             this.showState('loading');
 
-            const response = await fetch(`${this.apiBaseUrl}/acompanhamento/tracking/${this.urlHash}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+            // Verifica se a função Thefetch está disponível
+            if (typeof Thefetch !== 'function') {
+                console.error('❌ Função Thefetch não encontrada');
+                throw new Error('Sistema de requisições não disponível');
             }
 
-            const result = await response.json();
+            const result = await Thefetch(`/api/acompanhamento/tracking/${this.urlHash}`, 'GET');
 
             if (result.success && result.data) {
                 this.currentPedido = result.data.pedido;
@@ -275,18 +269,13 @@ class TrackingManager {
      * Carrega detalhes do processo
      */
     async loadProcessDetails(nomovtra) {
-        const response = await fetch(`${this.apiBaseUrl}/tms/processo/${nomovtra}/detalhes`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Erro HTTP: ${response.status}`);
+        // Verifica se a função Thefetch está disponível
+        if (typeof Thefetch !== 'function') {
+            console.error('❌ Função Thefetch não encontrada');
+            throw new Error('Sistema de requisições não disponível');
         }
 
-        const result = await response.json();
+        const result = await Thefetch(`/api/tms/processo/${nomovtra}/detalhes`, 'GET');
         if (result.success && result.data) {
             return result.data;
         }
@@ -298,12 +287,7 @@ class TrackingManager {
      * Carrega localização do veículo
      */
     async loadVehicleLocation(placa) {
-        const response = await fetch(`${this.apiBaseUrl}/localizacao/${placa}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
+        const response = await Thefetch(`/api/tms/localizacao/${placa}`, 'GET');
 
         if (!response.ok) {
             throw new Error(`Erro HTTP: ${response.status}`);
