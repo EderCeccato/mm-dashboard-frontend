@@ -102,7 +102,7 @@ class ColumnManager {
    constructor() {
       // Configuração das colunas baseada nos dados reais do Firebird
       this.defaultColumns = [
-         { key: 'situacao', name: 'Situação', visible: true, order: 0 },
+         { key: 'situacao', name: 'Situação', visible: true, order: 0},
          { key: 'nomovtra', name: 'Pedido', visible: true, order: 1 },
          { key: 'cliente', name: 'Cliente', visible: true, order: 2 },
          { key: 'descricaofluxo', name: 'Descrição Fluxo', visible: true, order: 3 },
@@ -365,7 +365,7 @@ class TableManager {
          scrollCollapse: false,
          paging: true,
          dom: '<"row"<"col-sm-6"l><"col-sm-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-5"i><"col-sm-7"p>>',
-         order: [[0, 'asc']], // Ordena por situação (vencidas primeiro)
+         order: [[0, 'desc']], // Ordena por situação (vencidas primeiro)
          rowCallback: (row, data) => this.styleTableRow(row, data),
          drawCallback: () => {
             // Esconde o loader quando a tabela termina de desenhar
@@ -385,8 +385,8 @@ class TableManager {
    buildDataColumn(col) {
       return {
          data: col.key,
-         title: col.name,
-         render: (data, type, row) => this.renderColumnData(col.key, data, row)
+         title: `<small>${col.name}</small>`,
+         render: (data, type, row) => `<small>${this.renderColumnData(col.key, data, row)}</small>`
       };
    }
 
@@ -404,17 +404,17 @@ class TableManager {
 
          case 'datainiciofluxo':
          case 'data':
-            return ApiUtils.formatDate(data);
+            return `<div style="min-width: 100px;">${ApiUtils.formatDate(data)}</div>`;
 
          case 'cliente':
             return row.cliente || '-';
 
          case 'container':
-            return data ? `<code>${data}</code>` : '-';
+            return data ? `<div style="min-width: 100px;">${data}</div>` : '-';
 
          case 'placacav':
          case 'placacar':
-            return data ? `<code>${data}</code>` : '-';
+            return data ? data : '-';
 
          default:
             return data || '-';

@@ -202,20 +202,23 @@ class TMSManager {
 				title: col.name,
 				render: (data, type, row) => {
 					if (col.key === 'nomstatusfre') {
-						return this.getStatusBadgeWithColor(data, row.color);
+						return `<small>${this.getStatusBadgeWithColor(data, row.color)}</small>`;
 					} else if (col.key === 'data') {
-						return data ? this.formatDate(data) : '-';
-					} else if (col.key.includes('vlr') || col.key === 'totalfrete' ||
-						col.key === 'vlrtotalnf' || col.key.includes('icm')) {
-						return data ? this.formatCurrency(data) : '-';
+						return data ? `<small>${this.formatDate(data)}</small>` : '-';
+					} else if (col.key.includes('vlr') || col.key === 'totalfrete' || col.key === 'vlrtotalnf' || col.key.includes('icm')) {
+						return data ? `<small>${this.formatCurrency(data)}</small>` : '-';
 					} else if (col.key === 'pesototalnf') {
-						return data ? this.formatWeight(data) : '-';
-					} else if (col.key === 'container' && !data) {
-						return '-';
+						return data ? `<small>${this.formatWeight(data)}</small>` : '-';
 					} else if (col.key === 'qtdevol') {
-						return data ? parseInt(data) : '-';
+						return data ? `<small>${parseInt(data)}</small>` : '-';
+					} else if (col.key === 'processo') {
+						return data ? `<div style="min-width: 150px;"><small>${data}</small></div>` : '-';
+					} else if (col.key === 'destinatario') {
+						return data ? `<div style="min-width: 200px;"><small>${data}</small></div>` : '-';
+					} else if (col.key === 'container') {
+						return data ? `<div style="min-width: 120px;"><small>${data}</small></div>` : '-';
 					}
-					return data || '-';
+					return data ? `<small>${data}</small>` : '-';
 				}
 			};
 		});
@@ -237,7 +240,8 @@ class TMSManager {
          scrollCollapse: false,
          paging: true,
          dom: '<"row"<"col-sm-6"l><"col-sm-6"f>><"row"<"col-sm-12"tr>><"row"<"col-sm-5"i><"col-sm-7"p>>',
-			order: defaultOrderIndex !== -1 ? [[defaultOrderIndex, 'desc']] : []
+			// order: defaultOrderIndex !== -1 ? [[defaultOrderIndex, 'desc']] : []
+         order: [[0, 'desc']]
       });
 
       // Evento de clique na linha para abrir modal

@@ -81,10 +81,24 @@
 .export-options .dropdown-item:hover { background-color: #f8f9fa; }
 
 /* Dark mode support */
-[data-theme-mode="dark"] #wms-table th { background-color: #212529; color: #ffffff; border-bottom-color: #495057; }
-[data-theme-mode="dark"] #wms-table td { border-right-color: #495057; }
-[data-theme-mode="dark"] .card { background-color: #212529; border-color: #495057; }
-[data-theme-mode="dark"] .card-header { border-bottom-color: #495057; }
+[data-theme-mode="dark"] #wms-table th {
+   background-color: #212529;
+   color: #ffffff;
+   border-bottom-color: #495057;
+}
+
+[data-theme-mode="dark"] #wms-table td {
+   border-right-color: #495057;
+}
+
+[data-theme-mode="dark"] .card {
+   /* background-color: #212529;  */
+   border-color: #495057;
+}
+
+[data-theme-mode="dark"] .card-header {
+   border-bottom-color: #495057;
+}
 
 @media (max-width: 768px) {
     #wms-table { font-size: 0.75rem; }

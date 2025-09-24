@@ -146,11 +146,13 @@ app.get('/', (req, res) => {
 // Servir arquivos estáticos (css, js, imagens, etc)
 app.use(express.static(PUBLIC_DIR));
 
-// Middleware para proteger rotas (exceto login e arquivos públicos)
+// Middleware para proteger rotas (exceto login, validação de acesso, acompanhamento e arquivos públicos)
 app.use((req, res, next) => {
-  // Permite acesso livre à tela de login e arquivos estáticos
+  // Permite acesso livre à tela de login, validação de acesso, acompanhamento e arquivos estáticos
   if (
     req.path === '/login' ||
+    req.path.startsWith('/validacao-acesso') ||
+    req.path.startsWith('/acompanhamento') ||
     req.path.startsWith('/assets') ||
     req.path.startsWith('/js') ||
     req.path.startsWith('/libs') ||
@@ -194,6 +196,35 @@ app.get('/login', (req, res) => {
 
   const filePath = path.join(PAGES_DIR, 'login', 'index.html');
   res.sendFile(filePath);
+});
+
+// Rota específica para validação de acesso
+app.get('/validacao-acesso', (req, res) => {
+  if (res.headersSent) {
+    return;
+  }
+
+  const filePath = path.join(PAGES_DIR, 'validacao-acesso', 'index.html');
+  res.sendFile(filePath);
+});
+
+// Rota específica para acompanhamento com hash
+app.get('/acompanhamento/:hash', (req, res) => {
+  if (res.headersSent) {
+    return;
+  }
+
+  const filePath = path.join(PAGES_DIR, 'acompanhamento', 'index.html');
+  res.sendFile(filePath);
+});
+
+// Rota específica para acompanhamento sem hash (redireciona para validação)
+app.get('/acompanhamento', (req, res) => {
+  if (res.headersSent) {
+    return;
+  }
+
+  res.redirect('/validacao-acesso');
 });
 
 // 404 para rotas não encontradas

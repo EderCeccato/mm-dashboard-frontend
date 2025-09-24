@@ -555,7 +555,7 @@ table.dataTable thead>tr>th.sorting{
 }
 
 [data-theme-mode="dark"] .card {
-    background-color: #212529;
+    /* background-color: #212529; */
     border-color: #495057;
 }
 
