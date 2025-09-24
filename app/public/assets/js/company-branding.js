@@ -60,6 +60,9 @@ const CompanyBranding = (function() {
             // Salva no localStorage para uso futuro
             localStorage.setItem(COMPANY_DATA_KEY, JSON.stringify(response.data));
 
+            // Salva dados de branding para páginas públicas
+            saveBrandingData(response.data);
+
             return response.data;
          }
 
@@ -68,6 +71,40 @@ const CompanyBranding = (function() {
       } catch (error) {
          console.error('❌ Erro ao buscar informações da empresa:', error);
          return null;
+      }
+   }
+
+   /**
+    * Salva dados de branding simplificados para uso em páginas públicas
+    * @param {Object} companyData Dados completos da empresa
+    */
+   function saveBrandingData(companyData) {
+      try {
+         if (!companyData) return;
+
+         const brandingData = {
+            primaryColor: null,
+            logo: companyData.logo || null,
+            companyName: companyData.nome || companyData.name || null
+         };
+
+         // Converte RGB para Hex se disponível
+         if (companyData.coremp) {
+            const rgbValues = companyData.coremp.split(',').map(val => parseInt(val.trim()));
+            if (rgbValues.length === 3 && rgbValues.every(val => !isNaN(val))) {
+               const rgbToHex = (r, g, b) => '#' + [r, g, b]
+                  .map(x => x.toString(16).padStart(2, '0'))
+                  .join('');
+               brandingData.primaryColor = rgbToHex(rgbValues[0], rgbValues[1], rgbValues[2]);
+            }
+         }
+
+         // Salva no localStorage para uso nas páginas públicas
+         localStorage.setItem('companyBranding', JSON.stringify(brandingData));
+
+         console.log('✅ Branding salvo para páginas públicas:', brandingData);
+      } catch (error) {
+         console.error('❌ Erro ao salvar branding:', error);
       }
    }
 
