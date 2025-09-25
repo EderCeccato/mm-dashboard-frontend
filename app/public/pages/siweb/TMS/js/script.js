@@ -56,13 +56,12 @@ class TMSManager {
       try {
          const response = await Thefetch(`/api/tms/processos`, 'GET');
 
-         if (!response.ok) {
+         if (!response.success) {
             throw new Error(`Erro HTTP: ${response.status}`);
          }
 
-         const result = await response.json();
-         if (result.success) {
-            this.data = result.data;
+         if (response.success) {
+            this.data = response.data;
          } else {
             this.showToast('Erro ao carregar processos TMS', 'error');
          }
@@ -737,7 +736,9 @@ class TMSManager {
          throw new Error('Sistema de requisições não disponível');
       }
 
-      const result = await Thefetch(`/api/processos/${nomovtra}/detalhes`, 'GET');
+      const result = await Thefetch(`/api/tms/processos/${nomovtra}/detalhes`, 'GET');
+      console.log(result);
+
       if (!result.success) {
          throw new Error(result.message || 'Erro ao carregar detalhes');
       }
@@ -755,7 +756,7 @@ class TMSManager {
          throw new Error('Sistema de requisições não disponível');
       }
 
-      const result = await Thefetch(`/api/localizacao/${placa}`, 'GET');
+      const result = await Thefetch(`/api/tms/localizacao/${placa}`, 'GET');
       if (result.success && result.data) {
          return result.data;
       }
