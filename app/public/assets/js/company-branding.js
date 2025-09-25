@@ -102,7 +102,7 @@ const CompanyBranding = (function() {
          // Salva no localStorage para uso nas páginas públicas
          localStorage.setItem('companyBranding', JSON.stringify(brandingData));
 
-         console.log('✅ Branding salvo para páginas públicas:', brandingData);
+         // console.log('✅ Branding salvo para páginas públicas:', brandingData);
       } catch (error) {
          console.error('❌ Erro ao salvar branding:', error);
       }
