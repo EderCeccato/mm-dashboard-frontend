@@ -77,7 +77,7 @@ class AccessValidationManager {
 
         } catch (error) {
             console.error('Erro na validação:', error);
-            this.showErrorToast('Erro ao validar código. Tente novamente.');
+            this.showErrorToast(error.message || 'Erro ao validar código de acesso');
         } finally {
             this.showLoading(false);
         }
@@ -150,6 +150,7 @@ class AccessValidationManager {
         if (show) {
             btnValidate?.classList.add('d-none');
             btnLoader?.classList.remove('d-none');
+            btnLoader?.classList.add('d-block');
         } else {
             btnValidate?.classList.remove('d-none');
             btnLoader?.classList.add('d-none');

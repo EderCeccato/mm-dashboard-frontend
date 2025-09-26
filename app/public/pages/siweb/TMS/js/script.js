@@ -737,7 +737,6 @@ class TMSManager {
       }
 
       const result = await Thefetch(`/api/tms/processos/${nomovtra}/detalhes`, 'GET');
-      console.log(result);
 
       if (!result.success) {
          throw new Error(result.message || 'Erro ao carregar detalhes');
