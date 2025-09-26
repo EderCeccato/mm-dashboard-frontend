@@ -51,7 +51,15 @@ class AccessValidationManager {
         try {
             // Primeira tentativa: verificar se já existe no banco MySQL
             const existingAccess = await this.checkExistingAccess(codeAccess);
-            console.log(existingAccess);
+
+            if (existingAccess.success === true) {
+                // Código já validado anteriormente, redirecionar
+                this.showSuccessToast('Código válido! Redirecionando...');
+                setTimeout(() => {
+                    window.location.href = existingAccess.redirect;
+                }, 1500);
+                return;
+            }
 
 
             // if (existingAccess.success && existingAccess.data.url) {
