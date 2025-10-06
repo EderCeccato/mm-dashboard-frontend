@@ -714,22 +714,6 @@
                </select>
             </div>
 
-            <!-- Produto -->
-            <div class="mb-3">
-               <label for="filter-produto" class="form-label">
-                  <i class="bi bi-box me-1"></i>Produto
-               </label>
-               <input type="text" class="form-control" id="filter-produto" placeholder="Digite o nome do produto">
-            </div>
-
-            <!-- Lote -->
-            <div class="mb-3">
-               <label for="filter-lote" class="form-label">
-                  <i class="bi bi-tag me-1"></i>Lote
-               </label>
-               <input type="text" class="form-control" id="filter-lote" placeholder="Digite o lote">
-            </div>
-
             <!-- Cliente -->
             <div class="mb-3">
                <label for="filter-cliente" class="form-label">
@@ -738,14 +722,6 @@
                <select class="form-select" id="filter-cliente">
                   <option value="">Todos</option>
                </select>
-            </div>
-
-            <!-- Container -->
-            <div class="mb-3">
-               <label for="filter-container" class="form-label">
-                  <i class="bi bi-box-seam me-1"></i>Container
-               </label>
-               <input type="text" class="form-control" id="filter-container" placeholder="Digite o container">
             </div>
 
             <!-- Data de Movimento -->
@@ -863,6 +839,15 @@
 
    <!-- Sortable JS -->
    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+   <!-- SheetJS (XLSX) for Excel Export -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+   <!-- jsPDF for PDF Export -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+   <!-- jsPDF AutoTable plugin for table generation -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
    <!-- Custom Script -->
    <script src="/pages/gestao-estoque/js/script.js"></script>

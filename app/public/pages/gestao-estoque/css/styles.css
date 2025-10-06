@@ -137,14 +137,14 @@ table.dataTable thead>tr>th.sorting{
 }
 
 #table-container {
-    width: 100%;
-    margin: 0;
-    padding: 0 1rem;
+   width: 100%;
+   margin: 0;
+   padding: 0 1rem;
 }
 
 .dataTables_wrapper {
-    width: 100%;
-    margin: 0;
+   width: 100%;
+   margin: 0;
 }
 
 .table-responsive {
@@ -554,6 +554,24 @@ table.dataTable thead>tr>th.sorting{
     background-color: #f8f9fa;
 }
 
+/* ===== FLATPICKR Z-INDEX FIX ===== */
+/* Corrige o z-index do flatpickr para aparecer acima do offcanvas */
+.flatpickr-calendar {
+    z-index: 1060 !important;
+}
+
+.flatpickr-months,
+.flatpickr-weekdays,
+.flatpickr-days,
+.flatpickr-time {
+    z-index: 1061 !important;
+}
+
+/* Para garantir que funcione dentro do offcanvas */
+.offcanvas .flatpickr-calendar {
+    z-index: 1060 !important;
+}
+
 /* ===== DARK MODE SUPPORT ===== */
 [data-theme-mode="dark"] #estoque-table th {
     background-color: #212529;
@@ -588,13 +606,13 @@ table.dataTable thead>tr>th.sorting{
 }
 
 .number-cell {
-    text-align: right;
-    font-family: monospace;
-    font-weight: 500;
+   text-align: right;
+   /* font-family: monospace; */
+   font-weight: 500;
 }
 
 .quantity-cell {
-    color: #0d6efd;
-    font-weight: 500;
-    text-align: right;
+   color: #0d6efd;
+   font-weight: 500;
+   text-align: right;
 }

@@ -141,8 +141,33 @@ class ColumnManager {
    }
 
    loadSettings() {
-      const saved = localStorage.getItem('estoque-column-settings');
-      return saved ? JSON.parse(saved) : [...this.defaultColumns];
+      try {
+         const saved = localStorage.getItem('estoque-column-settings');
+         if (saved) {
+            const parsedSettings = JSON.parse(saved);
+
+            // Verificar se as configurações são válidas
+            if (Array.isArray(parsedSettings) && parsedSettings.length > 0) {
+               // Validar se todas as colunas têm as propriedades necessárias
+               const validSettings = parsedSettings.filter(col =>
+                  col && col.key && col.name &&
+                  typeof col.visible === 'boolean' &&
+                  typeof col.order === 'number'
+               );
+
+               if (validSettings.length > 0) {
+                  return validSettings;
+               }
+            }
+         }
+      } catch (error) {
+         console.warn('Erro ao carregar configurações salvas:', error);
+         // Limpar configurações inválidas
+         localStorage.removeItem('estoque-column-settings');
+      }
+
+      // Retornar configuração padrão
+      return [...this.defaultColumns];
    }
 
    saveSettings() {
@@ -150,9 +175,27 @@ class ColumnManager {
    }
 
    getVisibleColumns() {
-      return this.columns
-         .filter(col => col.visible)
-         .sort((a, b) => a.order - b.order);
+      // Validar se columns existe e é um array
+      if (!this.columns || !Array.isArray(this.columns)) {
+         console.warn('Colunas não definidas, usando configuração padrão');
+         this.columns = [...this.defaultColumns];
+      }
+
+      // Filtrar e ordenar colunas visíveis
+      const visibleColumns = this.columns
+         .filter(col => col && col.visible && col.key)
+         .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+      // Garantir que pelo menos uma coluna esteja visível
+      if (visibleColumns.length === 0) {
+         console.warn('Nenhuma coluna visível, forçando primeira coluna');
+         if (this.columns.length > 0) {
+            this.columns[0].visible = true;
+            return [this.columns[0]];
+         }
+      }
+
+      return visibleColumns;
    }
 
    getColumnIndex(key) {
@@ -262,7 +305,11 @@ class FilterManager {
          dateFormat: 'd/m/Y',
          locale: 'pt',
          minDate: '2020-01-01',
-         maxDate: 'today'
+         maxDate: 'today',
+         // Configurações para funcionar dentro do offcanvas
+         appendTo: document.body,
+         static: false,
+         positionElement: dateInput
       });
    }
 
@@ -302,13 +349,10 @@ class FilterManager {
       this.dataTable.search('').columns().search('');
       this.activeFilters = 0;
 
-      // Get filter values
+      // Get filter values (apenas dropdowns)
       const filters = {
          armazem: document.getElementById('filter-armazem')?.value || '',
-         produto: document.getElementById('filter-produto')?.value || '',
-         lote: document.getElementById('filter-lote')?.value || '',
-         cliente: document.getElementById('filter-cliente')?.value || '',
-         container: document.getElementById('filter-container')?.value || ''
+         cliente: document.getElementById('filter-cliente')?.value || ''
       };
 
       // Apply individual column filters
@@ -318,10 +362,7 @@ class FilterManager {
             let columnKey;
             switch(filterKey) {
                case 'armazem': columnKey = 'nomarm'; break;
-               case 'produto': columnKey = 'nompro'; break;
-               case 'lote': columnKey = 'lote'; break;
                case 'cliente': columnKey = 'nomcli'; break;
-               case 'container': columnKey = 'container'; break;
             }
 
             if (columnKey) {
@@ -469,6 +510,728 @@ class FilterManager {
    }
 }
 
+// ===== GERENCIADOR DE EXPORTAÇÕES =====
+/**
+ * Classe responsável por gerenciar exportações Excel/PDF com feedback visual
+ */
+class ExportManager {
+   /**
+    * Exporta dados para Excel (gerado no frontend)
+    */
+   static async exportToExcel() {
+      const btn = document.querySelector('[data-export="excel"]');
+      if (!btn) return;
+
+      const originalText = btn.innerHTML;
+
+      try {
+         // Desabilita botão
+         btn.disabled = true;
+         btn.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Exportando...
+         `;
+
+         // Obtém dados filtrados da tabela
+         const filteredData = this.getFilteredTableData();
+
+         if (filteredData.length === 0) {
+            window.estoqueManager?.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
+
+         // Gera Excel no frontend com dados filtrados
+         this.generateExcelFile(filteredData);
+
+         window.estoqueManager?.showToast(`Excel gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
+
+      } catch (error) {
+         console.error('Erro ao gerar Excel:', error);
+         window.estoqueManager?.showToast('Erro ao gerar Excel. Tente novamente.', 'error');
+      } finally {
+         // Restaura botão
+         btn.disabled = false;
+         btn.innerHTML = originalText;
+      }
+   }
+
+   /**
+    * Exporta dados para PDF (gerado no frontend)
+    */
+   static async exportToPDF() {
+      const btn = document.querySelector('[data-export="pdf"]');
+      if (!btn) return;
+
+      const originalText = btn.innerHTML;
+
+      try {
+         // Desabilita botão
+         btn.disabled = true;
+         btn.innerHTML = `
+            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+            Exportando...
+         `;
+
+         // Obtém dados filtrados da tabela
+         const filteredData = this.getFilteredTableData();
+
+         if (filteredData.length === 0) {
+            window.estoqueManager?.showToast('Nenhum dado para exportar. Aplique filtros ou verifique se há dados na tabela.', 'warning');
+            return;
+         }
+
+         // Gera PDF no frontend com dados filtrados
+         this.generatePDFFile(filteredData);
+
+         window.estoqueManager?.showToast(`PDF gerado com sucesso! ${filteredData.length} item(ns) exportado(s)`, 'success');
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         window.estoqueManager?.showToast('Erro ao gerar PDF. Tente novamente.', 'error');
+      } finally {
+         // Restaura botão
+         btn.disabled = false;
+         btn.innerHTML = originalText;
+      }
+   }
+
+   /**
+    * Obtém dados filtrados da tabela (apenas dados visíveis)
+    */
+   static getFilteredTableData() {
+      const estoqueManager = window.estoqueManager;
+      if (!estoqueManager || !estoqueManager.dataTable) {
+         console.warn('Tabela não inicializada, retornando dados originais');
+         return estoqueManager?.data || [];
+      }
+
+      // Obtém dados filtrados da DataTable
+      const filteredData = [];
+      const dataTable = estoqueManager.dataTable;
+
+      // Itera sobre todas as linhas visíveis (considerando paginação e filtros)
+      dataTable.rows({ search: 'applied' }).every(function() {
+         const rowData = this.data();
+         filteredData.push(rowData);
+      });
+
+      console.log(`Exportando ${filteredData.length} itens filtrados de ${estoqueManager.data.length} total`);
+      return filteredData;
+   }
+
+   /**
+    * Gera arquivo Excel no frontend
+    */
+   static generateExcelFile(data) {
+      // Usar SheetJS (XLSX) para gerar Excel no frontend
+      if (typeof XLSX === 'undefined') {
+         console.error('Biblioteca XLSX não encontrada');
+         window.estoqueManager?.showToast('Biblioteca XLSX não encontrada. Verifique se está incluída no HTML.', 'error');
+         return;
+      }
+
+      const workbook = XLSX.utils.book_new();
+
+      // Preparar dados para Excel com colunas específicas do estoque
+      const excelData = data.map(item => ({
+         'Armazém': item.nomarm || '',
+         'Produto': item.nompro || '',
+         'Lote': item.lote || '',
+         'Ref Cliente': item.refcli || '',
+         'Vlr Unit NF': item.vlrunitnf || 0,
+         'N° NF': item.nonf || '',
+         'Container': item.container || '',
+         'Disponível': item.disponivel || 0,
+         'Peso Líq. Disponível': item.pesoliqdisp || 0,
+         'Código Produto': item.nopro || '',
+         'Código Armazém': item.noarm || '',
+         'N° OS': item.noos || '',
+         'Item': item.item || '',
+         'N° Cliente': item.nocli || '',
+         'Código Cliente': item.codcli || '',
+         'Vlr Unit': item.vlwunit || 0,
+         'KG Entrada': item.kg_ent || 0,
+         'Peso CX': item.pesocx || 0,
+         'Peso Líquido': item.pesoliq || 0,
+         'KG Entrada Líquido': item.kg_entliq || 0,
+         'Unidade': item.nomun || '',
+         'Data Validade': item.datavalidade ? new Date(item.datavalidade).toLocaleDateString('pt-BR') : '',
+         'Nome Cliente': item.nomcli || '',
+         'Data Movimento': item.datamov ? new Date(item.datamov).toLocaleDateString('pt-BR') : '',
+         'Fator Conversão': item.fatorconv || 0,
+         'Qtde Reservada': item.qtdereserv || 0,
+         'Peso Bruto Disponível': item.pesobrdisp || 0,
+         'Vlr Mercadoria': item.vlrmerc || 0,
+         'Quantidade': item.qtde || 0,
+         'Padrão FC': item.padraofc || '',
+         'Padrão FC Descrição': item.padraofcdescr || '',
+         'Metros': item.metros || 0
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+
+      // Ajustar largura das colunas
+      const colWidths = [
+         { wch: 20 }, // Armazém
+         { wch: 40 }, // Produto
+         { wch: 15 }, // Lote
+         { wch: 15 }, // Ref Cliente
+         { wch: 12 }, // Vlr Unit NF
+         { wch: 12 }, // N° NF
+         { wch: 15 }, // Container
+         { wch: 12 }, // Disponível
+         { wch: 18 }, // Peso Líq. Disponível
+         { wch: 15 }, // Código Produto
+         { wch: 15 }, // Código Armazém
+         { wch: 10 }, // N° OS
+         { wch: 8 },  // Item
+         { wch: 12 }, // N° Cliente
+         { wch: 15 }, // Código Cliente
+         { wch: 12 }, // Vlr Unit
+         { wch: 12 }, // KG Entrada
+         { wch: 10 }, // Peso CX
+         { wch: 12 }, // Peso Líquido
+         { wch: 18 }, // KG Entrada Líquido
+         { wch: 10 }, // Unidade
+         { wch: 15 }, // Data Validade
+         { wch: 30 }, // Nome Cliente
+         { wch: 15 }, // Data Movimento
+         { wch: 15 }, // Fator Conversão
+         { wch: 12 }, // Qtde Reservada
+         { wch: 18 }, // Peso Bruto Disponível
+         { wch: 15 }, // Vlr Mercadoria
+         { wch: 12 }, // Quantidade
+         { wch: 12 }, // Padrão FC
+         { wch: 25 }, // Padrão FC Descrição
+         { wch: 10 }  // Metros
+      ];
+      worksheet['!cols'] = colWidths;
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Gestao Estoque');
+
+      // Gerar arquivo e fazer download
+      const filename = `gestao_estoque_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(workbook, filename);
+   }
+
+   /**
+    * Gera arquivo PDF no frontend com design profissional (padrão MM Softwares)
+    */
+   static generatePDFFile(data) {
+      try {
+         // Tentar diferentes formas de acessar jsPDF
+         const jsPDF = window.jspdf?.jsPDF || window.jsPDF || window.jsPdf;
+
+         if (!jsPDF) {
+            window.estoqueManager?.showToast('Biblioteca jsPDF não encontrada. Verifique se está incluída no HTML.', 'error');
+            console.error('jsPDF não encontrado. Objetos disponíveis:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+            return;
+         }
+
+         const doc = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: 'a4'
+         });
+
+         // Configurações gerais
+         const pageWidth = doc.internal.pageSize.width;
+         const pageHeight = doc.internal.pageSize.height;
+         const margin = 15;
+         let currentY = 20;
+
+         // === CABEÇALHO PRINCIPAL ===
+         this.createPDFHeader(doc, pageWidth, currentY);
+         currentY = 50;
+
+         // === INFORMAÇÕES DO RELATÓRIO ===
+         currentY = this.addReportInfo(doc, data, margin, currentY);
+         currentY += 15;
+
+         // === DADOS DA TABELA ===
+         this.createPDFTable(doc, data, margin, currentY, pageWidth, pageHeight);
+
+         // === RODAPÉ ===
+         this.addPDFFooter(doc, pageWidth, pageHeight, margin);
+
+         // Salvar arquivo
+         const filename = `gestao_estoque_${new Date().toISOString().split('T')[0]}.pdf`;
+         doc.save(filename);
+
+      } catch (error) {
+         console.error('Erro ao gerar PDF:', error);
+         console.error('Stack trace:', error.stack);
+         console.error('Tipo do erro:', error.name);
+         console.error('Objetos PDF disponíveis no window:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+
+         window.estoqueManager?.showToast(`Erro ao gerar PDF: ${error.message}. Verifique o console para mais detalhes.`, 'error');
+      }
+   }   /**
+    * Cria o cabeçalho principal do PDF (padrão MM Softwares)
+    */
+   static createPDFHeader(doc, pageWidth, startY) {
+      // Obter cor da empresa ou usar verde como fallback
+      const companyColor = this.getCompanyColor();
+
+      // Fundo do cabeçalho
+      doc.setFillColor(...companyColor);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+
+      // Título principal - melhor espaçamento
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RELATÓRIO DE GESTÃO DE ESTOQUE', pageWidth / 2, startY, { align: 'center' });
+
+      // Subtítulo
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      // doc.text('Sistema de Gestão Logística - MM Softwares', pageWidth / 2, startY + 20, { align: 'center' });
+
+      // Data e hora de geração
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('pt-BR');
+      const timeStr = now.toLocaleTimeString('pt-BR');
+      doc.setFontSize(10);
+      doc.text(`Gerado em: ${dateStr} às ${timeStr}`, pageWidth / 2, startY + 32, { align: 'center' });
+   }
+
+   /**
+    * Adiciona informações do relatório
+    */
+   static addReportInfo(doc, data, margin, currentY) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('RESUMO DO RELATÓRIO', margin, currentY);
+
+      currentY += 8;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+
+      // Estatísticas básicas
+      const stats = this.calculateEstoqueStats(data);
+
+      // Informações do estoque
+      doc.text(`Total de itens: ${data.length}`, margin, currentY);
+
+      doc.setTextColor(40, 167, 69);
+      doc.text(`Com estoque: ${stats.comEstoque}`, margin + 70, currentY);
+
+      doc.setTextColor(255, 193, 7);
+      doc.text(`Estoque baixo: ${stats.estoqueBaixo}`, margin + 150, currentY);
+
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Sem estoque: ${stats.semEstoque}`, margin + 230, currentY);
+
+      // Voltar para cor preta
+      doc.setTextColor(0, 0, 0);
+
+      return currentY;
+   }
+
+   /**
+    * Calcula estatísticas dos dados de estoque
+    */
+   static calculateEstoqueStats(data) {
+      return data.reduce((stats, item) => {
+         const disponivel = parseFloat(item.disponivel) || 0;
+         if (disponivel > 10) {
+            stats.comEstoque++;
+         } else if (disponivel > 0) {
+            stats.estoqueBaixo++;
+         } else {
+            stats.semEstoque++;
+         }
+         return stats;
+      }, { comEstoque: 0, estoqueBaixo: 0, semEstoque: 0 });
+   }
+
+   /**
+    * Adiciona rodapé do PDF (padrão MM Softwares)
+    */
+   static addPDFFooter(doc, pageWidth, pageHeight, margin) {
+      const totalPages = doc.internal.getNumberOfPages();
+
+      for (let i = 1; i <= totalPages; i++) {
+         doc.setPage(i);
+
+         // Linha separadora
+         doc.setDrawColor(200, 200, 200);
+         doc.setLineWidth(0.5);
+         doc.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+
+         // Informações do rodapé
+         doc.setTextColor(100, 100, 100);
+         doc.setFontSize(8);
+         doc.setFont('helvetica', 'normal');
+
+         // Esquerda: Info da empresa
+         doc.text('MM Softwares - Sistema de Gestão de Estoque', margin, pageHeight - 8);
+
+         // Centro: Data
+         const now = new Date();
+         doc.text(`Relatório gerado em ${now.toLocaleDateString('pt-BR')}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+
+         // Direita: Numeração
+         doc.text(`Página ${i} de ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+      }
+   }   /**
+    * Cria a tabela principal do PDF com quebra de linha automática (padrão MM Softwares)
+    */
+   static createPDFTable(doc, data, margin, startY, pageWidth, pageHeight) {
+      const headers = [
+         'Armazém', 'Produto', 'Lote', 'Ref Cliente', 'Vlr Unit NF',
+         'N° NF', 'Container', 'Disponível'
+      ];
+
+      // Calcular larguras automáticas com prioridade para campos importantes
+      const colWidths = this.calculateOptimalColumnWidths(doc, headers, data, pageWidth, margin);
+      let currentY = startY;
+
+      // === CABEÇALHO DA TABELA ===
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.1);
+
+      // Desenhar fundo do cabeçalho - altura maior
+      const headerHeight = 12;
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      // Desenhar bordas das células do cabeçalho
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      // Texto do cabeçalho
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+
+         // Centralizar texto horizontalmente e verticalmente
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+
+      currentY += headerHeight + 2;
+
+      // === DADOS DA TABELA ===
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      const baseRowHeight = 10;
+
+      data.forEach((item, index) => {
+         // Preparar dados da linha
+         const rowData = [
+            item.nomarm || '',
+            item.nompro || '',
+            item.lote || '',
+            item.refcli || '',
+            this.formatCurrency(item.vlrunitnf),
+            item.nonf || '',
+            item.container || '',
+            this.formatNumber(item.disponivel, 2)
+         ];
+
+         // Calcular altura necessária para esta linha com quebra de texto
+         const rowHeight = this.calculateRowHeight(doc, rowData, colWidths, baseRowHeight);
+
+         // Verificar nova página
+         if (currentY + rowHeight > pageHeight - 30) {
+            doc.addPage();
+            currentY = margin + 20;
+
+            // Repetir cabeçalho na nova página
+            this.drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth);
+            currentY += headerHeight + 2;
+         }
+
+         // Cor de fundo alternada
+         if (index % 2 === 0) {
+            doc.setFillColor(250, 250, 250);
+         } else {
+            doc.setFillColor(255, 255, 255);
+         }
+
+         // Desenhar fundo da linha
+         doc.rect(margin, currentY, pageWidth - (margin * 2), rowHeight, 'F');
+
+         // Desenhar bordas das células
+         doc.setDrawColor(220, 220, 220);
+         doc.setLineWidth(0.1);
+         let cellX = margin;
+         colWidths.forEach((width, idx) => {
+            doc.rect(cellX, currentY, width, rowHeight, 'D');
+            cellX += width;
+         });
+
+         // Desenhar conteúdo das células com centralização vertical
+         currentX = margin;
+         rowData.forEach((text, colIndex) => {
+            const cellWidth = colWidths[colIndex];
+            const availableTextWidth = cellWidth - 4;
+
+            // Configurar fonte baseada na coluna
+            if (colIndex === 7) { // Disponível
+               const disponivel = parseFloat(item.disponivel) || 0;
+               if (disponivel > 10) {
+                  doc.setTextColor(40, 167, 69); // Verde
+               } else if (disponivel > 0) {
+                  doc.setTextColor(255, 193, 7); // Amarelo
+               } else {
+                  doc.setTextColor(220, 53, 69); // Vermelho
+               }
+               doc.setFont('helvetica', 'bold');
+               doc.setFontSize(8);
+            } else {
+               doc.setTextColor(0, 0, 0);
+               doc.setFont('helvetica', 'normal');
+               doc.setFontSize(8);
+            }
+
+            // Tratamento especial por tipo de coluna
+            let lines;
+            if (colIndex === 1) { // Produto: truncar em uma linha
+               lines = [this.truncateTextToFit(doc, text.toString(), availableTextWidth)];
+            } else if (colIndex === 6) { // Container: sempre mostrar completo
+               const fullText = text.toString();
+               if (doc.getTextWidth(fullText) > availableTextWidth) {
+                  doc.setFontSize(6);
+                  if (doc.getTextWidth(fullText) > availableTextWidth) {
+                     doc.setFontSize(5);
+                  }
+               }
+               lines = [fullText];
+            } else {
+               lines = this.wrapText(doc, text.toString(), availableTextWidth);
+            }
+
+            // Calcular posição Y para centralização vertical
+            const totalTextHeight = lines.length * 3;
+            const startY = currentY + (rowHeight - totalTextHeight) / 2 + 3;
+
+            // Desenhar cada linha do texto
+            lines.forEach((line, lineIndex) => {
+               const lineY = startY + (lineIndex * 3);
+
+               // Centralizar horizontalmente
+               const textWidth = doc.getTextWidth(line);
+               const textX = currentX + (cellWidth - textWidth) / 2;
+
+               doc.text(line, textX, lineY);
+            });
+
+            currentX += cellWidth;
+         });
+
+         currentY += rowHeight;
+      });
+   }
+
+   /**
+    * Desenha cabeçalho da tabela (para páginas adicionais)
+    */
+   static drawTableHeader(doc, headers, colWidths, margin, currentY, pageWidth) {
+      const headerHeight = 12;
+
+      doc.setFillColor(240, 240, 240);
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, currentY, pageWidth - (margin * 2), headerHeight, 'FD');
+
+      // Desenhar bordas das células do cabeçalho
+      doc.setDrawColor(180, 180, 180);
+      doc.setLineWidth(0.2);
+      let headerX = margin;
+      colWidths.forEach((width, idx) => {
+         doc.rect(headerX, currentY, width, headerHeight, 'D');
+         headerX += width;
+      });
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+
+      let currentX = margin;
+      headers.forEach((header, index) => {
+         const cellWidth = colWidths[index];
+         const textWidth = doc.getTextWidth(header);
+         const textX = currentX + (cellWidth - textWidth) / 2;
+         const textY = currentY + headerHeight / 2 + 2;
+
+         doc.text(header, textX, textY);
+         currentX += cellWidth;
+      });
+   }
+
+   /**
+    * Calcula larguras ótimas das colunas baseadas no conteúdo
+    */
+   static calculateOptimalColumnWidths(doc, headers, data, pageWidth, margin) {
+      const availableWidth = pageWidth - (margin * 2);
+
+      // Prioridades para cada coluna (1 = baixa, 3 = alta)
+      const priorities = [2, 3, 1, 1, 2, 1, 2, 2]; // Armazém, Produto(alta), Lote, Ref, Vlr, NF, Container, Disponível
+
+      // Larguras mínimas
+      const minWidths = [20, 40, 15, 15, 20, 15, 20, 18];
+
+      // Se não cabe nem o mínimo, usar proporções das prioridades
+      const totalPriority = priorities.reduce((sum, p) => sum + p, 0);
+      return priorities.map(priority => (availableWidth * priority) / totalPriority);
+   }
+
+   /**
+    * Calcula altura necessária para uma linha considerando quebras de texto
+    */
+   static calculateRowHeight(doc, rowData, colWidths, baseHeight) {
+      let maxLines = 1;
+
+      rowData.forEach((text, colIndex) => {
+         const availableTextWidth = colWidths[colIndex] - 4;
+
+         if (colIndex === 1 || colIndex === 6) { // Produto ou Container: máximo 1 linha
+            maxLines = Math.max(maxLines, 1);
+         } else {
+            doc.setFontSize(8);
+            const lines = this.wrapText(doc, text.toString(), availableTextWidth);
+            maxLines = Math.max(maxLines, lines.length);
+         }
+      });
+
+      return Math.max(baseHeight, maxLines * 3 + 4);
+   }
+
+   /**
+    * Quebra texto em múltiplas linhas para caber na largura disponível
+    */
+   static wrapText(doc, text, maxWidth) {
+      if (!text || text.trim() === '') return [''];
+
+      const words = text.trim().split(' ');
+      const lines = [];
+      let currentLine = '';
+
+      for (const word of words) {
+         const testLine = currentLine ? `${currentLine} ${word}` : word;
+         const testWidth = doc.getTextWidth(testLine);
+
+         if (testWidth <= maxWidth) {
+            currentLine = testLine;
+         } else {
+            if (currentLine) {
+               lines.push(currentLine);
+               currentLine = word;
+            } else {
+               const truncated = this.truncateTextToFit(doc, word, maxWidth);
+               lines.push(truncated);
+               currentLine = '';
+            }
+         }
+      }
+
+      if (currentLine) {
+         lines.push(currentLine);
+      }
+
+      return lines.slice(0, 3); // Limitar a 3 linhas por célula
+   }
+
+   /**
+    * Trunca texto para caber na largura disponível
+    */
+   static truncateTextToFit(doc, text, maxWidth) {
+      if (!text) return '';
+
+      const originalText = text.toString().trim();
+      let currentText = originalText;
+
+      if (doc.getTextWidth(currentText) <= maxWidth) {
+         return currentText;
+      }
+
+      const ellipsis = '...';
+      const ellipsisWidth = doc.getTextWidth(ellipsis);
+
+      for (let i = originalText.length - 1; i > 0; i--) {
+         const truncated = originalText.substring(0, i) + ellipsis;
+         if (doc.getTextWidth(truncated) <= maxWidth) {
+            return truncated;
+         }
+      }
+
+      return ellipsis;
+   }
+
+   /**
+    * Obtém a cor da empresa do localStorage ou usa verde como fallback
+    */
+   static getCompanyColor() {
+      try {
+         const companyData = localStorage.getItem('company');
+         if (companyData) {
+            const company = JSON.parse(companyData);
+            if (company.primaryColor) {
+               return this.hexToRgb(company.primaryColor);
+            }
+         }
+      } catch (error) {
+         console.warn('Erro ao obter cor da empresa:', error);
+      }
+
+      return [40, 167, 69]; // Verde Material Design (fallback)
+   }
+
+   /**
+    * Converte cor hex para RGB
+    */
+   static hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? [
+         parseInt(result[1], 16),
+         parseInt(result[2], 16),
+         parseInt(result[3], 16)
+      ] : [40, 167, 69];
+   }
+
+   /**
+    * Formata valores monetários
+    */
+   static formatCurrency(value) {
+      if (value === null || value === undefined || isNaN(value)) {
+         return 'R$ 0,00';
+      }
+      return new Intl.NumberFormat('pt-BR', {
+         style: 'currency',
+         currency: 'BRL'
+      }).format(value);
+   }
+
+   /**
+    * Formata números
+    */
+   static formatNumber(value, decimals = 2) {
+      if (value === null || value === undefined || isNaN(value)) {
+         return '0' + (decimals > 0 ? ',00' : '');
+      }
+      return new Intl.NumberFormat('pt-BR', {
+         minimumFractionDigits: decimals,
+         maximumFractionDigits: decimals
+      }).format(value);
+   }
+}
+
 // ===== CLASSE PRINCIPAL - GERENCIADOR DE ESTOQUE =====
 /**
  * Classe principal que gerencia toda a funcionalidade da tela de estoque
@@ -584,7 +1347,51 @@ class EstoqueManager {
          },
          responsive: true,
          scrollX: true,
+         scrollCollapse: false,
          colReorder: true,
+         dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+              '<"row"<"col-sm-12"tr>>' +
+              '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+         order: [[7, 'desc']]
+      });
+
+      // Initialize filter manager
+      this.filterManager = new FilterManager(this.dataTable);
+      this.filterManager.populateFilterOptions(this.data);
+
+      console.log('✅ DataTable inicializado');
+   }
+
+   /**
+    * Cria a instância do DataTable (padrão MM Softwares simplificado)
+    */
+   createDataTable() {
+      const visibleColumns = this.columnManager.getVisibleColumns();
+
+      // Configure columns
+      const columns = visibleColumns.map(col => ({
+         data: col.key,
+         title: col.name || col.key,
+         className: col.className || '',
+         render: (data, type, row) => {
+            if (type === 'display' || type === 'type') {
+               return this.formatCellData(data, col.key);
+            }
+            return data;
+         }
+      }));
+
+      // Initialize DataTable
+      this.dataTable = $('#estoque-table').DataTable({
+         data: this.data,
+         columns: columns,
+         pageLength: 25,
+         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Todos']],
+         language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
+         },
+         responsive: true,
+         scrollX: true,
          dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
               '<"row"<"col-sm-12"tr>>' +
               '<"row"<"col-sm-5"i><"col-sm-7"p>>',
@@ -594,8 +1401,6 @@ class EstoqueManager {
       // Initialize filter manager
       this.filterManager = new FilterManager(this.dataTable);
       this.filterManager.populateFilterOptions(this.data);
-
-      console.log('✅ DataTable inicializado');
    }
 
    /**
@@ -669,7 +1474,7 @@ class EstoqueManager {
 
       document.getElementById('btn-save-column-settings')?.addEventListener('click', () => {
          this.columnManager.saveColumnSettings();
-         this.initializeDataTable();
+         this.updateTableColumns();
          const modal = bootstrap.Modal.getInstance(document.getElementById('modal-column-settings'));
          if (modal) modal.hide();
          this.showToast('Configurações salvas!', 'success');
@@ -677,6 +1482,8 @@ class EstoqueManager {
 
       document.getElementById('btn-reset-columns')?.addEventListener('click', () => {
          this.columnManager.resetToDefault();
+         this.columnManager.initializeColumnSettings();
+         this.updateTableColumns();
          this.showToast('Configurações restauradas!', 'info');
       });
 
@@ -685,35 +1492,35 @@ class EstoqueManager {
          btn.addEventListener('click', (e) => {
             e.preventDefault();
             const format = btn.dataset.export;
-            this.exportData(format);
+            if (format === 'excel') {
+               ExportManager.exportToExcel();
+            } else if (format === 'pdf') {
+               ExportManager.exportToPDF();
+            }
          });
       });
    }
 
    /**
-    * Exporta dados em formato específico
+    * Atualiza colunas da tabela (padrão MM Softwares)
     */
-   exportData(format) {
-      if (!this.dataTable) return;
+   updateTableColumns() {
+      if (this.dataTable) {
+         // Destruir tabela
+         this.dataTable.destroy();
 
-      const filename = `Gestao_Estoque_${new Date().toISOString().split('T')[0]}`;
+         // Limpar completamente o HTML da tabela
+         const table = document.getElementById('estoque-table');
+         table.innerHTML = `
+            <thead>
+               <tr></tr>
+            </thead>
+            <tbody></tbody>
+         `;
 
-      const buttons = new $.fn.dataTable.Buttons(this.dataTable, {
-         buttons: [{
-            extend: format === 'excel' ? 'excelHtml5' : 'pdfHtml5',
-            title: format === 'pdf' ? 'Gestão de Estoque - ' + new Date().toLocaleDateString('pt-BR') : filename,
-            orientation: format === 'pdf' ? 'landscape' : undefined,
-            pageSize: format === 'pdf' ? 'A4' : undefined,
-            exportOptions: {
-               columns: ':visible'
-            }
-         }]
-      });
-
-      const container = buttons.container();
-      document.body.appendChild(container[0]);
-      buttons.buttons(0, 0).node.click();
-      buttons.destroy();
+         // Reinicializar com novos dados
+         this.initializeDataTable();
+      }
    }
 
    /**
