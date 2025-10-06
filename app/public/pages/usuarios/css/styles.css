@@ -255,7 +255,7 @@
 
 .user-avatar-section .form-label {
    font-weight: 500;
-   color: #374151;
+   color: rgb(var(--body-bg-rgb2));
    margin-bottom: 0.75rem;
 }
 
@@ -367,8 +367,8 @@
 }
 
 [data-theme-mode=dark] .existing-image-preview .card {
-   background-color: #1f2937;
-   border-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .existing-image-preview .card:hover {
@@ -378,7 +378,7 @@
 
 [data-theme-mode=dark] .existing-image-preview .card-body {
    background-color: #111827;
-   border-color: #374151;
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .existing-image-preview .text-muted {
@@ -452,8 +452,8 @@
 }
 
 [data-theme-mode=dark] .user-avatar-preview .avatar-preview-card {
-   border-color: #374151;
-   background-color: #1f2937;
+   border-color: rgb(var(--body-bg-rgb2));
+   background-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .user-avatar-preview .avatar-preview-card:hover {
@@ -463,8 +463,8 @@
 
 /* Dark mode para filtros */
 [data-theme-mode=dark] .card-body .row:first-child {
-   background-color: #1f2937;
-   border-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .card-body .row:first-child .form-label {
@@ -473,7 +473,7 @@
 
 [data-theme-mode=dark] .card-body .row:first-child .form-select,
 [data-theme-mode=dark] .card-body .row:first-child .form-control {
-   background-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
    border-color: #4b5563;
    color: #d1d5db;
 }
@@ -482,12 +482,12 @@
 [data-theme-mode=dark] .card-body .row:first-child .form-control:focus {
    border-color: var(--primary-color);
    box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.25);
-   background-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
 }
 
 /* Dark mode para choices */
 [data-theme-mode=dark] #clients-selection-section .choices__inner {
-   background-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
    border-color: #4b5563;
    color: #d1d5db;
 }
@@ -503,7 +503,7 @@
 }
 
 [data-theme-mode=dark] #clients-selection-section .choices__list--dropdown {
-   background-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
    border-color: #4b5563;
 }
 
@@ -697,8 +697,8 @@
 
 /* Dark mode para avatar FilePond */
 [data-theme-mode=dark] .user-avatar-section .filepond--panel-root {
-   background-color: #1f2937;
-   border-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .user-avatar-section .filepond--panel-root:hover {
@@ -709,7 +709,7 @@
 
 [data-theme-mode=dark] .user-avatar-section .filepond--item {
    background-color: #111827;
-   border-color: #374151;
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 /* FilePond Custom Styles - Design Moderno */
@@ -823,13 +823,13 @@
 
 .filepond--action-remove-item:hover {
    background-color: #e5e7eb !important;
-   color: #374151 !important;
+   color: rgb(var(--body-bg-rgb2)) !important;
 }
 
 /* Melhorias para o preview de arquivo */
 .filepond--file-info-main {
    font-weight: 600;
-   color: #374151;
+   color: rgb(var(--body-bg-rgb2));
 }
 
 .filepond--file-info-sub {
@@ -857,8 +857,8 @@
 }
 
 [data-theme-mode=dark] .filepond--panel-root {
-   background-color: #1f2937;
-   border-color: #374151;
+   background-color: rgb(var(--body-bg-rgb2));
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .filepond--panel-root:hover {
@@ -870,7 +870,7 @@
 [data-theme-mode=dark] .filepond--item-panel {
    background-color: #111827;
    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-   border-color: #374151;
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 [data-theme-mode=dark] .filepond--file-status-sub {
@@ -878,7 +878,7 @@
 }
 
 [data-theme-mode=dark] .filepond--action-remove-item {
-   background-color: #374151 !important;
+   background-color: rgb(var(--body-bg-rgb2)) !important;
    color: #9ca3af !important;
 }
 
@@ -889,7 +889,7 @@
 
 [data-theme-mode=dark] .filepond--file-info {
    background-color: #111827;
-   border-color: #374151;
+   border-color: rgb(var(--body-bg-rgb2));
 }
 
 /* Layout para preview de imagens existentes */
