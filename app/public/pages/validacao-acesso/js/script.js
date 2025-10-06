@@ -61,28 +61,6 @@ class AccessValidationManager {
                 return;
             }
 
-
-            // if (existingAccess.success && existingAccess.data.url) {
-            //     // Código já validado anteriormente, redirecionar
-            //     this.showSuccessToast('Código válido! Redirecionando...');
-            //     setTimeout(() => {
-            //         window.location.href = `/pages/acompanhamento/${existingAccess.data.url}`;
-            //     }, 1500);
-            //     return;
-            // }
-
-            // // Segunda tentativa: validar no Firebird e criar nova URL
-            // const validation = await this.validateNewAccess(codeAccess);
-
-            // if (validation.success && validation.data.url) {
-            //     this.showSuccessToast('Código validado com sucesso! Redirecionando...');
-            //     setTimeout(() => {
-            //         window.location.href = `/pages/acompanhamento/${validation.data.url}`;
-            //     }, 1500);
-            // } else {
-            //     this.showFieldError('access-code', validation.message || 'Código de acesso inválido');
-            // }
-
         } catch (error) {
             console.error('Erro na validação:', error);
             this.showErrorToast(error.message || 'Erro ao validar código de acesso');
