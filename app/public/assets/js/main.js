@@ -1,5 +1,7 @@
-// ⚠️ IMPORTANTE: Não precisamos mais da BASE_URL externa!
-// O proxy do servidor cuida de rotear /api/* para o backend automaticamente
+// Configuração da URL base do backend
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3301'  // Desenvolvimento
+  : 'https://sua-api-producao.com'; // Produção
 
 /**
  * Sistema de Coleta de Erros para Debug
@@ -86,16 +88,15 @@ window.ErrorCollector = (function() {
    };
 })();
 
-// 🚀 Função utilitária para requisições - AGORA USA O PROXY LOCAL!
+// 🚀 Função utilitária para requisições - USA URL DIRETA DO BACKEND
 async function Thefetch(path, method = 'GET', body = null) {
-   // ✅ Agora a URL será sempre relativa ao próprio site
-   // O proxy do servidor redireciona /api/* para o backend automaticamente
-   const url = path; // path já deve começar com /api/
+   // Constrói a URL completa combinando BASE_URL com o path
+   const url = `${BASE_URL}${path}`;
 
    const options = {
       method,
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include' // Mantém cookies para autenticação
+      credentials: 'include' // Necessário para JWT cookies
    };
 
    if (body) {
@@ -117,7 +118,7 @@ async function Thefetch(path, method = 'GET', body = null) {
             method: method,
             statusCode: response.status,
             timestamp: new Date().toISOString(),
-            url: url, // Agora mostra apenas a rota relativa
+            url: url, // URL completa do backend
             body: body,
             context: `Falha na requisição ${method} ${path}`
          };

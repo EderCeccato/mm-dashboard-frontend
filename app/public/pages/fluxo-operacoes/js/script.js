@@ -124,15 +124,15 @@ class ColumnManager {
    constructor() {
       this.storageKey = 'fluxo-operacoes-columns';
       this.defaultColumns = [
-         { data: 'noosmov', title: 'OS Movimento', visible: true, width: '100px' },
-         { data: 'nocli', title: 'Cód. Cliente', visible: true, width: '100px' },
-         { data: 'nomcli', title: 'Cliente', visible: true, width: '250px' },
-         { data: 'nomopos', title: 'Tipo Op.', visible: true, width: '100px' },
-         { data: 'empresa', title: 'Empresa', visible: true, width: '200px' },
-         { data: 'status', title: 'Status', visible: true, width: '150px' },
-         { data: 'tarefaatual', title: 'Tarefa Atual', visible: true, width: '150px' },
-         { data: 'data', title: 'Data', visible: true, width: '130px' },
-         { data: 'separador', title: 'Separador', visible: true, width: '120px' }
+         { data: 'noosmov', title: 'N° OS', visible: true},
+         { data: 'nocli', title: 'Cód. Cliente', visible: true},
+         { data: 'nomcli', title: 'Cliente', visible: true},
+         { data: 'nomopos', title: 'Tipo Op.', visible: true},
+         { data: 'empresa', title: 'Empresa', visible: true},
+         { data: 'status', title: 'Status', visible: true},
+         { data: 'tarefaatual', title: 'Tarefa Atual', visible: true},
+         { data: 'data', title: 'Data', visible: true},
+         { data: 'separador', title: 'Separador', visible: true}
       ];
    }
 
@@ -173,7 +173,6 @@ class ColumnManager {
          data: col.data,
          title: col.title,
          visible: col.visible,
-         width: col.width,
          className: 'text-center',
          render: (data, type, row) => {
             if (type === 'display') {
@@ -381,7 +380,7 @@ class ExportManager {
     */
    static exportToExcel(data, filename = 'fluxo_operacoes') {
       const worksheet = XLSX.utils.json_to_sheet(data.map(row => ({
-         'OS Movimento': row.noosmov,
+         'N° OS': row.noosmov,
          'Cód. Cliente': row.nocli,
          'Cliente': row.nomcli,
          'Tipo Operação': row.nomopos,
@@ -460,6 +459,7 @@ class FluxoOperacoesManager {
          await this.loadOperacoes();
          this.initializeDataTable();
          this.setupEventListeners();
+         this.setupResizeObserver();
          this.showLoading(false);
       } catch (error) {
          console.error('Erro ao inicializar:', error);
@@ -496,6 +496,10 @@ class FluxoOperacoesManager {
          order: [[7, 'desc']], // Ordenar por data decrescente
          responsive: true,
          scrollX: true,
+         autoWidth: true, // Impede cálculo automático de largura
+         // columnDefs: [
+         //    { targets: '_all', width: null } // Remove larguras fixas das colunas
+         // ],
          language: {
             url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/pt-BR.json'
          },
@@ -504,6 +508,12 @@ class FluxoOperacoesManager {
             // Evita chamar durante a inicialização ou destruição
             if (settings.bInitialised && this.dataTable) {
                this.updateTotalRecords(this.dataTable.page.info().recordsDisplay);
+            }
+         },
+         initComplete: () => {
+            // Força o redimensionamento da tabela após inicialização
+            if (this.dataTable) {
+               this.dataTable.columns.adjust();
             }
          }
       });
@@ -529,14 +539,101 @@ class FluxoOperacoesManager {
    }
 
    /**
+    * Reajusta as colunas do DataTable após redimensionamento
+    */
+   adjustDataTableColumns() {
+      if (this.dataTable) {
+         this.dataTable.columns.adjust().draw();
+      }
+   }
+
+   /**
+    * Função debounce para otimizar performance no resize
+    * @param {Function} func - Função a ser executada
+    * @param {number} wait - Tempo de espera em millisegundos
+    * @returns {Function} Função com debounce aplicado
+    */
+   debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+         const later = () => {
+            clearTimeout(timeout);
+            func.apply(this, args);
+         };
+         clearTimeout(timeout);
+         timeout = setTimeout(later, wait);
+      };
+   }
+
+   /**
+    * Configura observador para mudanças de tamanho no container da tabela
+    */
+   setupResizeObserver() {
+      // Verifica se o browser suporta ResizeObserver
+      if (typeof ResizeObserver !== 'undefined') {
+         const tableContainer = document.querySelector('.dataTables_wrapper');
+         if (tableContainer) {
+            // Função com debounce para evitar muitas chamadas
+            const debouncedAdjust = this.debounce(() => {
+               this.adjustDataTableColumns();
+            }, 150);
+
+            this.resizeObserver = new ResizeObserver(entries => {
+               for (let entry of entries) {
+                  // Verifica se houve mudança significativa no tamanho
+                  if (entry.contentRect.width > 0) {
+                     debouncedAdjust();
+                  }
+               }
+            });
+
+            this.resizeObserver.observe(tableContainer);
+         }
+      }
+   }
+
+   /**
     * Configura event listeners
     */
    setupEventListeners() {
+      // Event listener para redimensionamento da janela
+      const debouncedResize = this.debounce(() => {
+         this.adjustDataTableColumns();
+      }, 250);
+
+      window.addEventListener('resize', debouncedResize);
+
+      // Event listener para mudança de orientação (mobile/tablet)
+      window.addEventListener('orientationchange', () => {
+         // Delay maior para orientationchange pois o layout demora mais para se ajustar
+         setTimeout(() => {
+            this.adjustDataTableColumns();
+         }, 500);
+      });
+
       // Botão filtros
       document.getElementById('btn-toggle-filters')?.addEventListener('click', () => {
          const sidebar = new bootstrap.Offcanvas(document.getElementById('filters-sidebar'));
          sidebar.show();
       });
+
+      // Event listeners para reajustar DataTable quando offcanvas é mostrado/escondido
+      const filtersSidebar = document.getElementById('filters-sidebar');
+      if (filtersSidebar) {
+         filtersSidebar.addEventListener('shown.bs.offcanvas', () => {
+            // Pequeno delay para garantir que o layout se ajustou
+            setTimeout(() => {
+               this.adjustDataTableColumns();
+            }, 100);
+         });
+
+         filtersSidebar.addEventListener('hidden.bs.offcanvas', () => {
+            // Pequeno delay para garantir que o layout se ajustou
+            setTimeout(() => {
+               this.adjustDataTableColumns();
+            }, 100);
+         });
+      }
 
       // Aplicar filtros
       document.getElementById('btn-apply-filters')?.addEventListener('click', () => {
@@ -669,18 +766,18 @@ class FluxoOperacoesManager {
 
       tbody.innerHTML = itens.map(item => `
          <tr>
-            <td><span class="badge bg-secondary">${item.item}</span></td>
-            <td class="text-start">
+            <td class="text-center"><span class="badge bg-secondary">${item.item}</span></td>
+            <td class="text-start text-center">
                <div class="fw-semibold">${ApiUtils.truncateText(item.nompro, 30)}</div>
                <small class="text-muted">Cód: ${item.nopro}</small>
             </td>
-            <td><span class="badge bg-info">${item.codcli}</span></td>
-            <td><span class="badge bg-warning text-dark">${item.lote || '-'}</span></td>
-            <td><strong>${(item.qtde || 0).toLocaleString('pt-BR')}</strong></td>
-            <td>${item.nomun || '-'}</td>
-            <td><span class="badge bg-success">${item.status}</span></td>
-            <td>${ApiUtils.formatDateOnly(item.datavalidade)}</td>
-            <td>
+            <td class="text-center"><span class="badge bg-info">${item.codcli}</span></td>
+            <td class="text-center"><span class="badge bg-warning text-dark">${item.lote || '-'}</span></td>
+            <td class="text-center"><strong>${(item.qtde || 0).toLocaleString('pt-BR')}</strong></td>
+            <td class="text-center">${item.nomun || '-'}</td>
+            <td class="text-center"><span class="badge bg-success">${item.status}</span></td>
+            <td class="text-center">${ApiUtils.formatDateOnly(item.datavalidade)}</td>
+            <td class="text-center position-relative">
                <div class="position-badge">
                   L${item.linha || '?'}-B${item.bloco || '?'}-N${item.nivel || '?'}-A${item.apto || '?'}
                </div>
@@ -825,7 +922,7 @@ class FluxoOperacoesManager {
       const modalBody = document.querySelector('#modal-operation-details .modal-body');
       modalBody.innerHTML = `
          <!-- Info Header -->
-         <div class="row mb-3">
+         <div class="row">
             <div class="col-12">
                <div class="card border-secondary">
                   <div class="card-header bg-light">
@@ -833,16 +930,16 @@ class FluxoOperacoesManager {
                   </div>
                   <div class="card-body">
                      <div class="row">
-                        <div class="col-md-3">
-                           <strong>OS Movimento:</strong> <span id="detail-noosmov" class="text-primary"></span>
+                        <div class="col-md">
+                           <strong>N° OS:</strong> <span id="detail-noosmov" class="text-primary"></span>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md">
                            <strong>Cliente:</strong> <span id="detail-cliente"></span>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md">
                            <strong>Empresa:</strong> <span id="detail-empresa"></span>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md">
                            <strong>Status:</strong> <span id="detail-status"></span>
                         </div>
                      </div>

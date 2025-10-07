@@ -1,5 +1,7 @@
 // Configurações globais para validação de arquivos
-const BASE_URL = 'http://localhost:3301'
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:3301'  // Desenvolvimento
+  : 'https://sua-api-producao.com'; // Produção
 
 const FILE_VALIDATION_CONFIG = {
    'company-background': {
@@ -1573,7 +1575,7 @@ const CompaniesManager = (function() {
          const uploadResponse = await fetch(`${BASE_URL}/api/company/${companyUuid}/upload-images`, {
             method: 'POST',
             body: formData,
-            credentials: 'include'
+            credentials: 'include' // Necessário para JWT cookies
          });
 
          // Verifica se a resposta foi bem-sucedida
@@ -3073,7 +3075,7 @@ document.addEventListener('DOMContentLoaded', function() {
          const uploadResponse = await fetch(`${BASE_URL}/api/user/${userUuid}/upload-avatar`, {
             method: 'POST',
             body: formData,
-            credentials: 'include'
+            credentials: 'include' // Necessário para JWT cookies
          });
 
          // Verifica se a resposta foi bem-sucedida

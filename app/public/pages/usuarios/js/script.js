@@ -22,7 +22,9 @@ const CONFIG = {
    }
 };
 
-const URL_BASE = 'http://localhost:3301';
+const URL_BASE = window.location.hostname === 'localhost'
+  ? 'http://localhost:3301'  // Desenvolvimento
+  : 'https://sua-api-producao.com'; // Produção
 
 const UsersManager = (function() {
    'use strict';
@@ -975,7 +977,7 @@ const UsersManager = (function() {
          const uploadResponse = await fetch(`${URL_BASE}/api/user/${userUuid}/upload-avatar`, {
             method: 'POST',
             body: formData,
-            credentials: 'include'
+            credentials: 'include' // Necessário para JWT cookies
          });
 
          if (!uploadResponse.ok) {

@@ -1,7 +1,7 @@
 {
   "name": "frontend-server",
   "version": "1.0.0",
-  "description": "Servidor frontend com proxy para backend",
+  "description": "Servidor frontend para servir arquivos estáticos",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -10,10 +10,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "cookie-parser": "^1.4.7",
     "dotenv": "^16.6.1",
-    "express": "^4.21.2",
-    "http-proxy-middleware": "^2.0.9"
+    "express": "^4.21.2"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
@@ -21,9 +19,9 @@
   },
   "keywords": [
     "express",
-    "proxy",
     "frontend",
-    "server"
+    "server",
+    "static"
   ],
   "license": "MIT"
 }

@@ -54,6 +54,7 @@
 /* ===== DATATABLE STYLING ===== */
 .dataTables_wrapper {
     padding: 0;
+    width: 100%;
 }
 
 .dataTables_length,
@@ -92,8 +93,53 @@
     background: #555;
 }
 
+/* ===== FIXES PARA ALINHAMENTO DO HEADER ===== */
+table.dataTable {
+    width: 100% !important;
+    table-layout: auto;
+}
+
 table.dataTable thead>tr>th.sorting{
     text-align: center !important;
+}
+
+/* Força recalculo do layout em mudanças de viewport */
+.dataTables_scroll {
+    width: 100%;
+    clear: both;
+}
+
+.dataTables_scrollHead {
+    width: 100% !important;
+}
+
+.dataTables_scrollHeadInner {
+    width: 100% !important;
+}
+
+.dataTables_scrollHeadInner table {
+    width: 100% !important;
+}
+
+.dataTables_scrollBody {
+    width: 100% !important;
+}
+
+/* Previne problemas de largura com containers flexíveis */
+.card-body .dataTables_wrapper {
+    overflow: visible;
+}
+
+/* Correção específica para responsividade */
+@media (max-width: 768px) {
+    .dataTables_wrapper .dataTables_scroll {
+        overflow-x: auto;
+    }
+
+    .dataTables_scrollHead,
+    .dataTables_scrollBody {
+        width: 100% !important;
+    }
 }
 
 /* ===== BADGES DE STATUS ===== */
@@ -181,6 +227,22 @@ table.dataTable thead>tr>th.sorting{
 /* ===== MODAL DETALHES ===== */
 .modal-xl {
     max-width: 1200px;
+}
+
+/* Permite que o modal cresça verticalmente sem scroll interno */
+#modal-operation-details .modal-dialog {
+    max-height: none;
+    margin: 1.75rem auto;
+}
+
+#modal-operation-details .modal-content {
+    max-height: none;
+    height: auto;
+}
+
+#modal-operation-details .modal-body {
+    max-height: none;
+    overflow: visible;
 }
 
 .modal-content {
@@ -371,6 +433,11 @@ table.dataTable thead>tr>th.sorting{
 
     .modal-xl {
         max-width: 95%;
+    }
+
+    /* Ajustes responsivos para o modal sem scroll */
+    #modal-operation-details .modal-dialog {
+        margin: 0.5rem auto;
     }
 
     .nav-tabs .nav-link {
