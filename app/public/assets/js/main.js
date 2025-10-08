@@ -88,7 +88,35 @@ window.ErrorCollector = (function() {
    };
 })();
 
-// 🚀 Função utilitária para requisições - USA URL DIRETA DO BACKEND
+// � Função para recuperar o token de acesso
+function getAccessToken() {
+   try {
+      // Primeiro tenta obter do cookie (método mais seguro)
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+         const [name, value] = cookie.trim().split('=');
+         if (name === 'accessToken') {
+            return value;
+         }
+      }
+
+      // Se não encontrar no cookie, verifica no localStorage
+      const tokenData = localStorage.getItem('tokenData');
+      if (tokenData) {
+         const parsedTokenData = JSON.parse(tokenData);
+         if (parsedTokenData.accessToken) {
+            return parsedTokenData.accessToken;
+         }
+      }
+      
+      return null;
+   } catch (error) {
+      console.warn('❌ Erro ao recuperar token de acesso:', error);
+      return null;
+   }
+}
+
+// �🚀 Função utilitária para requisições - USA URL DIRETA DO BACKEND
 async function Thefetch(path, method = 'GET', body = null) {
    // Constrói a URL completa combinando BASE_URL com o path
    const url = `${BASE_URL}${path}`;
@@ -98,6 +126,12 @@ async function Thefetch(path, method = 'GET', body = null) {
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include' // Necessário para JWT cookies
    };
+
+   // Adiciona o token de acesso ao header Authorization se disponível
+   const accessToken = getAccessToken();
+   if (accessToken) {
+      options.headers['Authorization'] = `Bearer ${accessToken}`;
+   }
 
    if (body) {
       options.body = JSON.stringify(body);
@@ -134,6 +168,16 @@ async function Thefetch(path, method = 'GET', body = null) {
          // Salva apenas os dados básicos para o toast do usuário
          sessionStorage.setItem('errorCode', payload.code);
          sessionStorage.setItem('errorMessage', payload.message);
+
+         // Se é erro de token de acesso, lança uma exceção específica
+         if (payload.code === 'ACCESS_TOKEN_MISSING' || payload.code === 'INVALID_TOKEN' || response.status === 401) {
+            const tokenError = new Error(payload.message || 'Token de acesso não fornecido');
+            tokenError.code = payload.code || 'ACCESS_TOKEN_MISSING';
+            tokenError.route = path;
+            tokenError.method = method;
+            tokenError.statusCode = response.status;
+            throw tokenError;
+         }
 
          // Se veio erro e indicou redirectTo, redireciona e interrompe
          if (!response.ok && payload.redirectTo) {
