@@ -1,7 +1,7 @@
 // Configuração da URL base do backend
 const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3301'  // Desenvolvimento
-  : 'http://18.229.118.172:3301'; // Produção
+  : 'https://mm-dashboard-backend.vercel.app'; // Produção
 
 /**
  * Sistema de Coleta de Erros para Debug
