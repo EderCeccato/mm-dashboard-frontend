@@ -37,11 +37,25 @@ const AuthManager = (function() {
          }
 
          // Salva informações do token (data de login, expiração)
-         localStorage.setItem(KEYS.TOKEN_DATA, JSON.stringify({
+         const tokenData = {
             loginTime: Date.now(),
             // 24 horas de expiração por padrão
             expiresAt: Date.now() + (24 * 60 * 60 * 1000)
-         }));
+         };
+
+         // Se o token veio na resposta, salva ele também
+         if (data.token || data.accessToken) {
+            tokenData.accessToken = data.token || data.accessToken;
+         } else if (data.data && (data.data.token || data.data.accessToken)) {
+            tokenData.accessToken = data.data.token || data.data.accessToken;
+         }
+
+         localStorage.setItem(KEYS.TOKEN_DATA, JSON.stringify(tokenData));
+
+         // Salva os dados do usuário se foram encontrados
+         if (userData) {
+            localStorage.setItem(KEYS.USER_DATA, JSON.stringify(userData));
+         }
 
          return true;
       } catch (error) {
