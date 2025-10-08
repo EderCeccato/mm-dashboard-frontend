@@ -285,9 +285,13 @@ const AuthManager = (function() {
     * @returns {Promise<boolean>} Verdadeiro se tem acesso
     */
    async function checkAccess() {
-      // Se estiver na página de login, não verifica
-      if (window.location.pathname === '/login' ||
-         window.location.pathname.includes('/login/')) {
+      const currentPath = window.location.pathname;
+
+      // Se estiver na página de login, não verifica (mais abrangente)
+      if (currentPath === '/login' ||
+          currentPath === '/login/' ||
+          currentPath.includes('/login/') ||
+          currentPath.includes('/pages/login/')) {
          return true;
       }
 

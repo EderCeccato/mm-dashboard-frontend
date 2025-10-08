@@ -95,8 +95,14 @@ function event_click() {
    const btn_submit = document.querySelector('.btn.btn-primary');
    const btn_loading = document.querySelector('.btn-loader');
 
-   btn_submit.addEventListener('click', async function(e) {
-      e.preventDefault();
+   // Função para executar o login
+   async function performLogin(e) {
+      // Previne o comportamento padrão do formulário SEMPRE
+      if (e) {
+         e.preventDefault();
+         e.stopPropagation();
+      }
+
       if (btn_submit) btn_submit.style.display = 'none';
       if (btn_loading) btn_loading.style.display = 'flex';
 
@@ -140,12 +146,35 @@ function event_click() {
             }, 1000);
          } else {
             // Exibe o toast com a mensagem de erro do servidor
-            const errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
+            let errorMessage = data_login && data_login.message ? data_login.message : 'Email ou senha inválidos';
+            console.log(errorMessage);
+
+
+            // Verifica se o servidor retornou informações sobre tentativas restantes
+            if (data_login && data_login.data && typeof data_login.data.attemptsRemaining === 'number') {
+               const attempts = data_login.data.attemptsRemaining;
+               if (attempts > 0) {
+                  errorMessage += ` (${attempts} tentativa${attempts === 1 ? '' : 's'} restante${attempts === 1 ? '' : 's'})`;
+               } else {
+                  errorMessage += ' (conta bloqueada)';
+               }
+            } else if (data_login && typeof data_login.attemptsRemaining === 'number') {
+               // Formato alternativo da resposta
+               const attempts = data_login.attemptsRemaining;
+               if (attempts > 0) {
+                  errorMessage += ` (${attempts} tentativa${attempts === 1 ? '' : 's'} restante${attempts === 1 ? '' : 's'})`;
+               } else {
+                  errorMessage += ' (conta bloqueada)';
+               }
+            }
+
             showErrorToast(errorMessage);
 
-            // Restaura os botões
-            if (btn_submit) btn_submit.style.display = 'block';
-            if (btn_loading) btn_loading.style.display = 'none';
+            // Restaura os botões após um delay (igual ao sucesso)
+            setTimeout(() => {
+               if (btn_submit) btn_submit.style.display = 'block';
+               if (btn_loading) btn_loading.style.display = 'none';
+            }, 1000);
          }
       } catch (error) {
          // Captura erros da requisição (como 401, 500, etc.)
@@ -155,38 +184,40 @@ function event_click() {
          const errorMessage = error.message || 'Erro ao fazer login. Tente novamente.';
          showErrorToast(errorMessage);
 
-         // Restaura os botões
-         if (btn_submit) btn_submit.style.display = 'block';
-         if (btn_loading) btn_loading.style.display = 'none';
+         // Restaura os botões após um delay (igual ao sucesso)
+         setTimeout(() => {
+            if (btn_submit) btn_submit.style.display = 'block';
+            if (btn_loading) btn_loading.style.display = 'none';
+         }, 1000);
       }
-   });
+   }
+
+   // Event listeners
+   // Remove o listener de click direto no botão para evitar duplicação
+   // btn_submit.addEventListener('click', performLogin);
+
+   // Listener para submit do formulário (captura tanto Enter quanto click no botão)
+   const loginForm = document.getElementById('login-form');
+   if (loginForm) {
+      loginForm.addEventListener('submit', performLogin);
+   }
 }
 
 // Inicializa a página quando o DOM estiver carregado
 document.addEventListener('DOMContentLoaded', async function() {
-   // Verifica se o usuário já está autenticado antes de mostrar a tela de login
-   if (typeof AuthManager !== 'undefined' && AuthManager.isAuthenticated) {
-      try {
-         const isAuthenticated = await AuthManager.isAuthenticated();
-         if (isAuthenticated) {
-            // Se estiver autenticado, redireciona para a home
-            console.log('✅ Usuário já autenticado, redirecionando para home...');
-            window.location.href = '/pages/home/';
-            return; // Para não executar o resto do código
-         }
-      } catch (error) {
-         console.error('❌ Erro ao verificar autenticação na página de login:', error);
-         // Em caso de erro, continua para mostrar a tela de login normalmente
-      }
-   }
-
-   // Exibe o toast com a mensagem de erro
+   // Exibe o toast com a mensagem de erro primeiro (se houver)
    const msg = sessionStorage.getItem('errorMessage');
    if (msg) {
       showErrorToast(msg);
       sessionStorage.removeItem('errorMessage');
    }
 
-   // Registra eventos se o usuário não estiver autenticado
+   // Registra eventos de login sempre
    event_click();
+
+   // IMPORTANTE: Não verificar autenticação automaticamente na página de login
+   // Isso deve ser feito apenas APÓS o usuário fazer login com sucesso
+   // ou quando acessar outras páginas que requerem autenticação
+
+   console.log('📝 Página de login carregada. Aguardando credenciais do usuário...');
 });
