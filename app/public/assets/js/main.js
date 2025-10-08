@@ -1,7 +1,7 @@
 // Configuração da URL base do backend
 const BASE_URL = window.location.hostname === 'localhost'
   ? 'http://localhost:3301'  // Desenvolvimento
-  : 'https://wc6hbl6mu4.execute-api.sa-east-1.amazonaws.com'; // Produção
+  : 'https://wc6hbl6mu4.execute-api.sa-east-1.amazonaws.com/prod'; // Produção
 
 /**
  * Sistema de Coleta de Erros para Debug
