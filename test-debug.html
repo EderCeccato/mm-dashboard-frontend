@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Login - Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .warning { background: #fff3e0; color: #ef6c00; }
+        input, button { margin: 5px; padding: 8px; }
+        button { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Teste de Login e Token - Debug</h1>
+    
+    <div>
+        <h3>1. Teste de Login</h3>
+        <input type="email" id="email" value="cliente@sigatrans.com.br" placeholder="Email">
+        <input type="password" id="password" value="132456" placeholder="Senha">
+        <button onclick="testLogin()">Fazer Login</button>
+    </div>
+
+    <div>
+        <h3>2. Teste de Verificação de Sessão</h3>
+        <button onclick="testSession()">Verificar Sessão</button>
+    </div>
+
+    <div>
+        <h3>3. Estado Atual</h3>
+        <button onclick="checkCurrentState()">Verificar Estado</button>
+    </div>
+
+    <div>
+        <h3>4. Limpar Dados</h3>
+        <button onclick="clearData()">Limpar LocalStorage</button>
+    </div>
+
+    <div id="logs"></div>
+
+    <script>
+        // Função para adicionar logs na tela
+        function addLog(message, type = 'log') {
+            const logs = document.getElementById('logs');
+            const logDiv = document.createElement('div');
+            logDiv.className = `log ${type}`;
+            logDiv.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            logs.appendChild(logDiv);
+            console.log(message);
+        }
+
+        // Configuração da URL base (igual ao main.js)
+        const BASE_URL = window.location.hostname === 'localhost'
+            ? 'http://localhost:3301'
+            : 'https://fy5gyeix2g.execute-api.sa-east-1.amazonaws.com/dev';
+
+        addLog(`🌐 URL Base: ${BASE_URL}`);
+
+        // Função para recuperar token (igual ao main.js)
+        function getAccessToken() {
+            try {
+                // Primeiro tenta obter do cookie
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'accessToken') {
+                        return value;
+                    }
+                }
+
+                // Verifica no localStorage
+                const tokenData = localStorage.getItem('tokenData');
+                if (tokenData) {
+                    const parsedTokenData = JSON.parse(tokenData);
+                    if (parsedTokenData.accessToken) {
+                        return parsedTokenData.accessToken;
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                addLog(`❌ Erro ao recuperar token: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // Função Thefetch simplificada para teste
+        async function Thefetch(path, method = 'GET', body = null) {
+            const url = `${BASE_URL}${path}`;
+            
+            const options = {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            };
+
+            // Adiciona token se disponível
+            const accessToken = getAccessToken();
+            if (accessToken) {
+                options.headers['Authorization'] = `Bearer ${accessToken}`;
+                addLog(`🔑 Token adicionado ao header: ${accessToken.substring(0, 20)}...`);
+            } else {
+                addLog(`⚠️ Nenhum token encontrado para enviar`, 'warning');
+            }
+
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            addLog(`📡 Fazendo requisição: ${method} ${path}`);
+            addLog(`📋 Headers: ${JSON.stringify(options.headers, null, 2)}`);
+            
+            try {
+                const response = await fetch(url, options);
+                const payload = await response.json().catch(() => ({}));
+
+                addLog(`📥 Resposta recebida (${response.status}): ${JSON.stringify(payload, null, 2)}`);
+
+                if (!response.ok) {
+                    if (payload.code === 'ACCESS_TOKEN_MISSING' || response.status === 401) {
+                        addLog(`🚫 Erro de token: ${payload.message}`, 'error');
+                    }
+                    throw new Error(payload.message || 'Erro na requisição');
+                }
+
+                return payload;
+            } catch (error) {
+                addLog(`❌ Erro na requisição: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Função para fazer login
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            addLog(`🔐 Tentando fazer login com: ${email}`);
+
+            try {
+                const result = await Thefetch('/api/auth/login', 'POST', {
+                    email: email,
+                    password: password
+                });
+
+                if (result && result.success) {
+                    addLog(`✅ Login realizado com sucesso!`, 'success');
+                    addLog(`👤 Dados recebidos: ${JSON.stringify(result, null, 2)}`);
+
+                    // Simular salvamento de dados (como faz o AuthManager)
+                    if (result.data && result.data.user) {
+                        localStorage.setItem('userData', JSON.stringify(result.data.user));
+                        addLog(`💾 Dados do usuário salvos no localStorage`);
+                    }
+
+                    // Salvar token se disponível
+                    const tokenData = {
+                        loginTime: Date.now(),
+                        expiresAt: Date.now() + (24 * 60 * 60 * 1000)
+                    };
+
+                    if (result.token || result.accessToken) {
+                        tokenData.accessToken = result.token || result.accessToken;
+                        addLog(`🔑 Token salvo: ${tokenData.accessToken.substring(0, 20)}...`);
+                    } else if (result.data && (result.data.token || result.data.accessToken)) {
+                        tokenData.accessToken = result.data.token || result.data.accessToken;
+                        addLog(`🔑 Token salvo (data): ${tokenData.accessToken.substring(0, 20)}...`);
+                    } else {
+                        addLog(`⚠️ Nenhum token encontrado na resposta`, 'warning');
+                    }
+
+                    localStorage.setItem('tokenData', JSON.stringify(tokenData));
+                    
+                    // Verificar cookies
+                    addLog(`🍪 Cookies após login: ${document.cookie}`);
+                    
+                } else {
+                    addLog(`❌ Login falhou: ${result?.message || 'Erro desconhecido'}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ Erro no login: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para testar verificação de sessão
+        async function testSession() {
+            addLog(`🔍 Verificando sessão...`);
+
+            try {
+                const result = await Thefetch('/api/auth/session', 'GET');
+                addLog(`✅ Sessão válida: ${JSON.stringify(result, null, 2)}`, 'success');
+            } catch (error) {
+                addLog(`❌ Erro na verificação de sessão: ${error.message}`, 'error');
+            }
+        }
+
+        // Função para verificar estado atual
+        function checkCurrentState() {
+            addLog(`📊 === ESTADO ATUAL ===`);
+            
+            // LocalStorage
+            const userData = localStorage.getItem('userData');
+            const tokenData = localStorage.getItem('tokenData');
+            
+            if (userData) {
+                addLog(`👤 UserData: ${userData}`);
+            } else {
+                addLog(`❌ Nenhum userData encontrado`, 'error');
+            }
+            
+            if (tokenData) {
+                addLog(`🔑 TokenData: ${tokenData}`);
+            } else {
+                addLog(`❌ Nenhum tokenData encontrado`, 'error');
+            }
+            
+            // Cookies
+            addLog(`🍪 Cookies: ${document.cookie || 'Nenhum cookie'}`);
+            
+            // Token atual
+            const currentToken = getAccessToken();
+            if (currentToken) {
+                addLog(`🎯 Token atual: ${currentToken.substring(0, 30)}...`);
+            } else {
+                addLog(`❌ Nenhum token atual disponível`, 'error');
+            }
+        }
+
+        // Função para limpar dados
+        function clearData() {
+            localStorage.clear();
+            document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            addLog(`🧹 Dados limpos`, 'success');
+        }
+
+        // Verificar estado inicial
+        window.onload = function() {
+            addLog(`🚀 Página carregada. Verificando estado inicial...`);
+            checkCurrentState();
+        };
+    </script>
+</body>
+</html>
