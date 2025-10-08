@@ -1,8 +1,3 @@
-// Configurações globais para validação de arquivos
-const BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:3301'  // Desenvolvimento
-  : 'https://sua-api-producao.com'; // Produção
-
 const FILE_VALIDATION_CONFIG = {
    'company-background': {
       maxWidth: 700,
@@ -75,8 +70,6 @@ const CONFIG = {
       'client': { label: 'Cliente', badge: 'bg-teal' }
    }
 };
-
-const URL_BASE = 'http://localhost:3301';
 
 const CompaniesManager = (function() {
    'use strict';

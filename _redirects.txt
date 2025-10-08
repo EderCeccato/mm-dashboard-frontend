@@ -1,0 +1,32 @@
+# Redireciona raiz para login
+/ /login 302
+
+# Rotas específicas para as páginas existentes
+/login /app/public/pages/login/index.html 200
+/validacao-acesso /app/public/pages/validacao-acesso/index.html 200
+/acompanhamento/:hash /app/public/pages/acompanhamento/index.html 200
+/acompanhamento /validacao-acesso 302
+
+# Rotas do dashboard
+/home /app/public/pages/home/index.html 200
+/empresas /app/public/pages/empresas/index.html 200
+/usuarios /app/public/pages/usuarios/index.html 200
+/gestao-estoque /app/public/pages/gestao-estoque/index.html 200
+/fluxo-operacional /app/public/pages/fluxo-operacional/index.html 200
+/fluxo-operacoes /app/public/pages/fluxo-operacoes/index.html 200
+/siweb /app/public/pages/siweb/index.html 200
+
+# Páginas de erro
+/erro-401 /app/public/pages/erro-401/index.html 401
+/erro-500 /app/public/pages/erro-500/index.html 500
+
+# Assets estáticos
+/assets/* /app/public/assets/:splat 200
+/js/* /app/public/js/:splat 200
+/css/* /app/public/css/:splat 200
+/images/* /app/public/images/:splat 200
+/libs/* /app/public/libs/:splat 200
+/icon-fonts/* /app/public/icon-fonts/:splat 200
+
+# Fallback para 404
+/* /app/public/pages/erro-404/index.html 404
