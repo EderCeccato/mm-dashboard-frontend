@@ -1,6 +1,6 @@
 // Configuração da URL base do backend
 const BASE_URL = window.location.hostname === 'localhost'
-  ? 'http://localhost:3301'  // Desenvolvimento
+  ? 'http://18.229.118.172:3301'  // Desenvolvimento
   : 'http://18.229.118.172:3301'; // Produção
 
 /**
@@ -95,9 +95,21 @@ async function Thefetch(path, method = 'GET', body = null) {
 
    const options = {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include' // Necessário para JWT cookies
+      headers: {
+         'Content-Type': 'application/json'
+      }
    };
+
+   // Adicionar token no Authorization header se existir
+   const token = localStorage.getItem('accessToken');
+   if (token) {
+      options.headers.Authorization = `Bearer ${token}`;
+   }
+
+   // Para same-origin, incluir cookies também (compatibilidade)
+   if (!BASE_URL.includes('://') || BASE_URL.includes(window.location.hostname)) {
+      options.credentials = 'include';
+   }
 
    if (body) {
       options.body = JSON.stringify(body);
@@ -105,6 +117,16 @@ async function Thefetch(path, method = 'GET', body = null) {
 
    try {
       const response = await fetch(url, options);
+
+      // Se token expirou (401), limpar dados e redirecionar para login
+      if (response.status === 401) {
+         localStorage.removeItem('accessToken');
+         localStorage.removeItem('userData');
+         localStorage.removeItem('tokenData');
+         console.log('🔒 Token expirado, redirecionando para login...');
+         window.location.href = '/login';
+         return;
+      }
 
       // Tenta extrair JSON (pode falhar se for HTML puro)
       const payload = await response.json().catch(() => ({}));

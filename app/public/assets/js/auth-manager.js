@@ -43,11 +43,17 @@ const AuthManager = (function() {
             expiresAt: Date.now() + (24 * 60 * 60 * 1000)
          };
 
-         // Se o token veio na resposta, salva ele também
+         // Salva o accessToken diretamente no localStorage (novo padrão)
+         let accessToken = null;
          if (data.token || data.accessToken) {
-            tokenData.accessToken = data.token || data.accessToken;
+            accessToken = data.token || data.accessToken;
          } else if (data.data && (data.data.token || data.data.accessToken)) {
-            tokenData.accessToken = data.data.token || data.data.accessToken;
+            accessToken = data.data.token || data.data.accessToken;
+         }
+
+         if (accessToken) {
+            localStorage.setItem('accessToken', accessToken);
+            tokenData.accessToken = accessToken; // Mantém compatibilidade
          }
 
          localStorage.setItem(KEYS.TOKEN_DATA, JSON.stringify(tokenData));
@@ -169,15 +175,16 @@ const AuthManager = (function() {
             return false;
          }
 
-         // 2. Verifica se o token expirou localmente
-         const tokenData = JSON.parse(localStorage.getItem(KEYS.TOKEN_DATA) || '{}');
-         if (!tokenData.expiresAt) {
-            console.log('❌ Dados do token não encontrados no localStorage');
+         // 2. Verifica se o accessToken existe
+         const accessToken = localStorage.getItem('accessToken');
+         if (!accessToken) {
+            console.log('❌ AccessToken não encontrado no localStorage');
             return false;
          }
 
-         // 3. Verifica expiração local
-         if (Date.now() > tokenData.expiresAt) {
+         // 3. Verifica se o token expirou localmente (compatibilidade)
+         const tokenData = JSON.parse(localStorage.getItem(KEYS.TOKEN_DATA) || '{}');
+         if (tokenData.expiresAt && Date.now() > tokenData.expiresAt) {
             console.log('❌ Token expirado localmente');
             return false;
          }
@@ -249,7 +256,8 @@ const AuthManager = (function() {
          localStorage.setItem(KEYS.USER_DATA, JSON.stringify(preservedData));
       }
 
-      // Limpa outros dados do localStorage
+      // Limpa dados de autenticação
+      localStorage.removeItem('accessToken'); // Novo padrão
       localStorage.removeItem(KEYS.MODULES);
       localStorage.removeItem(KEYS.TOKEN_DATA);
 
@@ -260,7 +268,7 @@ const AuthManager = (function() {
       localStorage.removeItem('lastUserEmail');
       localStorage.removeItem('lastUserName');
 
-      // Limpa cookie do backend
+      // Limpa cookie do backend (compatibilidade)
       document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 
       await Thefetch('/api/auth/logout', 'POST');

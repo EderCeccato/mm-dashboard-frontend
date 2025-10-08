@@ -110,16 +110,21 @@ function event_click() {
                AuthManager.saveAuthData(data_login);
             } else {
                // Fallback caso o AuthManager não esteja carregado
-               // Verifica a estrutura da resposta
+               // Salva o accessToken (novo padrão)
+               if (data_login.data && data_login.data.accessToken) {
+                  localStorage.setItem('accessToken', data_login.data.accessToken);
+               } else if (data_login.accessToken) {
+                  localStorage.setItem('accessToken', data_login.accessToken);
+               }
+
+               // Salva dados do usuário
                if (data_login.data && data_login.data.user) {
-                  // Nova estrutura
                   localStorage.setItem('userData', JSON.stringify(data_login.data.user));
                } else if (data_login.user) {
-                  // Estrutura antiga
                   localStorage.setItem('userData', JSON.stringify(data_login.user));
                }
 
-               // Salva informações do token
+               // Salva informações do token (compatibilidade)
                localStorage.setItem('tokenData', JSON.stringify({
                   loginTime: Date.now(),
                   expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 horas
