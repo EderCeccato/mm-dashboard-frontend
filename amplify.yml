@@ -1,34 +1,12 @@
 version: 1
 frontend:
   phases:
-    preBuild:
-      commands:
-        - npm ci
     build:
       commands:
-        - echo "Building Node.js Express application"
+        - echo "No build step needed"
   artifacts:
-    baseDirectory: /
+    baseDirectory: app/public
     files:
       - '**/*'
-      - node_modules/**/*
   cache:
-    paths:
-      - node_modules/**/*
-applications:
-  - frontend:
-      phases:
-        preBuild:
-          commands:
-            - npm ci
-        build:
-          commands:
-            - echo "No additional build steps required"
-      artifacts:
-        baseDirectory: /
-        files:
-          - '**/*'
-      cache:
-        paths:
-          - node_modules/**/*
-    appRoot: /
+    paths: []
