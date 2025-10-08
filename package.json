@@ -5,10 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "cross-env NODE_ENV=development nodemon server.js",
-    "prod": "cross-env NODE_ENV=production node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "echo 'No build step needed for this application'"
+    "dev": "cross-env NODE_ENV=development nodemon server.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",
